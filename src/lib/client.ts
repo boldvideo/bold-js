@@ -9,6 +9,10 @@ type ClientOptions = {
 }
 
 function createClient(apiKey: string, options: ClientOptions = {debug: false}) {
+  if (!apiKey || typeof apiKey !== 'string') {
+    throw new Error('API key is missing or invalid');
+  }
+
   const { debug } = options;
   const apiClientOptions = {
     baseURL: options.baseURL ?? "https://app.boldvideo.io/api/v1/",
@@ -17,7 +21,14 @@ function createClient(apiKey: string, options: ClientOptions = {debug: false}) {
     },
   };
 
-  const apiClient: AxiosInstance = axios.create(apiClientOptions);
+  let apiClient: AxiosInstance;
+
+  try {
+    apiClient = axios.create(apiClientOptions);
+  } catch (error) {
+    console.error("Error creating API client", error);
+    throw error;
+  }
 
   const userId = [...Array(30)]
     .map(() => Math.random().toString(36)[2])
