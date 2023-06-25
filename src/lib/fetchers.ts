@@ -51,6 +51,17 @@ export function fetchVideos(client: ApiClient) {
   };
 }
 
+export function searchVideos(client: ApiClient) {
+  return async (term: string) => {
+    try {
+      return await get<Response<Video[]>>(client, `videos?query=${term}`);
+    } catch (error) {
+      console.error(`Error searching for videos with term: ${term}`, error);
+      throw error;
+    }
+  };
+}
+
 export function fetchVideo(client: ApiClient) {
   return async (id: string) => {
     try {

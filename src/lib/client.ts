@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from "axios";
 
-import { fetchVideo, fetchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
+import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { trackEvent, trackPageView } from './tracking'
 
 type ClientOptions = {
@@ -39,6 +39,7 @@ function createClient(apiKey: string, options: ClientOptions = {debug: false}) {
     videos: {
       list: fetchVideos(apiClient),
       get: fetchVideo(apiClient),
+      search: searchVideos(apiClient),
     },
     playlists: {
       list: fetchPlaylists(apiClient),
