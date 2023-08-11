@@ -16,7 +16,7 @@ type EventData = {
   videoId?: string;
   title: string;
   videoDuration?: number;
-  timeStamp?: number;
+  currentTime?: number;
 };
 
 function sendEvent(
@@ -35,7 +35,7 @@ function sendEvent(
     vid: data?.videoId || undefined,
     vt: data.title,
     vdur: data?.videoDuration || undefined,
-    time: data?.timeStamp || undefined,
+    time: data?.currentTime || undefined,
   };
 
   if (debug) console.log(`Bold SDK - Logging event '${eventName}'`, payload);
@@ -58,7 +58,7 @@ export function trackEvent(
       videoId: video.id,
       title: video.title,
       videoDuration: video.duration,
-      timeStamp: event.timeStamp,
+      currentTime: (event.target as HTMLMediaElement).currentTime || 0,
     };
     // debounce fast hitting timeupdate event
     if (event.type == "timeupdate") {
