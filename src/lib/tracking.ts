@@ -58,10 +58,10 @@ export function trackEvent(
       videoId: video.id,
       title: video.title,
       videoDuration: video.duration,
-      currentTime: (event.target as HTMLMediaElement).currentTime || 0,
+      currentTime: (event.target as HTMLMediaElement)?.currentTime || 0,
     };
     // debounce fast hitting timeupdate event
-    if (event.type == "timeupdate") {
+    if (event.type == "timeupdate" || event.type == "time-update") {
       throttledSendEvent(
         client,
         getEventName(event),
@@ -89,14 +89,16 @@ export function trackPageView(
   };
 }
 
-function getEventName({ type }: { type: string }) {
-  switch (type) {
+function getEventName(event: { type: string }) {
+  switch (event.type) {
     case "pause":
       return "video_pause";
     case "play":
       return "video_resume";
     case "loadedmetadata":
+    case "loaded-metadata":
       return "video_load";
+    case "time-update":
     case "timeupdate":
       return "video_progress";
     default:
@@ -107,7 +109,7 @@ function getEventName({ type }: { type: string }) {
 function basicInfos() {
   return {
     url: location.href,
-    domain: "localhost:3000",
+    domain: location.hostname,
     referrer: document.referrer || null,
     deviceWidth: window.innerWidth,
     userAgent: navigator.userAgent,
