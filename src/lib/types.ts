@@ -37,6 +37,8 @@ export type MenuItem = {
 export type Settings = {
   featured_playlists: Playlist[];
   menu_items: MenuItem[];
+  ai_avatar: string;
+  ai_name: string;
   meta_data: {
     channel_name: string;
     description: string;
