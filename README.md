@@ -1,10 +1,10 @@
 <div align="center">
-    <a href="https://wearebold.af?utm_source=github.com&utm_medium=readme&utm_campaign=bold-js" align="center">
-		<img src="https://wearebold.af/bold-js-github-header.svg"  alt="Bold Logo">
+    <a href="https://boldvideo.com?utm_source=github.com&utm_medium=readme&utm_campaign=bold-js" align="center">
+		<img src="https://boldvideo.com/bold-js-github-header.svg"  alt="Bold Logo">
 	</a>
 	<h1 align="center rainbow">@boldvideo/bold-js</h1>
     <p align="center">
-        The JavaScript SDK for interacting with the <a href="http://wearebold.af?utm_source=github.com&utm_medium=readme&utm_campaign=bold-js" target="_blank">Bold API</a>, to power your own business video platform.
+        The JavaScript SDK for interacting with the <a href="https://boldvideo.com?utm_source=github.com&utm_medium=readme&utm_campaign=bold-js" target="_blank">Bold API</a>, to power your own business video platform.
     </p>
 </div>
 
