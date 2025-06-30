@@ -39,6 +39,7 @@ export type Settings = {
   menu_items: MenuItem[];
   ai_avatar: string;
   ai_name: string;
+  has_ai: boolean;
   meta_data: {
     channel_name: string;
     description: string;
