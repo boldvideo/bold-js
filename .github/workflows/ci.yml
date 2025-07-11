@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Test on Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [16.x, 18.x, 20.x]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.2
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run linter
+        run: pnpm run lint
+      
+      - name: Build package
+        run: pnpm run build
+      
+      - name: Check package exports
+        run: |
+          node -e "const pkg = require('./dist/index.cjs'); console.log('CJS import successful');"
+          node -e "import('./dist/index.js').then(() => console.log('ESM import successful'));"
+      
+      - name: Check TypeScript declarations
+        run: |
+          if [ ! -f "dist/index.d.ts" ]; then
+            echo "TypeScript declarations not found!"
+            exit 1
+          fi
+
+  size-check:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10.12.2
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Build package
+        run: pnpm run build
+      
+      - name: Check bundle size
+        run: |
+          echo "Bundle sizes:"
+          ls -lh dist/
+          
+          # Warn if bundle exceeds 50KB (adjust threshold as needed)
+          size=$(stat -c%s dist/index.js 2>/dev/null || stat -f%z dist/index.js)
+          if [ $size -gt 51200 ]; then
+            echo "⚠️  Warning: Bundle size exceeds 50KB"
+          fi

@@ -58,6 +58,29 @@ const playlists = await bold.playlists.list();
 
 - **[Bold API Documentation](https://docs.boldvideo.io/docs/api)**
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this project.
+
+## Security
+
+### For Maintainers
+
+The automated release process is secure by default:
+- NPM_TOKEN is only accessible to workflows on the main branch
+- External contributors' PRs cannot access secrets
+- Only maintainers with write access can merge to main
+- The changeset-release workflow only runs after merge to main
+
+### Recommended Branch Protection
+
+For additional security, enable these branch protection rules for `main`:
+- Require pull request reviews before merging
+- Dismiss stale pull request approvals when new commits are pushed
+- Require status checks to pass (CI workflow)
+- Require branches to be up to date before merging
+- Include administrators in these restrictions
+
 ## More Resources
 
 ### Support
