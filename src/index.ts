@@ -1,6 +1,11 @@
 export { createClient } from "lib/client";
 export type {
   Video,
+  VideoAttachment,
+  VideoDownloadUrls,
+  VideoSubtitles,
+  VideoTranscript,
+  VideoMetadata,
   Playlist,
   MenuItem,
   Settings,

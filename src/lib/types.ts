@@ -1,4 +1,37 @@
+export type VideoAttachment = {
+  id: string;
+  title: string;
+  file_url: string;
+  file_size?: number;
+  file_type?: string;
+};
+
+export type VideoDownloadUrls = {
+  mp4?: string;
+  audio?: string;
+  legacy_mp4?: string;
+};
+
+export type VideoSubtitles = {
+  label: string;
+  url: string;
+  engine?: string;
+  language: string;
+};
+
+export type VideoTranscript = {
+  text: string;
+  json: any;
+};
+
+export type VideoMetadata = {
+  description: string;
+  title: string;
+  image: string | null;
+};
+
 export type Video = {
+  // Existing fields (kept as-is)
   captions: string;
   captions_label: string;
   captions_lang: string;
@@ -6,16 +39,44 @@ export type Video = {
   duration: number;
   id: string;
   imported_from: string | null;
-  legacy_video_url: null | null;
-  meta_data: [];
+  legacy_video_url: string | null;
   playback_id: string;
   published_at: string;
   stream_url: string;
   teaser: string | null;
   thumbnail: string;
   title: string;
-  transcription: string;
   type: string;
+
+  // Fixed: meta_data should be an object, not array
+  meta_data: VideoMetadata;
+
+  // New: Chapters in WEBVTT format
+  chapters?: string;
+
+  // New: Attachments array
+  attachments?: VideoAttachment[];
+
+  // New: Call-to-action (can be null)
+  cta?: any | null;
+
+  // New: Download URLs object
+  download_urls?: VideoDownloadUrls;
+
+  // New: Internal ID
+  internal_id?: string;
+
+  // New: Playback speed
+  playback_speed?: number;
+
+  // New: Subtitles object
+  subtitles?: VideoSubtitles;
+
+  // New: Tags array
+  tags?: string[];
+
+  // New: Transcript object (replaces transcription)
+  transcript?: VideoTranscript;
 };
 
 export type Playlist = {
