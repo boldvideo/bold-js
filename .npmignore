@@ -1,0 +1,18 @@
+# Ignore development and config files
+node_modules
+notes
+hack
+.claude
+
+# Source files (we ship compiled dist/ instead)
+src
+tsconfig.json
+
+# Development configs
+.changeset
+.github
+
+# Documentation (except README.md which should be included)
+CLAUDE.md
+CONTRIBUTING.md
+SECURITY.md

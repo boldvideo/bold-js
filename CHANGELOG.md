@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 0.6.1
+
+### Patch Changes
+
+- Fix missing compiled dist files in published package by adding .npmignore
+
 ## 0.6.0
 
 ### Minor Changes
