@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 0.7.1
+
+### Patch Changes
+
+- Fix: Add thoughts directory to .npmignore to prevent publishing internal planning files
+
 ## 0.7.0
 
 ### Minor Changes

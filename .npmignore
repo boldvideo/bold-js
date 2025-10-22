@@ -3,6 +3,7 @@ node_modules
 notes
 hack
 .claude
+thoughts
 
 # Source files (we ship compiled dist/ instead)
 src
