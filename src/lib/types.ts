@@ -131,6 +131,7 @@ export type PortalTheme = {
 };
 
 export type Portal = {
+  color_scheme?: 'toggle' | 'light' | 'dark';
   display: PortalDisplay;
   layout: PortalLayout;
   navigation: PortalNavigation;
