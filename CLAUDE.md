@@ -18,11 +18,32 @@ pnpm run build
 # Run type checking/linting
 pnpm run lint
 
-# Publish new version (uses changesets)
+# Create a changeset (for versioning)
 pnpm changeset
-pnpm changeset version
-pnpm changeset publish
 ```
+
+## Release Workflow
+
+This project uses [Changesets](https://github.com/changesets/changesets) with automated GitHub Actions for publishing. **Do not run version/publish commands locally.**
+
+### How to Release
+
+1. **Create a changeset** when making changes that should be released:
+   ```bash
+   pnpm changeset
+   ```
+   This creates a markdown file in `.changeset/` describing the change and version bump type.
+
+2. **Commit and push** your changes (including the changeset file) to `main`.
+
+3. **Automated release process**:
+   - The `changeset-release.yml` workflow creates a "Release PR" with version bumps
+   - Merging that PR automatically publishes to npm
+
+### Important
+
+- **Never run `pnpm changeset version` or `pnpm changeset publish` locally** - GitHub Actions handles this
+- The CI builds `dist/` automatically - compiled files are always included in published packages
 
 ## Architecture & Key Components
 

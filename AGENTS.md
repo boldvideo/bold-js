@@ -22,9 +22,35 @@ pnpm install          # Install dependencies
 pnpm run build        # Build to dist/ (ESM + CJS + type declarations)
 pnpm run lint         # Type checking with tsc
 pnpm changeset        # Create a changeset for versioning
-pnpm changeset version   # Apply changesets and bump versions
-pnpm changeset publish   # Publish to npm
 ```
+
+## Release Workflow
+
+This project uses [Changesets](https://github.com/changesets/changesets) with automated GitHub Actions for publishing.
+
+### How to Release
+
+1. **Create a changeset** when making changes that should be released:
+   ```bash
+   pnpm changeset
+   ```
+   This creates a markdown file in `.changeset/` describing the change and version bump type (patch/minor/major).
+
+2. **Commit and push** your changes (including the changeset file) to `main`.
+
+3. **Automated release process**:
+   - The `changeset-release.yml` workflow runs on push to `main`
+   - If changesets exist, it creates a "Release PR" that:
+     - Bumps the version in `package.json`
+     - Updates `CHANGELOG.md`
+     - Removes the changeset files
+   - When you merge that Release PR, the workflow automatically publishes to npm
+
+### Important Notes
+
+- **Never run `pnpm changeset version` or `pnpm changeset publish` locally** - the GitHub Action handles this automatically
+- The CI workflow (`ci.yml`) runs `pnpm run build` which generates the `dist/` folder - this ensures compiled files are always included in the published package
+- The `release.yml` workflow can also publish when a `v*` tag is pushed (alternative release method)
 
 ## Project Structure
 
