@@ -1,5 +1,25 @@
 # @boldvideo/bold-js
 
+## 0.7.1
+
+### Patch Changes
+
+- Fix: Add thoughts directory to .npmignore to prevent publishing internal planning files
+
+## 0.7.0
+
+### Minor Changes
+
+- Add `color_scheme` field to Portal type (BOLD-759)
+
+  Added optional `color_scheme` field to the Portal type to support theme configuration:
+
+  - `'toggle'`: Show theme toggle, allow user to switch between light/dark
+  - `'light'`: Force light mode, hide theme toggle
+  - `'dark'`: Force dark mode, hide theme toggle
+
+  This field is already returned by the API and consumed by the Next.js starter. The type definition now matches the API response.
+
 ## 0.6.1
 
 ### Patch Changes
