@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 0.8.2
+
+### Patch Changes
+
+- e8876a9: Fix release workflow to build dist files before publishing
+
 ## 0.8.1
 
 ### Patch Changes
