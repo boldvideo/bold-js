@@ -21,4 +21,9 @@ export type {
   ThemeColors,
   Account,
   AccountAI,
+  Citation,
+  Usage,
+  CoachEvent,
+  CoachOptions,
+  AskOptions,
 } from "./lib/types";

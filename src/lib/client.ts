@@ -2,6 +2,7 @@ import axios, { AxiosInstance } from "axios";
 
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { trackEvent, trackPageView } from './tracking'
+import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
 
 export type ClientOptions = {
@@ -37,6 +38,11 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
     .map(() => Math.random().toString(36)[2])
     .join("");
 
+  const aiConfig = {
+    baseURL: apiClientOptions.baseURL,
+    headers: apiClientOptions.headers,
+  };
+
   return {
     settings: fetchSettings(apiClient),
     videos: {
@@ -48,6 +54,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
       list: fetchPlaylists(apiClient),
       get: fetchPlaylist(apiClient),
     },
+    ai: createAI(aiConfig),
     trackEvent: trackEvent(apiClient, userId, { debug }),
     trackPageView: trackPageView(apiClient, userId, { debug }),
   };
