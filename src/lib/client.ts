@@ -2,22 +2,25 @@ import axios, { AxiosInstance } from "axios";
 
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { trackEvent, trackPageView } from './tracking'
+import { DEFAULT_API_BASE_URL } from './constants'
 
-type ClientOptions = {
+export type ClientOptions = {
   baseURL?: string
-  debug: boolean
+  debug?: boolean
+  headers?: Record<string, string>
 }
 
-function createClient(apiKey: string, options: ClientOptions = {debug: false}) {
+function createClient(apiKey: string, options: ClientOptions = {}) {
   if (!apiKey || typeof apiKey !== 'string') {
     throw new Error('API key is missing or invalid');
   }
 
-  const { debug } = options;
+  const { debug = false, headers = {} } = options;
   const apiClientOptions = {
-    baseURL: options.baseURL ?? "https://app.boldvideo.io/api/v1/",
+    baseURL: options.baseURL ?? DEFAULT_API_BASE_URL,
     headers: {
       Authorization: apiKey,
+      ...headers,
     },
   };
 
