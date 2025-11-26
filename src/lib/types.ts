@@ -216,3 +216,35 @@ export type Settings = {
   // New: API version
   version: string;
 };
+
+// AI Streaming Types
+
+export interface Citation {
+  video_id: string;
+  title: string;
+  timestamp_ms: number;
+  text: string;
+}
+
+export interface Usage {
+  input_tokens: number;
+  output_tokens: number;
+}
+
+export type CoachEvent =
+  | { type: "conversation_created"; id: string; status: "processing" }
+  | { type: "clarification"; questions: string[]; mode: "clarification"; needs_clarification: true }
+  | { type: "token"; content: string }
+  | { type: "answer"; content: string; citations: Citation[]; usage: Usage }
+  | { type: "error"; message: string; step?: string; reason?: string; timestamp: string }
+  | { type: "complete" };
+
+export interface CoachOptions {
+  message: string;
+  conversationId?: string;
+  collectionId?: string;
+}
+
+export interface AskOptions {
+  message: string;
+}
