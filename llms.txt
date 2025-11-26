@@ -1,0 +1,45 @@
+# Bold Video JavaScript SDK
+
+> TypeScript client for the Bold Video API. Fetch videos, playlists, settings. Stream AI responses. Track analytics.
+
+## Quick Start
+
+```typescript
+import { createClient } from '@boldvideo/bold-js';
+
+const bold = createClient('your-api-key');
+
+// Fetch videos
+const videos = await bold.videos.list();
+const video = await bold.videos.get('video-id');
+
+// AI streaming
+const stream = await bold.ai.coach({ message: "How do I price my SaaS?" });
+for await (const event of stream) {
+  if (event.type === 'token') process.stdout.write(event.content);
+}
+```
+
+## API Reference
+
+- `createClient(apiKey, options?)` - Create SDK instance
+- `bold.settings()` - Channel settings, menus, featured playlists
+- `bold.videos.list()` - List videos
+- `bold.videos.get(id)` - Get video by ID
+- `bold.videos.search(query)` - Search videos
+- `bold.playlists.list()` - List playlists
+- `bold.playlists.get(id)` - Get playlist by ID
+- `bold.ai.coach(options)` - AI RAG assistant, returns `AsyncIterable<CoachEvent>`
+- `bold.ai.ask(videoId, options)` - Video Q&A, returns `AsyncIterable<CoachEvent>`
+- `bold.trackEvent(event)` - Track video analytics
+- `bold.trackPageView(data)` - Track page views
+
+## Types
+
+Key types exported: `Video`, `Playlist`, `Settings`, `Portal`, `CoachEvent`, `CoachOptions`, `AskOptions`, `Citation`
+
+## Links
+
+- [GitHub](https://github.com/boldvideo/bold-js)
+- [npm](https://www.npmjs.com/package/@boldvideo/bold-js)
+- [Types Source](https://github.com/boldvideo/bold-js/blob/main/src/lib/types.ts)
