@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 0.8.1
+
+### Patch Changes
+
+- c643c04: Fix missing compiled dist files in published package
+
 ## 0.8.0
 
 ### Minor Changes
