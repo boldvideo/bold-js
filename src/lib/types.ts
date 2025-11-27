@@ -63,8 +63,8 @@ export type Video = {
   // New: Download URLs object
   download_urls?: VideoDownloadUrls;
 
-  // New: Internal ID
-  internal_id?: string;
+  // Internal ID
+  internal_id: string;
 
   // New: Playback speed
   playback_speed?: number;
@@ -220,9 +220,9 @@ export type Settings = {
 // AI Streaming Types
 
 export interface Citation {
-  video_id: string;
-  title: string;
-  timestamp_ms: number;
+  video: Pick<Video, 'internal_id' | 'title' | 'playback_id'>;
+  start_ms: number;
+  end_ms: number;
   text: string;
 }
 
