@@ -63,8 +63,8 @@ export type Video = {
   // New: Download URLs object
   download_urls?: VideoDownloadUrls;
 
-  // New: Internal ID
-  internal_id?: string;
+  // Internal ID
+  internal_id: string;
 
   // New: Playback speed
   playback_speed?: number;
