@@ -220,9 +220,9 @@ export type Settings = {
 // AI Streaming Types
 
 export interface Citation {
-  video_id: string;
-  title: string;
-  timestamp_ms: number;
+  video: Pick<Video, 'internal_id' | 'title' | 'playback_id'>;
+  start_ms: number;
+  end_ms: number;
   text: string;
 }
 
