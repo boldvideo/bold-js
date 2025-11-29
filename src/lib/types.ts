@@ -217,34 +217,82 @@ export type Settings = {
   version: string;
 };
 
-// AI Streaming Types
+// AI Streaming Types (Unified API)
 
-export interface Citation {
-  video: Pick<Video, 'internal_id' | 'title' | 'playback_id'>;
-  start_ms: number;
-  end_ms: number;
+/**
+ * Source citation from AI responses
+ */
+export interface Source {
+  video_id: string;
+  title: string;
+  timestamp: number;        // Start time in seconds
+  timestamp_end?: number;   // End time in seconds
   text: string;
+  playback_id?: string;
+  speaker?: string;
 }
 
-export interface Usage {
-  input_tokens: number;
-  output_tokens: number;
+/**
+ * Token usage statistics
+ */
+export interface AIUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
 }
 
-export type CoachEvent =
-  | { type: "conversation_created"; id: string; status: "processing" }
-  | { type: "clarification"; questions: string[]; mode: "clarification"; needs_clarification: true }
-  | { type: "token"; content: string }
-  | { type: "answer"; content: string; citations: Citation[]; usage: Usage }
-  | { type: "error"; message: string; step?: string; reason?: string; timestamp: string }
-  | { type: "complete" };
+/**
+ * SSE event types for AI streaming responses
+ */
+export type AIEvent =
+  | { type: "message_start"; id: string; model?: string }
+  | { type: "sources"; sources: Source[] }
+  | { type: "text_delta"; delta: string }
+  | { type: "clarification"; questions: string[] }
+  | { type: "message_complete"; content: string; sources: Source[]; usage: AIUsage }
+  | { type: "error"; code: string; message: string; retryable: boolean; details?: Record<string, unknown> };
 
-export interface CoachOptions {
-  message: string;
+/**
+ * Non-streaming AI response
+ */
+export interface AIResponse {
+  id: string;
+  content: string;
+  sources: Source[];
+  usage: AIUsage;
+  model?: string;
+}
+
+/**
+ * Options for bold.ai.ask() and bold.ai.coach()
+ */
+export interface AskOptions {
+  prompt: string;
+  stream?: boolean;          // Default: true
   conversationId?: string;
   collectionId?: string;
 }
 
-export interface AskOptions {
-  message: string;
+/**
+ * Options for bold.ai.search()
+ */
+export interface SearchOptions {
+  prompt: string;
+  stream?: boolean;          // Default: true
+  limit?: number;
+  collectionId?: string;
+  videoId?: string;
+}
+
+/**
+ * Options for bold.ai.chat()
+ *
+ * conversationId: Pass to continue an existing conversation (multi-turn chat).
+ * If omitted, a new conversation is created. The id is returned in the
+ * message_start event - capture it to pass to subsequent requests.
+ */
+export interface ChatOptions {
+  prompt: string;
+  stream?: boolean;          // Default: true
+  conversationId?: string;
 }
