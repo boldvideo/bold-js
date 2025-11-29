@@ -1,5 +1,15 @@
 # @boldvideo/bold-js
 
+## 1.0.1
+
+### Patch Changes
+
+- 844d6f1: Add persona and ai_search types to Account settings
+
+  - Added `Persona` type (discriminated union based on `enabled` flag)
+  - Added `AccountAISearch` type with `enabled` boolean
+  - Updated `Account` type to include `ai_search` and `persona` fields
+
 ## 1.0.0
 
 ### Major Changes
