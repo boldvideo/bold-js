@@ -139,29 +139,24 @@ export type Portal = {
 };
 
 export type ThemeColors = {
+  // User-defined inputs (3)
+  accent: string;
   background: string;
-  border: string;
-  card: string;
-  "card-foreground": string;
-  destructive: string;
-  "destructive-foreground": string;
   foreground: string;
-  input: string;
+  // Derived by backend (6)
+  "accent-foreground": string;
   muted: string;
   "muted-foreground": string;
-  popover: string;
-  "popover-foreground": string;
-  primary: string;
-  "primary-foreground": string;
+  border: string;
   ring: string;
-  secondary: string;
-  "secondary-foreground": string;
+  surface: string;
 };
 
 export type ThemeConfig = {
-  dark: ThemeColors;
-  light: ThemeColors;
   radius: string;
+  color_scheme: "toggle" | "light" | "dark";
+  light: ThemeColors;
+  dark: ThemeColors;
 };
 
 export type AccountAI = {
