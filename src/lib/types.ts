@@ -171,9 +171,28 @@ export type AccountAI = {
   name: string;
 };
 
+export type AccountAISearch = {
+  enabled: boolean;
+};
+
+export type PersonaEnabled = {
+  enabled: true;
+  name: string;
+  greeting: string;
+  conversation_starters: string[];
+};
+
+export type PersonaDisabled = {
+  enabled: false;
+};
+
+export type Persona = PersonaEnabled | PersonaDisabled;
+
 export type Account = {
   ai: AccountAI;
+  ai_search: AccountAISearch;
   name: string;
+  persona: Persona;
   slug: string;
 };
 
