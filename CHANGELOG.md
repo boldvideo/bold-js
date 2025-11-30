@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.3.0
+
+### Minor Changes
+
+- 57c4de2: Add missing fields to PortalTheme type: `logo_dark_url` for dark mode logos and `css_overrides` for custom CSS injection.
+
 ## 1.2.0
 
 ### Minor Changes
