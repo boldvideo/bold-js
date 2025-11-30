@@ -54,6 +54,27 @@ const playlists = await bold.playlists.list();
 
 ```
 
+### AI Search with Conversation Context
+
+Use the `context` parameter to enable multi-turn conversations:
+
+```js
+// First question
+const first = await bold.ai.search({ 
+  prompt: "How do indie designers find clients?",
+  stream: false 
+});
+console.log(first.content);
+
+// Follow-up with context from previous response
+const followUp = await bold.ai.search({
+  prompt: "What about cold outreach specifically?",
+  context: first.context,
+  stream: false
+});
+console.log(followUp.content);
+```
+
 ## Related Links
 
 - **[Bold API Documentation](https://docs.boldvideo.io/docs/api)**

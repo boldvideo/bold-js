@@ -28,4 +28,5 @@ export type {
   AskOptions,
   SearchOptions,
   ChatOptions,
+  AIContextMessage,
 } from "./lib/types";

@@ -200,6 +200,7 @@ export function createAI(config: AIConfig): AIClient {
     if (options.limit) body.limit = options.limit;
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.videoId) body.video_id = options.videoId;
+    if (options.context) body.context = options.context;
 
     if (options.stream === false) {
       body.stream = false;
