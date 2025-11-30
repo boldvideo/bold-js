@@ -36,7 +36,7 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
         try {
           const event = JSON.parse(json) as AIEvent;
           yield event;
-          if (event.type === 'message_complete' || event.type === 'error') {
+          if (event.type === 'complete' || event.type === 'error') {
             await reader.cancel();
             return;
           }

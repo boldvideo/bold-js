@@ -274,10 +274,13 @@ export interface AIUsage {
  */
 export type AIEvent =
   | { type: "message_start"; id: string; model?: string }
-  | { type: "sources"; sources: Source[] }
+  | { type: "sources"; sources: Source[]; query?: string }
   | { type: "text_delta"; delta: string }
+  | { type: "token"; content: string }  // Legacy: same content as text_delta
+  | { type: "answer"; content: string; response_id?: string; context?: AIContextMessage[] }
   | { type: "clarification"; questions: string[] }
-  | { type: "message_complete"; content: string; sources: Source[]; usage: AIUsage }
+  | { type: "message_complete"; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[] }
+  | { type: "complete" }  // Final event - stream ends here
   | { type: "error"; code: string; message: string; retryable: boolean; details?: Record<string, unknown> };
 
 /**
