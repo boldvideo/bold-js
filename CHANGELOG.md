@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.5.1
+
+### Patch Changes
+
+- 21267d9: Fix SSE parsing to process final 'complete' event when stream closes without trailing newline
+
 ## 1.5.0
 
 ### Minor Changes
