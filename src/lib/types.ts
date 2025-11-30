@@ -289,6 +289,7 @@ export interface AIResponse {
   sources: Source[];
   usage: AIUsage;
   model?: string;
+  context?: AIContextMessage[];
 }
 
 /**
@@ -302,6 +303,14 @@ export interface AskOptions {
 }
 
 /**
+ * Conversation message for AI context
+ */
+export interface AIContextMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+/**
  * Options for bold.ai.search()
  */
 export interface SearchOptions {
@@ -310,6 +319,7 @@ export interface SearchOptions {
   limit?: number;
   collectionId?: string;
   videoId?: string;
+  context?: AIContextMessage[];
 }
 
 /**
