@@ -46,11 +46,23 @@ This project uses [Changesets](https://github.com/changesets/changesets) with au
      - Removes the changeset files
    - When you merge that Release PR, the workflow automatically publishes to npm
 
+### Manual Release (when you need to publish immediately)
+
+If you need to release immediately without waiting for the Release PR:
+
+```bash
+pnpm changeset version     # Consume changesets, bump version, update CHANGELOG
+git add -A && git commit -m "chore: release vX.Y.Z"
+git tag vX.Y.Z
+git push origin main --tags
+```
+
+The `release.yml` workflow will automatically publish to npm when it sees the `v*` tag.
+
 ### Important Notes
 
-- **Never run `pnpm changeset version` or `pnpm changeset publish` locally** - the GitHub Action handles this automatically
 - The CI workflow (`ci.yml`) runs `pnpm run build` which generates the `dist/` folder - this ensures compiled files are always included in the published package
-- The `release.yml` workflow can also publish when a `v*` tag is pushed (alternative release method)
+- The `release.yml` workflow publishes when a `v*` tag is pushed
 
 ## Project Structure
 
