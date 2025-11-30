@@ -20,11 +20,19 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
   try {
     while (true) {
       const { done, value } = await reader.read();
-      if (done) break;
+      
+      if (value) {
+        buffer += decoder.decode(value, { stream: true });
+      }
+      
+      // When stream ends, flush any remaining buffer
+      if (done) {
+        buffer += decoder.decode(); // Flush decoder
+      }
 
-      buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split(/\r?\n\r?\n/);
-      buffer = lines.pop() || '';
+      // Keep incomplete chunk in buffer only if stream is still open
+      buffer = done ? '' : (lines.pop() || '');
 
       for (const line of lines) {
         const trimmed = line.trim();
@@ -44,6 +52,8 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
           // Skip malformed JSON
         }
       }
+      
+      if (done) break;
     }
   } finally {
     reader.releaseLock();
