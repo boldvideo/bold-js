@@ -144,9 +144,9 @@ export type ThemeColors = {
   background: string;
   foreground: string;
   // Derived by backend (6)
-  "accent-foreground": string;
+  accent_foreground: string;
   muted: string;
-  "muted-foreground": string;
+  muted_foreground: string;
   border: string;
   ring: string;
   surface: string;
