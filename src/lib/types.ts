@@ -129,6 +129,7 @@ export type PortalTheme = {
   font_header: string;
   // Logo
   logo_url: string;
+  logo_dark_url: string;
   logo_width: number;
   logo_height: number;
   // Layout & appearance
@@ -139,6 +140,8 @@ export type PortalTheme = {
   color_scheme: "toggle" | "light" | "dark";
   light: ThemeColors;
   dark: ThemeColors;
+  // Custom CSS
+  css_overrides: string | null;
 };
 
 export type Portal = {
