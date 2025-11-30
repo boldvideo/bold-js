@@ -120,14 +120,25 @@ export type PortalNavigation = {
 };
 
 export type PortalTheme = {
+  // Raw color inputs
   background: string;
+  foreground: string;
+  primary: string;
+  // Typography
   font_body: string;
   font_header: string;
-  foreground: string;
-  logo_height: number;
+  // Logo
   logo_url: string;
   logo_width: number;
-  primary: string;
+  logo_height: number;
+  // Layout & appearance
+  header_size: string;
+  layout: string;
+  // Theme config (consolidated from theme_config)
+  radius: string;
+  color_scheme: "toggle" | "light" | "dark";
+  light: ThemeColors;
+  dark: ThemeColors;
 };
 
 export type Portal = {
