@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.1.1
+
+### Patch Changes
+
+- 7bd10c4: Fix ThemeColors type: changed `accent-foreground` and `muted-foreground` properties to use underscores (`accent_foreground`, `muted_foreground`) to match the API response format
+
 ## 1.1.0
 
 ### Minor Changes
