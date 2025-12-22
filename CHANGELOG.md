@@ -1,5 +1,17 @@
 # @boldvideo/bold-js
 
+## 1.6.0
+
+### Minor Changes
+
+- 71b3437: Add `bold.ai.recommend()` for AI-powered video recommendations
+
+  - New method `bold.ai.recommend({ topics, ...options })` returns personalized video recommendations based on topics
+  - Supports both streaming (default) and non-streaming modes
+  - Includes AI-generated guidance for learning paths
+  - New types: `RecommendOptions`, `RecommendResponse`, `Recommendation`, `RecommendationVideo`, `TopicInput`
+  - New `recommendations` event type in `AIEvent` union for streaming responses
+
 ## 1.5.1
 
 ### Patch Changes
