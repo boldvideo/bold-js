@@ -133,7 +133,7 @@ console.log(response.recommendations);
 | `limit` | `number` | Max videos per topic (default: 5, max: 20) |
 | `collectionId` | `string` | Filter to a specific collection |
 | `tags` | `string[]` | Filter by tags |
-| `synthesize` | `boolean` | Include AI guidance (default: true) |
+| `includeGuidance` | `boolean` | Include AI learning path narrative (default: true) |
 | `context` | `string` | User context for personalized guidance |
 
 ### Coach / Ask
@@ -186,6 +186,12 @@ const stream = await bold.ai.chat('video-id', {
 for await (const event of stream) {
   if (event.type === 'text_delta') process.stdout.write(event.delta);
 }
+
+// With playback context - helps AI understand what viewer just watched
+const stream = await bold.ai.chat('video-id', { 
+  prompt: 'What does she mean by that?',
+  currentTime: 847  // seconds
+});
 ```
 
 ### Multi-turn Conversations

@@ -209,6 +209,7 @@ export function createAI(config: AIConfig): AIClient {
 
     const body: Record<string, unknown> = { prompt: options.prompt };
     if (options.collectionId) body.collection_id = options.collectionId;
+    if (options.tags) body.tags = options.tags;
 
     if (options.stream === false) {
       body.stream = false;
@@ -229,6 +230,7 @@ export function createAI(config: AIConfig): AIClient {
     if (options.limit) body.limit = options.limit;
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.videoId) body.video_id = options.videoId;
+    if (options.tags) body.tags = options.tags;
     if (options.context) body.context = options.context;
 
     if (options.stream === false) {
@@ -245,6 +247,7 @@ export function createAI(config: AIConfig): AIClient {
       : `ai/videos/${videoId}/chat`;
 
     const body: Record<string, unknown> = { prompt: options.prompt };
+    if (options.currentTime !== undefined) body.current_time = options.currentTime;
 
     if (options.stream === false) {
       body.stream = false;
@@ -261,7 +264,7 @@ export function createAI(config: AIConfig): AIClient {
     if (options.limit) body.limit = options.limit;
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.tags) body.tags = options.tags;
-    if (options.synthesize !== undefined) body.synthesize = options.synthesize;
+    if (options.includeGuidance !== undefined) body.include_guidance = options.includeGuidance;
     if (options.context) body.context = options.context;
 
     if (options.stream === false) {

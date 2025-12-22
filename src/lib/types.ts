@@ -304,6 +304,7 @@ export interface AskOptions {
   stream?: boolean;          // Default: true
   conversationId?: string;
   collectionId?: string;
+  tags?: string[];           // Filter by tags
 }
 
 /**
@@ -323,6 +324,7 @@ export interface SearchOptions {
   limit?: number;
   collectionId?: string;
   videoId?: string;
+  tags?: string[];           // Filter by tags
   context?: AIContextMessage[];
 }
 
@@ -337,6 +339,7 @@ export interface ChatOptions {
   prompt: string;
   stream?: boolean;          // Default: true
   conversationId?: string;
+  currentTime?: number;      // Current playback position in seconds for context
 }
 
 /**
@@ -347,7 +350,7 @@ export interface RecommendationVideo {
   title: string;
   playback_id: string;
   relevance: number;
-  why: string;
+  reason: string;
 }
 
 /**
@@ -373,7 +376,7 @@ export interface RecommendOptions {
   limit?: number;                 // Max videos per topic (default: 5, max: 20)
   collectionId?: string;
   tags?: string[];
-  synthesize?: boolean;           // Default: true (include AI guidance)
+  includeGuidance?: boolean;      // Default: true (include AI learning path narrative)
   context?: string;               // User context for personalized guidance
 }
 

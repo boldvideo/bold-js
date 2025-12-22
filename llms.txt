@@ -65,7 +65,7 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
   limit?: number;             // Max videos per topic (default: 5, max: 20)
   collectionId?: string;      // Filter to collection
   tags?: string[];            // Filter by tags
-  synthesize?: boolean;       // Include AI guidance (default: true)
+  includeGuidance?: boolean;  // Include AI learning path narrative (default: true)
   context?: string;           // User context for personalization
 }
 ```
@@ -78,6 +78,7 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
   stream?: boolean;           // Default: true
   conversationId?: string;    // Continue existing conversation
   collectionId?: string;      // Filter to collection
+  tags?: string[];            // Filter by tags
 }
 ```
 
@@ -90,6 +91,7 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
   limit?: number;             // Max results
   collectionId?: string;      // Filter to collection
   videoId?: string;           // Search within specific video
+  tags?: string[];            // Filter by tags
   context?: AIContextMessage[]; // Conversation context
 }
 ```
@@ -101,6 +103,7 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
   prompt: string;             // Question about the video (required)
   stream?: boolean;           // Default: true
   conversationId?: string;    // Continue existing conversation
+  currentTime?: number;       // Current playback position in seconds
 }
 ```
 
