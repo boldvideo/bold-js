@@ -26,58 +26,233 @@
   </a>
 </p>
 
-## Usage
+---
 
-First, install the library:
+## Installation
 
-```sh
+```bash
 npm install @boldvideo/bold-js
 ```
 
-Next, instantiate the client to establish a connection to your Bold Channel:
-```js
-import { createClient } from "@boldvideo/bold-js";
+## Quick Start
 
-const bold = createClient('YOUR_API_KEY');
-```
+```typescript
+import { createClient } from '@boldvideo/bold-js';
 
-Now you're able to query any of your resources from Bold. For exmaple:
-```js
-// fetches your channel settings, menus and featured playlists
-const settings = await bold.settings();
+const bold = createClient('your-api-key');
 
-// fetches the latest videos
+// Fetch videos
 const videos = await bold.videos.list();
 
-// fetches the latest playlists
-const playlists = await bold.playlists.list();
-
-```
-
-### AI Search with Conversation Context
-
-Use the `context` parameter to enable multi-turn conversations:
-
-```js
-// First question
-const first = await bold.ai.search({ 
-  prompt: "How do indie designers find clients?",
+// Get AI-powered recommendations
+const recs = await bold.ai.recommend({ 
+  topics: ['sales', 'negotiation'],
   stream: false 
 });
-console.log(first.content);
+console.log(recs.guidance);
+```
 
-// Follow-up with context from previous response
+---
+
+## API Reference
+
+### Videos
+
+```typescript
+// List latest videos
+const videos = await bold.videos.list();
+
+// Get a single video
+const video = await bold.videos.get('video-id');
+
+// Search videos
+const results = await bold.videos.search('pricing strategies');
+```
+
+### Playlists
+
+```typescript
+// List all playlists
+const playlists = await bold.playlists.list();
+
+// Get a single playlist with videos
+const playlist = await bold.playlists.get('playlist-id');
+```
+
+### Settings
+
+```typescript
+// Fetch channel settings, menus, and featured playlists
+const settings = await bold.settings();
+```
+
+---
+
+## AI Methods
+
+All AI methods support both streaming (default) and non-streaming modes.
+
+### Recommend
+
+Get AI-powered video recommendations based on topics — ideal for personalized learning paths, exam prep, and content discovery.
+
+```typescript
+// Streaming (default)
+const stream = await bold.ai.recommend({ 
+  topics: ['contract law', 'ethics', 'client management'],
+  context: 'I failed these topics on my certification exam'
+});
+
+for await (const event of stream) {
+  if (event.type === 'recommendations') {
+    event.recommendations.forEach(rec => {
+      console.log(`${rec.topic}:`);
+      rec.videos.forEach(v => console.log(`  - ${v.title} (${v.relevance})`));
+    });
+  }
+  if (event.type === 'text_delta') {
+    process.stdout.write(event.delta); // AI guidance
+  }
+}
+
+// Non-streaming
+const response = await bold.ai.recommend({ 
+  topics: ['sales', 'marketing'],
+  stream: false 
+});
+console.log(response.guidance);
+console.log(response.recommendations);
+```
+
+**Options:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `topics` | `string[]` \| `string` | Topics to find content for (required) |
+| `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
+| `limit` | `number` | Max videos per topic (default: 5, max: 20) |
+| `collectionId` | `string` | Filter to a specific collection |
+| `tags` | `string[]` | Filter by tags |
+| `synthesize` | `boolean` | Include AI guidance (default: true) |
+| `context` | `string` | User context for personalized guidance |
+
+### Coach / Ask
+
+Library-wide RAG assistant for answering questions across your entire video library.
+
+```typescript
+// Streaming
+const stream = await bold.ai.coach({ prompt: 'How do I price my SaaS?' });
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+  if (event.type === 'sources') console.log('Sources:', event.sources);
+}
+
+// Non-streaming
+const response = await bold.ai.ask({ 
+  prompt: 'What are the best closing techniques?',
+  stream: false 
+});
+console.log(response.content);
+```
+
+### Search
+
+Semantic search with light synthesis.
+
+```typescript
+const stream = await bold.ai.search({ 
+  prompt: 'pricing strategies',
+  limit: 10 
+});
+
+for await (const event of stream) {
+  if (event.type === 'sources') {
+    console.log(`Found ${event.sources.length} results`);
+  }
+}
+```
+
+### Chat
+
+Video-scoped conversation for Q&A about a specific video.
+
+```typescript
+const stream = await bold.ai.chat('video-id', { 
+  prompt: 'What is discussed at the 5 minute mark?' 
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+}
+```
+
+### Multi-turn Conversations
+
+Use the `context` parameter for follow-up questions:
+
+```typescript
+const first = await bold.ai.search({ 
+  prompt: 'How do indie designers find clients?',
+  stream: false 
+});
+
 const followUp = await bold.ai.search({
-  prompt: "What about cold outreach specifically?",
+  prompt: 'What about cold outreach specifically?',
   context: first.context,
   stream: false
 });
-console.log(followUp.content);
 ```
+
+---
+
+## Analytics
+
+Track video events and page views for analytics.
+
+```typescript
+// Track video events (play, pause, complete, etc.)
+bold.trackEvent({
+  type: 'play',
+  videoId: 'video-id',
+  timestamp: 0
+});
+
+// Track page views
+bold.trackPageView({
+  path: '/videos/my-video',
+  referrer: document.referrer
+});
+```
+
+---
+
+## TypeScript
+
+All types are exported for full TypeScript support:
+
+```typescript
+import type { 
+  Video, 
+  Playlist, 
+  Settings,
+  AIEvent,
+  AIResponse,
+  RecommendOptions,
+  RecommendResponse,
+  Recommendation,
+  Source
+} from '@boldvideo/bold-js';
+```
+
+---
 
 ## Related Links
 
 - **[Bold API Documentation](https://docs.boldvideo.io/docs/api)**
+- **[GitHub Repository](https://github.com/boldvideo/bold-js)**
+- **[npm Package](https://www.npmjs.com/package/@boldvideo/bold-js)**
 
 ## Contributing
 
@@ -85,27 +260,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to contribute to this 
 
 ## Security
 
-### For Maintainers
+See [SECURITY.md](SECURITY.md) for security policies and reporting vulnerabilities.
 
-The automated release process is secure by default:
-- NPM_TOKEN is only accessible to workflows on the main branch
-- External contributors' PRs cannot access secrets
-- Only maintainers with write access can merge to main
-- The changeset-release workflow only runs after merge to main
+## License
 
-### Recommended Branch Protection
-
-For additional security, enable these branch protection rules for `main`:
-- Require pull request reviews before merging
-- Dismiss stale pull request approvals when new commits are pushed
-- Require status checks to pass (CI workflow)
-- Require branches to be up to date before merging
-- Include administrators in these restrictions
-
-## More Resources
-
-### Support
-
-- Bugs or Feature Requests? [Submit an issue](/../../issues/new).
-
-
+MIT

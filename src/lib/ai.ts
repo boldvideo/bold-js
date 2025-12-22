@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, AskOptions, SearchOptions, ChatOptions } from './types';
+import type { AIEvent, AIResponse, AskOptions, SearchOptions, ChatOptions, RecommendOptions, RecommendResponse } from './types';
 
 export interface AIConfig {
   baseURL: string;
@@ -177,6 +177,25 @@ export interface AIClient {
   chat(videoId: string, options: ChatOptions & { stream: false }): Promise<AIResponse>;
   chat(videoId: string, options: ChatOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
   chat(videoId: string, options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
+
+  /**
+   * Recommend - AI-powered video recommendations
+   *
+   * @example
+   * // Streaming (default)
+   * const stream = await bold.ai.recommend({ topics: ["sales", "negotiation"] });
+   * for await (const event of stream) {
+   *   if (event.type === "recommendations") console.log(event.recommendations);
+   * }
+   *
+   * @example
+   * // Non-streaming
+   * const response = await bold.ai.recommend({ topics: ["sales"], stream: false });
+   * console.log(response.guidance);
+   */
+  recommend(options: RecommendOptions & { stream: false }): Promise<RecommendResponse>;
+  recommend(options: RecommendOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
+  recommend(options: RecommendOptions): Promise<AsyncIterable<AIEvent> | RecommendResponse>;
 }
 
 /**
@@ -235,10 +254,29 @@ export function createAI(config: AIConfig): AIClient {
     return streamRequest(path, body, config);
   }
 
+  async function recommend(options: RecommendOptions): Promise<AsyncIterable<AIEvent> | RecommendResponse> {
+    const path = 'ai/recommend';
+
+    const body: Record<string, unknown> = { topics: options.topics };
+    if (options.limit) body.limit = options.limit;
+    if (options.collectionId) body.collection_id = options.collectionId;
+    if (options.tags) body.tags = options.tags;
+    if (options.synthesize !== undefined) body.synthesize = options.synthesize;
+    if (options.context) body.context = options.context;
+
+    if (options.stream === false) {
+      body.stream = false;
+      return jsonRequest(path, body, config) as unknown as Promise<RecommendResponse>;
+    }
+
+    return streamRequest(path, body, config);
+  }
+
   return {
     ask: ask as AIClient['ask'],
     coach: coach as AIClient['coach'],
     search: search as AIClient['search'],
     chat: chat as AIClient['chat'],
+    recommend: recommend as AIClient['recommend'],
   };
 }

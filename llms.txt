@@ -13,33 +13,109 @@ const bold = createClient('your-api-key');
 const videos = await bold.videos.list();
 const video = await bold.videos.get('video-id');
 
+// AI-powered recommendations
+const recs = await bold.ai.recommend({ topics: ['sales', 'negotiation'], stream: false });
+console.log(recs.guidance);
+
 // AI streaming
-const stream = await bold.ai.coach({ message: "How do I price my SaaS?" });
+const stream = await bold.ai.coach({ prompt: 'How do I price my SaaS?' });
 for await (const event of stream) {
-  if (event.type === 'token') process.stdout.write(event.content);
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
 }
 ```
 
 ## API Reference
 
+### Client
+
 - `createClient(apiKey, options?)` - Create SDK instance
+
+### Content
+
 - `bold.settings()` - Channel settings, menus, featured playlists
 - `bold.videos.list()` - List videos
 - `bold.videos.get(id)` - Get video by ID
 - `bold.videos.search(query)` - Search videos
 - `bold.playlists.list()` - List playlists
 - `bold.playlists.get(id)` - Get playlist by ID
-- `bold.ai.coach(options)` - AI RAG assistant, returns `AsyncIterable<CoachEvent>`
-- `bold.ai.ask(videoId, options)` - Video Q&A, returns `AsyncIterable<CoachEvent>`
-- `bold.trackEvent(event)` - Track video analytics
+
+### AI Methods
+
+All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIResponse>` (non-streaming).
+
+- `bold.ai.recommend(options)` - AI-powered video recommendations based on topics
+- `bold.ai.coach(options)` - Library-wide RAG assistant (alias: `ask`)
+- `bold.ai.ask(options)` - Library-wide RAG assistant
+- `bold.ai.search(options)` - Semantic search with synthesis
+- `bold.ai.chat(videoId, options)` - Video-scoped Q&A conversation
+
+### Analytics
+
+- `bold.trackEvent(event)` - Track video events (play, pause, complete)
 - `bold.trackPageView(data)` - Track page views
+
+## AI Options
+
+### RecommendOptions
+
+```typescript
+{
+  topics: string[] | string;  // Topics to find content for (required)
+  stream?: boolean;           // Default: true
+  limit?: number;             // Max videos per topic (default: 5, max: 20)
+  collectionId?: string;      // Filter to collection
+  tags?: string[];            // Filter by tags
+  synthesize?: boolean;       // Include AI guidance (default: true)
+  context?: string;           // User context for personalization
+}
+```
+
+### AskOptions / CoachOptions
+
+```typescript
+{
+  prompt: string;             // Question to ask (required)
+  stream?: boolean;           // Default: true
+  conversationId?: string;    // Continue existing conversation
+  collectionId?: string;      // Filter to collection
+}
+```
+
+### SearchOptions
+
+```typescript
+{
+  prompt: string;             // Search query (required)
+  stream?: boolean;           // Default: true
+  limit?: number;             // Max results
+  collectionId?: string;      // Filter to collection
+  videoId?: string;           // Search within specific video
+  context?: AIContextMessage[]; // Conversation context
+}
+```
+
+### ChatOptions
+
+```typescript
+{
+  prompt: string;             // Question about the video (required)
+  stream?: boolean;           // Default: true
+  conversationId?: string;    // Continue existing conversation
+}
+```
 
 ## Types
 
-Key types exported: `Video`, `Playlist`, `Settings`, `Portal`, `CoachEvent`, `CoachOptions`, `AskOptions`, `Citation`
+Key types exported:
+
+- `Video`, `Playlist`, `Settings`, `Portal`
+- `AIEvent`, `AIResponse`, `Source`, `AIUsage`
+- `AskOptions`, `SearchOptions`, `ChatOptions`
+- `RecommendOptions`, `RecommendResponse`, `Recommendation`, `RecommendationVideo`, `TopicInput`
 
 ## Links
 
 - [GitHub](https://github.com/boldvideo/bold-js)
 - [npm](https://www.npmjs.com/package/@boldvideo/bold-js)
+- [API Docs](https://docs.boldvideo.io/docs/api)
 - [Types Source](https://github.com/boldvideo/bold-js/blob/main/src/lib/types.ts)

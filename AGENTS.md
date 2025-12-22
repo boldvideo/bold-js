@@ -96,7 +96,10 @@ bold.videos.search(query) // Search videos
 bold.playlists.list()     // List playlists
 bold.playlists.get(id)    // Get single playlist
 bold.ai.coach(opts)       // AI RAG assistant (streaming)
-bold.ai.ask(videoId, opts)// Video Q&A (streaming)
+bold.ai.ask(opts)         // AI RAG assistant (alias for coach)
+bold.ai.search(opts)      // Semantic search with synthesis
+bold.ai.chat(videoId, opts) // Video-scoped Q&A
+bold.ai.recommend(opts)   // AI-powered recommendations
 bold.trackEvent()         // Track video events
 bold.trackPageView()      // Track page views
 ```

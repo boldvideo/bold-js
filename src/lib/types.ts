@@ -279,6 +279,7 @@ export type AIEvent =
   | { type: "token"; content: string }  // Legacy: same content as text_delta
   | { type: "answer"; content: string; response_id?: string; context?: AIContextMessage[] }
   | { type: "clarification"; questions: string[] }
+  | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete"; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[] }
   | { type: "complete" }  // Final event - stream ends here
   | { type: "error"; code: string; message: string; retryable: boolean; details?: Record<string, unknown> };
@@ -336,4 +337,52 @@ export interface ChatOptions {
   prompt: string;
   stream?: boolean;          // Default: true
   conversationId?: string;
+}
+
+/**
+ * A recommended video with relevance score
+ */
+export interface RecommendationVideo {
+  video_id: string;
+  title: string;
+  playback_id: string;
+  relevance: number;
+  why: string;
+}
+
+/**
+ * A topic recommendation with its videos
+ */
+export interface Recommendation {
+  topic: string;
+  position: number;
+  videos: RecommendationVideo[];
+}
+
+/**
+ * Topic input format for recommendations
+ */
+export type TopicInput = string | { q: string; priority?: number };
+
+/**
+ * Options for bold.ai.recommend()
+ */
+export interface RecommendOptions {
+  topics: TopicInput[] | string;  // Array of topics or comma-separated string
+  stream?: boolean;               // Default: true
+  limit?: number;                 // Max videos per topic (default: 5, max: 20)
+  collectionId?: string;
+  tags?: string[];
+  synthesize?: boolean;           // Default: true (include AI guidance)
+  context?: string;               // User context for personalized guidance
+}
+
+/**
+ * Non-streaming response for recommend endpoint
+ */
+export interface RecommendResponse {
+  id: string;
+  recommendations: Recommendation[];
+  guidance: string;
+  sources: Source[];
 }

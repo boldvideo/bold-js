@@ -29,4 +29,9 @@ export type {
   SearchOptions,
   ChatOptions,
   AIContextMessage,
+  RecommendOptions,
+  RecommendResponse,
+  Recommendation,
+  RecommendationVideo,
+  TopicInput,
 } from "./lib/types";
