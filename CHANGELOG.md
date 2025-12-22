@@ -1,5 +1,16 @@
 # @boldvideo/bold-js
 
+## 1.6.1
+
+### Patch Changes
+
+- 7aff057: Align SDK with API specification
+
+  - Renamed `synthesize` to `includeGuidance` in `RecommendOptions` to match API
+  - Renamed `why` to `reason` in `RecommendationVideo` type to match API response
+  - Added `tags` filter to `AskOptions` and `SearchOptions`
+  - Added `currentTime` to `ChatOptions` for playback context
+
 ## 1.6.0
 
 ### Minor Changes
