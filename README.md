@@ -44,8 +44,8 @@ const bold = createClient('your-api-key');
 // Fetch videos
 const videos = await bold.videos.list();
 
-// Get AI-powered recommendations
-const recs = await bold.ai.recommend({ 
+// AI-powered recommendations
+const recs = await bold.ai.recommendations({ 
   topics: ['sales', 'negotiation'],
   stream: false 
 });
@@ -92,15 +92,47 @@ const settings = await bold.settings();
 
 All AI methods support both streaming (default) and non-streaming modes.
 
-### Recommend
+### Chat
+
+Library-wide conversational AI for deep Q&A across your entire video library.
+
+```typescript
+// Streaming (default)
+const stream = await bold.ai.chat({ prompt: 'How do I price my SaaS?' });
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+  if (event.type === 'sources') console.log('Sources:', event.sources);
+}
+
+// Non-streaming
+const response = await bold.ai.chat({ 
+  prompt: 'What are the best closing techniques?',
+  stream: false 
+});
+console.log(response.content);
+```
+
+**Options:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `prompt` | `string` | The user's question (required) |
+| `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
+| `videoId` | `string` | If provided, scope to this video instead of whole library |
+| `currentTime` | `number` | Current playback position (only with `videoId`) |
+| `conversationId` | `string` | Pass to continue existing conversation |
+| `collectionId` | `string` | Filter to a specific collection |
+| `tags` | `string[]` | Filter by tags |
+
+### Recommendations
 
 Get AI-powered video recommendations based on topics — ideal for personalized learning paths, exam prep, and content discovery.
 
 ```typescript
 // Streaming (default)
-const stream = await bold.ai.recommend({ 
+const stream = await bold.ai.recommendations({ 
   topics: ['contract law', 'ethics', 'client management'],
-  context: 'I failed these topics on my certification exam'
 });
 
 for await (const event of stream) {
@@ -116,7 +148,7 @@ for await (const event of stream) {
 }
 
 // Non-streaming
-const response = await bold.ai.recommend({ 
+const response = await bold.ai.recommendations({ 
   topics: ['sales', 'marketing'],
   stream: false 
 });
@@ -128,38 +160,17 @@ console.log(response.recommendations);
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `topics` | `string[]` \| `string` | Topics to find content for (required) |
+| `topics` | `string[]` | Topics to find content for (required) |
 | `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
 | `limit` | `number` | Max videos per topic (default: 5, max: 20) |
 | `collectionId` | `string` | Filter to a specific collection |
 | `tags` | `string[]` | Filter by tags |
 | `includeGuidance` | `boolean` | Include AI learning path narrative (default: true) |
-| `context` | `string` | User context for personalized guidance |
-
-### Coach / Ask
-
-Library-wide RAG assistant for answering questions across your entire video library.
-
-```typescript
-// Streaming
-const stream = await bold.ai.coach({ prompt: 'How do I price my SaaS?' });
-
-for await (const event of stream) {
-  if (event.type === 'text_delta') process.stdout.write(event.delta);
-  if (event.type === 'sources') console.log('Sources:', event.sources);
-}
-
-// Non-streaming
-const response = await bold.ai.ask({ 
-  prompt: 'What are the best closing techniques?',
-  stream: false 
-});
-console.log(response.content);
-```
+| `context` | `AIContextMessage[]` | Previous conversation turns for follow-ups |
 
 ### Search
 
-Semantic search with light synthesis.
+Fast semantic search with a brief AI-generated summary.
 
 ```typescript
 const stream = await bold.ai.search({ 
@@ -174,12 +185,13 @@ for await (const event of stream) {
 }
 ```
 
-### Chat
+### Video-Scoped Chat
 
-Video-scoped conversation for Q&A about a specific video.
+Chat about a specific video by passing `videoId`. Uses only that video's transcript as context.
 
 ```typescript
-const stream = await bold.ai.chat('video-id', { 
+const stream = await bold.ai.chat({ 
+  videoId: 'video-id',
   prompt: 'What is discussed at the 5 minute mark?' 
 });
 
@@ -187,8 +199,9 @@ for await (const event of stream) {
   if (event.type === 'text_delta') process.stdout.write(event.delta);
 }
 
-// With playback context - helps AI understand what viewer just watched
-const stream = await bold.ai.chat('video-id', { 
+// With playback context (coming soon)
+const stream = await bold.ai.chat({ 
+  videoId: 'video-id',
   prompt: 'What does she mean by that?',
   currentTime: 847  // seconds
 });
@@ -245,12 +258,37 @@ import type {
   Settings,
   AIEvent,
   AIResponse,
-  RecommendOptions,
-  RecommendResponse,
+  ChatOptions,
+  SearchOptions,
+  RecommendationsOptions,
+  RecommendationsResponse,
   Recommendation,
   Source
 } from '@boldvideo/bold-js';
 ```
+
+---
+
+## Migration from v1.6.x
+
+### Method Changes
+
+| Old | New | Notes |
+|-----|-----|-------|
+| `bold.ai.ask(opts)` | `bold.ai.chat(opts)` | `ask()` still works but is deprecated |
+| `bold.ai.coach(opts)` | `bold.ai.chat(opts)` | `coach()` still works but is deprecated |
+| `bold.ai.chat(videoId, opts)` | `bold.ai.chat({ videoId, ...opts })` | Pass `videoId` in options |
+| `bold.ai.recommend(opts)` | `bold.ai.recommendations(opts)` | `recommend()` still works but is deprecated |
+
+### Type Renames
+
+| Old Type | New Type |
+|----------|----------|
+| `AskOptions` | `ChatOptions` |
+| `RecommendOptions` | `RecommendationsOptions` |
+| `RecommendResponse` | `RecommendationsResponse` |
+
+The old types are still exported as aliases for backward compatibility.
 
 ---
 

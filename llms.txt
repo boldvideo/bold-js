@@ -14,11 +14,11 @@ const videos = await bold.videos.list();
 const video = await bold.videos.get('video-id');
 
 // AI-powered recommendations
-const recs = await bold.ai.recommend({ topics: ['sales', 'negotiation'], stream: false });
+const recs = await bold.ai.recommendations({ topics: ['sales', 'negotiation'], stream: false });
 console.log(recs.guidance);
 
 // AI streaming
-const stream = await bold.ai.coach({ prompt: 'How do I price my SaaS?' });
+const stream = await bold.ai.chat({ prompt: 'How do I price my SaaS?' });
 for await (const event of stream) {
   if (event.type === 'text_delta') process.stdout.write(event.delta);
 }
@@ -43,11 +43,14 @@ for await (const event of stream) {
 
 All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIResponse>` (non-streaming).
 
-- `bold.ai.recommend(options)` - AI-powered video recommendations based on topics
-- `bold.ai.coach(options)` - Library-wide RAG assistant (alias: `ask`)
-- `bold.ai.ask(options)` - Library-wide RAG assistant
+- `bold.ai.chat(options)` - Conversational AI for Q&A (pass `videoId` to scope to a video)
 - `bold.ai.search(options)` - Semantic search with synthesis
-- `bold.ai.chat(videoId, options)` - Video-scoped Q&A conversation
+- `bold.ai.recommendations(options)` - AI-powered video recommendations based on topics
+
+**Deprecated aliases** (still work but will be removed):
+- `bold.ai.ask(options)` → use `chat()`
+- `bold.ai.coach(options)` → use `chat()`
+- `bold.ai.recommend(options)` → use `recommendations()`
 
 ### Analytics
 
@@ -56,26 +59,14 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
 
 ## AI Options
 
-### RecommendOptions
-
-```typescript
-{
-  topics: string[] | string;  // Topics to find content for (required)
-  stream?: boolean;           // Default: true
-  limit?: number;             // Max videos per topic (default: 5, max: 20)
-  collectionId?: string;      // Filter to collection
-  tags?: string[];            // Filter by tags
-  includeGuidance?: boolean;  // Include AI learning path narrative (default: true)
-  context?: string;           // User context for personalization
-}
-```
-
-### AskOptions / CoachOptions
+### ChatOptions
 
 ```typescript
 {
   prompt: string;             // Question to ask (required)
   stream?: boolean;           // Default: true
+  videoId?: string;           // If set, scope to this video
+  currentTime?: number;       // Current playback position (with videoId)
   conversationId?: string;    // Continue existing conversation
   collectionId?: string;      // Filter to collection
   tags?: string[];            // Filter by tags
@@ -96,14 +87,17 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
 }
 ```
 
-### ChatOptions
+### RecommendationsOptions
 
 ```typescript
 {
-  prompt: string;             // Question about the video (required)
+  topics: string[];           // Topics to find content for (required)
   stream?: boolean;           // Default: true
-  conversationId?: string;    // Continue existing conversation
-  currentTime?: number;       // Current playback position in seconds
+  limit?: number;             // Max videos per topic (default: 5, max: 20)
+  collectionId?: string;      // Filter to collection
+  tags?: string[];            // Filter by tags
+  includeGuidance?: boolean;  // Include AI learning path narrative (default: true)
+  context?: AIContextMessage[]; // Previous conversation turns for follow-ups
 }
 ```
 
@@ -113,8 +107,8 @@ Key types exported:
 
 - `Video`, `Playlist`, `Settings`, `Portal`
 - `AIEvent`, `AIResponse`, `Source`, `AIUsage`
-- `AskOptions`, `SearchOptions`, `ChatOptions`
-- `RecommendOptions`, `RecommendResponse`, `Recommendation`, `RecommendationVideo`, `TopicInput`
+- `ChatOptions`, `SearchOptions`
+- `RecommendationsOptions`, `RecommendationsResponse`, `Recommendation`, `RecommendationVideo`
 
 ## Links
 

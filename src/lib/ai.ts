@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, AskOptions, SearchOptions, ChatOptions, RecommendOptions, RecommendResponse } from './types';
+import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse } from './types';
 
 export interface AIConfig {
   baseURL: string;
@@ -44,7 +44,7 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
         try {
           const event = JSON.parse(json) as AIEvent;
           yield event;
-          if (event.type === 'complete' || event.type === 'error') {
+          if (event.type === 'message_complete' || event.type === 'error') {
             await reader.cancel();
             return;
           }
@@ -98,11 +98,11 @@ async function streamRequest(
 /**
  * Make non-streaming request to AI endpoint
  */
-async function jsonRequest(
+async function jsonRequest<T = AIResponse>(
   path: string,
   body: Record<string, unknown>,
   config: AIConfig
-): Promise<AIResponse> {
+): Promise<T> {
   const url = buildURL(config.baseURL, path);
 
   const response = await fetch(url, {
@@ -119,7 +119,7 @@ async function jsonRequest(
     throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<AIResponse>;
+  return response.json() as Promise<T>;
 }
 
 /**
@@ -127,26 +127,39 @@ async function jsonRequest(
  */
 export interface AIClient {
   /**
-   * Ask - Library-wide RAG assistant
+   * Chat - Conversational AI for Q&A
+   * 
+   * If `videoId` is provided, scopes to that video. Otherwise searches your entire library.
    *
    * @example
-   * // Streaming (default)
-   * const stream = await bold.ai.ask({ prompt: "How do I price my SaaS?" });
+   * // Library-wide Q&A
+   * const stream = await bold.ai.chat({ prompt: "How do I price my SaaS?" });
    * for await (const event of stream) {
    *   if (event.type === "text_delta") process.stdout.write(event.delta);
    * }
    *
    * @example
+   * // Video-scoped Q&A
+   * const stream = await bold.ai.chat({ videoId: "vid_xyz", prompt: "What does she mean?" });
+   *
+   * @example
    * // Non-streaming
-   * const response = await bold.ai.ask({ prompt: "How do I price my SaaS?", stream: false });
+   * const response = await bold.ai.chat({ prompt: "How do I price my SaaS?", stream: false });
    * console.log(response.content);
+   */
+  chat(options: ChatOptions & { stream: false }): Promise<AIResponse>;
+  chat(options: ChatOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
+  chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
+
+  /**
+   * @deprecated Use chat() instead. Will be removed in a future version.
    */
   ask(options: AskOptions & { stream: false }): Promise<AIResponse>;
   ask(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
   ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
 
   /**
-   * Coach - Alias for ask() (Library-wide RAG assistant)
+   * @deprecated Use chat() instead. Will be removed in a future version.
    */
   coach(options: AskOptions & { stream: false }): Promise<AIResponse>;
   coach(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
@@ -165,33 +178,28 @@ export interface AIClient {
   search(options: SearchOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
   search(options: SearchOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
 
-  /**
-   * Chat - Video-scoped conversation
-   *
-   * @example
-   * const stream = await bold.ai.chat("video-id", { prompt: "What is discussed at 5 minutes?" });
-   * for await (const event of stream) {
-   *   if (event.type === "text_delta") process.stdout.write(event.delta);
-   * }
-   */
-  chat(videoId: string, options: ChatOptions & { stream: false }): Promise<AIResponse>;
-  chat(videoId: string, options: ChatOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  chat(videoId: string, options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
 
   /**
-   * Recommend - AI-powered video recommendations
+   * Recommendations - AI-powered video recommendations
    *
    * @example
    * // Streaming (default)
-   * const stream = await bold.ai.recommend({ topics: ["sales", "negotiation"] });
+   * const stream = await bold.ai.recommendations({ topics: ["sales", "negotiation"] });
    * for await (const event of stream) {
    *   if (event.type === "recommendations") console.log(event.recommendations);
    * }
    *
    * @example
    * // Non-streaming
-   * const response = await bold.ai.recommend({ topics: ["sales"], stream: false });
+   * const response = await bold.ai.recommendations({ topics: ["sales"], stream: false });
    * console.log(response.guidance);
+   */
+  recommendations(options: RecommendationsOptions & { stream: false }): Promise<RecommendationsResponse>;
+  recommendations(options: RecommendationsOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
+  recommendations(options: RecommendationsOptions): Promise<AsyncIterable<AIEvent> | RecommendationsResponse>;
+
+  /**
+   * @deprecated Use recommendations() instead. Will be removed in a future version.
    */
   recommend(options: RecommendOptions & { stream: false }): Promise<RecommendResponse>;
   recommend(options: RecommendOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
@@ -202,14 +210,23 @@ export interface AIClient {
  * Create AI methods bound to client config
  */
 export function createAI(config: AIConfig): AIClient {
-  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
+  async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
+    const isVideoScoped = !!options.videoId;
+    
+    const basePath = isVideoScoped
+      ? `ai/videos/${options.videoId}/chat`
+      : 'ai/chat';
+    
     const path = options.conversationId
-      ? `ai/ask/${options.conversationId}`
-      : 'ai/ask';
+      ? `${basePath}/${options.conversationId}`
+      : basePath;
 
     const body: Record<string, unknown> = { prompt: options.prompt };
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.tags) body.tags = options.tags;
+    if (isVideoScoped && options.currentTime !== undefined) {
+      body.current_time = options.currentTime;
+    }
 
     if (options.stream === false) {
       body.stream = false;
@@ -219,8 +236,12 @@ export function createAI(config: AIConfig): AIClient {
     return streamRequest(path, body, config);
   }
 
+  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
+    return chat(options);
+  }
+
   async function coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
-    return ask(options);
+    return chat(options);
   }
 
   async function search(options: SearchOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
@@ -241,24 +262,8 @@ export function createAI(config: AIConfig): AIClient {
     return streamRequest(path, body, config);
   }
 
-  async function chat(videoId: string, options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
-    const path = options.conversationId
-      ? `ai/videos/${videoId}/chat/${options.conversationId}`
-      : `ai/videos/${videoId}/chat`;
-
-    const body: Record<string, unknown> = { prompt: options.prompt };
-    if (options.currentTime !== undefined) body.current_time = options.currentTime;
-
-    if (options.stream === false) {
-      body.stream = false;
-      return jsonRequest(path, body, config);
-    }
-
-    return streamRequest(path, body, config);
-  }
-
-  async function recommend(options: RecommendOptions): Promise<AsyncIterable<AIEvent> | RecommendResponse> {
-    const path = 'ai/recommend';
+  async function recommendations(options: RecommendationsOptions): Promise<AsyncIterable<AIEvent> | RecommendationsResponse> {
+    const path = 'ai/recommendations';
 
     const body: Record<string, unknown> = { topics: options.topics };
     if (options.limit) body.limit = options.limit;
@@ -269,17 +274,22 @@ export function createAI(config: AIConfig): AIClient {
 
     if (options.stream === false) {
       body.stream = false;
-      return jsonRequest(path, body, config) as unknown as Promise<RecommendResponse>;
+      return jsonRequest<RecommendationsResponse>(path, body, config);
     }
 
     return streamRequest(path, body, config);
   }
 
+  async function recommend(options: RecommendOptions): Promise<AsyncIterable<AIEvent> | RecommendResponse> {
+    return recommendations(options);
+  }
+
   return {
+    chat: chat as AIClient['chat'],
     ask: ask as AIClient['ask'],
     coach: coach as AIClient['coach'],
     search: search as AIClient['search'],
-    chat: chat as AIClient['chat'],
+    recommendations: recommendations as AIClient['recommendations'],
     recommend: recommend as AIClient['recommend'],
   };
 }

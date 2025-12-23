@@ -251,38 +251,35 @@ export type Settings = {
  * Source citation from AI responses
  */
 export interface Source {
-  video_id: string;
-  title: string;
+  id: string;               // Chunk identifier
+  video_id: string;         // Bold video ID
+  title: string;            // Video title
+  text: string;             // Transcript excerpt
   timestamp: number;        // Start time in seconds
-  timestamp_end?: number;   // End time in seconds
-  text: string;
-  playback_id?: string;
-  speaker?: string;
+  timestamp_end: number;    // End time in seconds
+  playback_id: string;      // Mux playback ID for embedding
+  speaker?: string;         // Speaker name if detected
 }
 
 /**
  * Token usage statistics
  */
 export interface AIUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
+  input_tokens: number;
+  output_tokens: number;
 }
 
 /**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
-  | { type: "message_start"; id: string; model?: string }
-  | { type: "sources"; sources: Source[]; query?: string }
+  | { type: "message_start"; id: string; conversation_id?: string; video_id?: string }
+  | { type: "sources"; sources: Source[] }
   | { type: "text_delta"; delta: string }
-  | { type: "token"; content: string }  // Legacy: same content as text_delta
-  | { type: "answer"; content: string; response_id?: string; context?: AIContextMessage[] }
-  | { type: "clarification"; questions: string[] }
+  | { type: "clarification"; content: string; questions: string[] }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[] }
-  | { type: "complete" }  // Final event - stream ends here
-  | { type: "error"; code: string; message: string; retryable: boolean; details?: Record<string, unknown> };
+  | { type: "message_complete"; id: string; conversation_id?: string; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "error"; code: string; message: string; retryable: boolean };
 
 /**
  * Non-streaming AI response
@@ -297,15 +294,34 @@ export interface AIResponse {
 }
 
 /**
- * Options for bold.ai.ask() and bold.ai.coach()
+ * Options for bold.ai.chat()
+ * 
+ * If `videoId` is provided, scopes chat to that video (hits /ai/videos/:id/chat).
+ * Otherwise, searches your entire library (hits /ai/chat).
  */
-export interface AskOptions {
+export interface ChatOptions {
   prompt: string;
   stream?: boolean;          // Default: true
-  conversationId?: string;
+  conversationId?: string;   // Pass to continue existing conversation
   collectionId?: string;
   tags?: string[];           // Filter by tags
+  
+  /**
+   * If provided, scope chat to a specific video instead of the whole library.
+   */
+  videoId?: string;
+  
+  /**
+   * Current playback position in seconds. Only used when videoId is set.
+   * Helps AI understand what the viewer just watched.
+   */
+  currentTime?: number;
 }
+
+/**
+ * @deprecated Use ChatOptions instead
+ */
+export type AskOptions = ChatOptions;
 
 /**
  * Conversation message for AI context
@@ -329,18 +345,10 @@ export interface SearchOptions {
 }
 
 /**
- * Options for bold.ai.chat()
- *
- * conversationId: Pass to continue an existing conversation (multi-turn chat).
- * If omitted, a new conversation is created. The id is returned in the
- * message_start event - capture it to pass to subsequent requests.
+ * ChatOptions with videoId required - for video-scoped chat.
+ * @deprecated Use ChatOptions with videoId instead
  */
-export interface ChatOptions {
-  prompt: string;
-  stream?: boolean;          // Default: true
-  conversationId?: string;
-  currentTime?: number;      // Current playback position in seconds for context
-}
+export type VideoChatOptions = Omit<ChatOptions, 'videoId' | 'collectionId' | 'tags'> & { videoId?: never };
 
 /**
  * A recommended video with relevance score
@@ -358,34 +366,40 @@ export interface RecommendationVideo {
  */
 export interface Recommendation {
   topic: string;
-  position: number;
   videos: RecommendationVideo[];
 }
 
 /**
- * Topic input format for recommendations
+ * Options for bold.ai.recommendations()
  */
-export type TopicInput = string | { q: string; priority?: number };
-
-/**
- * Options for bold.ai.recommend()
- */
-export interface RecommendOptions {
-  topics: TopicInput[] | string;  // Array of topics or comma-separated string
+export interface RecommendationsOptions {
+  topics: string[];               // Topics to find content for (required, max: 10)
   stream?: boolean;               // Default: true
   limit?: number;                 // Max videos per topic (default: 5, max: 20)
   collectionId?: string;
   tags?: string[];
   includeGuidance?: boolean;      // Default: true (include AI learning path narrative)
-  context?: string;               // User context for personalized guidance
+  context?: AIContextMessage[];   // Previous conversation turns for follow-ups
 }
 
 /**
- * Non-streaming response for recommend endpoint
+ * @deprecated Use RecommendationsOptions instead
  */
-export interface RecommendResponse {
+export type RecommendOptions = RecommendationsOptions;
+
+/**
+ * Non-streaming response for recommendations endpoint
+ */
+export interface RecommendationsResponse {
   id: string;
   recommendations: Recommendation[];
   guidance: string;
   sources: Source[];
+  context?: AIContextMessage[];
+  usage?: AIUsage;
 }
+
+/**
+ * @deprecated Use RecommendationsResponse instead
+ */
+export type RecommendResponse = RecommendationsResponse;
