@@ -243,15 +243,27 @@ export interface AIUsage {
 }
 
 /**
+ * Metadata included with answer events
+ */
+export interface AnswerMetadata {
+  topScore: number;
+  chunksFound: number;
+  videosSearched: number;
+}
+
+/**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
   | { type: "sources"; sources: Source[] }
   | { type: "text_delta"; delta: string }
+  | { type: "token"; content: string }
   | { type: "clarification"; content: string; questions: string[] }
   | { type: "recommendations"; recommendations: Recommendation[] }
+  | { type: "answer"; content: string; metadata: AnswerMetadata; usage?: AIUsage; confidence?: string; responseStrategy?: string; citations?: Source[] }
   | { type: "message_complete"; conversationId?: string; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "complete" }
   | { type: "error"; code: string; message: string; retryable: boolean };
 
 /**
