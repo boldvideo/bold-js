@@ -110,6 +110,8 @@ Key types exported:
 - `ChatOptions`, `SearchOptions`
 - `RecommendationsOptions`, `RecommendationsResponse`, `Recommendation`, `RecommendationVideo`
 
+All response types use camelCase (e.g., `source.videoId`, `source.timestampEnd`, `usage.inputTokens`).
+
 ## Links
 
 - [GitHub](https://github.com/boldvideo/bold-js)

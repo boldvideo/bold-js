@@ -252,12 +252,12 @@ export type Settings = {
  */
 export interface Source {
   id: string;               // Chunk identifier
-  video_id: string;         // Bold video ID
+  videoId: string;          // Bold video ID
   title: string;            // Video title
   text: string;             // Transcript excerpt
   timestamp: number;        // Start time in seconds
-  timestamp_end: number;    // End time in seconds
-  playback_id: string;      // Mux playback ID for embedding
+  timestampEnd: number;     // End time in seconds
+  playbackId: string;       // Mux playback ID for embedding
   speaker?: string;         // Speaker name if detected
 }
 
@@ -265,32 +265,35 @@ export interface Source {
  * Token usage statistics
  */
 export interface AIUsage {
-  input_tokens: number;
-  output_tokens: number;
+  inputTokens: number;
+  outputTokens: number;
 }
 
 /**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
-  | { type: "message_start"; id: string; conversation_id?: string; video_id?: string }
+  | { type: "message_start"; conversationId?: string; videoId?: string }
   | { type: "sources"; sources: Source[] }
   | { type: "text_delta"; delta: string }
   | { type: "clarification"; content: string; questions: string[] }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; id: string; conversation_id?: string; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "message_complete"; conversationId?: string; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean };
 
 /**
- * Non-streaming AI response
+ * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
  */
 export interface AIResponse {
-  id: string;
+  conversationId?: string;       // Present for /chat endpoints (primary identifier)
+  videoId?: string;              // Present for /videos/:id/chat
+  /** @deprecated Use conversationId instead. Will be removed in v2. */
+  id?: string;                   // Deprecated alias for conversationId
   content: string;
   sources: Source[];
   usage: AIUsage;
   model?: string;
-  context?: AIContextMessage[];
+  context?: AIContextMessage[];  // Present for /search, absent for /chat
 }
 
 /**
@@ -354,9 +357,9 @@ export type VideoChatOptions = Omit<ChatOptions, 'videoId' | 'collectionId' | 't
  * A recommended video with relevance score
  */
 export interface RecommendationVideo {
-  video_id: string;
+  videoId: string;
   title: string;
-  playback_id: string;
+  playbackId: string;
   relevance: number;
   reason: string;
 }
@@ -391,7 +394,6 @@ export type RecommendOptions = RecommendationsOptions;
  * Non-streaming response for recommendations endpoint
  */
 export interface RecommendationsResponse {
-  id: string;
   recommendations: Recommendation[];
   guidance: string;
   sources: Source[];

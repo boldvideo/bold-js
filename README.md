@@ -271,6 +271,26 @@ import type {
 
 ## Migration from v1.6.x
 
+### Breaking: Response types now use camelCase
+
+All API responses are now transformed to use idiomatic TypeScript/JavaScript naming:
+
+```typescript
+// Before (v1.6.x)
+source.video_id
+source.timestamp_end
+source.playback_id
+usage.input_tokens
+event.conversation_id
+
+// After (v1.7.0)
+source.videoId
+source.timestampEnd
+source.playbackId
+usage.inputTokens
+event.conversationId
+```
+
 ### Method Changes
 
 | Old | New | Notes |

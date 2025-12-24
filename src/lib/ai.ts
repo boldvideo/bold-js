@@ -1,4 +1,5 @@
 import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse } from './types';
+import { camelizeKeys } from '../util/camelize';
 
 export interface AIConfig {
   baseURL: string;
@@ -42,7 +43,8 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
         if (!json) continue;
 
         try {
-          const event = JSON.parse(json) as AIEvent;
+          const raw = JSON.parse(json);
+          const event = camelizeKeys(raw) as AIEvent;
           yield event;
           if (event.type === 'message_complete' || event.type === 'error') {
             await reader.cancel();
@@ -119,7 +121,8 @@ async function jsonRequest<T = AIResponse>(
     throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
   }
 
-  return response.json() as Promise<T>;
+  const raw = await response.json();
+  return camelizeKeys(raw) as T;
 }
 
 /**
