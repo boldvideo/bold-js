@@ -1,5 +1,6 @@
 import { Video, Playlist, Settings } from "./types";
 import { AxiosInstance } from "axios";
+import { camelizeKeys } from "../util/camelize";
 
 type Response<T> = {
   data: T;
@@ -16,7 +17,7 @@ async function get<TResponse>(
     if (res.status !== 200) {
       throw new Error(`Unexpected response status: ${res.status}`);
     }
-    return res.data as TResponse;
+    return camelizeKeys(res.data) as TResponse;
   } catch (error) {
     console.error(`Error fetching data from URL: ${url}`, error);
     throw error;

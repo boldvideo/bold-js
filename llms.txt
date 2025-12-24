@@ -110,7 +110,7 @@ Key types exported:
 - `ChatOptions`, `SearchOptions`
 - `RecommendationsOptions`, `RecommendationsResponse`, `Recommendation`, `RecommendationVideo`
 
-All response types use camelCase (e.g., `source.videoId`, `source.timestampEnd`, `usage.inputTokens`).
+All response types use camelCase (e.g., `video.playbackId`, `video.publishedAt`, `settings.featuredPlaylists`, `source.videoId`).
 
 ## Links
 

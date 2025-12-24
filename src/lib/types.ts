@@ -1,15 +1,15 @@
 export type VideoAttachment = {
   id: string;
   title: string;
-  file_url: string;
-  file_size?: number;
-  file_type?: string;
+  fileUrl: string;
+  fileSize?: number;
+  fileType?: string;
 };
 
 export type VideoDownloadUrls = {
   mp4?: string;
   audio?: string;
-  legacy_mp4?: string;
+  legacyMp4?: string;
 };
 
 export type VideoSubtitles = {
@@ -31,58 +31,47 @@ export type VideoMetadata = {
 };
 
 export type Video = {
-  // Existing fields (kept as-is)
   captions: string;
-  captions_label: string;
-  captions_lang: string;
+  captionsLabel: string;
+  captionsLang: string;
   description: string | null;
   duration: number;
   id: string;
-  imported_from: string | null;
-  legacy_video_url: string | null;
-  playback_id: string;
-  published_at: string;
-  stream_url: string;
+  importedFrom: string | null;
+  legacyVideoUrl: string | null;
+  playbackId: string;
+  publishedAt: string;
+  streamUrl: string;
   teaser: string | null;
   thumbnail: string;
   title: string;
   type: string;
 
-  // Fixed: meta_data should be an object, not array
-  meta_data: VideoMetadata;
+  metaData: VideoMetadata;
 
-  // New: Chapters in WEBVTT format
   chapters?: string;
 
-  // New: Attachments array
   attachments?: VideoAttachment[];
 
-  // New: Call-to-action (can be null)
   cta?: any | null;
 
-  // New: Download URLs object
-  download_urls?: VideoDownloadUrls;
+  downloadUrls?: VideoDownloadUrls;
 
-  // Internal ID
-  internal_id: string;
+  internalId: string;
 
-  // New: Playback speed
-  playback_speed?: number;
+  playbackSpeed?: number;
 
-  // New: Subtitles object
   subtitles?: VideoSubtitles;
 
-  // New: Tags array
   tags?: string[];
 
-  // New: Transcript object (replaces transcription)
   transcript?: VideoTranscript;
 };
 
 export type Playlist = {
   description?: string;
   id: string;
-  is_private: boolean;
+  isPrivate: boolean;
   title: string;
   type: string;
   videos: Video[];
@@ -90,14 +79,14 @@ export type Playlist = {
 
 export type MenuItem = {
   icon: string;
-  is_ext: boolean;
+  isExt: boolean;
   label: string;
   url: string;
 };
 
 export type PortalDisplay = {
-  show_chapters: boolean;
-  show_transcripts: boolean;
+  showChapters: boolean;
+  showTranscripts: boolean;
 };
 
 export type AssistantConfig = {
@@ -107,45 +96,39 @@ export type AssistantConfig = {
 };
 
 export type PortalLayout = {
-  assistant_config: AssistantConfig | null;
-  show_playlists: boolean;
+  assistantConfig: AssistantConfig | null;
+  showPlaylists: boolean;
   type: string;
-  videos_limit: number;
+  videosLimit: number;
 };
 
 export type PortalNavigation = {
-  show_ai_search: boolean;
-  show_header: boolean;
-  show_search: boolean;
+  showAiSearch: boolean;
+  showHeader: boolean;
+  showSearch: boolean;
 };
 
 export type PortalTheme = {
-  // Raw color inputs
   background: string;
   foreground: string;
   primary: string;
-  // Typography
-  font_body: string;
-  font_header: string;
-  // Logo
-  logo_url: string;
-  logo_dark_url: string;
-  logo_width: number;
-  logo_height: number;
-  // Layout & appearance
-  header_size: string;
+  fontBody: string;
+  fontHeader: string;
+  logoUrl: string;
+  logoDarkUrl: string;
+  logoWidth: number;
+  logoHeight: number;
+  headerSize: string;
   layout: string;
-  // Theme config (consolidated from theme_config)
   radius: string;
-  color_scheme: "toggle" | "light" | "dark";
+  colorScheme: "toggle" | "light" | "dark";
   light: ThemeColors;
   dark: ThemeColors;
-  // Custom CSS
-  css_overrides: string | null;
+  cssOverrides: string | null;
 };
 
 export type Portal = {
-  color_scheme?: 'toggle' | 'light' | 'dark';
+  colorScheme?: 'toggle' | 'light' | 'dark';
   display: PortalDisplay;
   layout: PortalLayout;
   navigation: PortalNavigation;
@@ -153,14 +136,12 @@ export type Portal = {
 };
 
 export type ThemeColors = {
-  // User-defined inputs (3)
   accent: string;
   background: string;
   foreground: string;
-  // Derived by backend (6)
-  accent_foreground: string;
+  accentForeground: string;
   muted: string;
-  muted_foreground: string;
+  mutedForeground: string;
   border: string;
   ring: string;
   surface: string;
@@ -168,13 +149,13 @@ export type ThemeColors = {
 
 export type ThemeConfig = {
   radius: string;
-  color_scheme: "toggle" | "light" | "dark";
+  colorScheme: "toggle" | "light" | "dark";
   light: ThemeColors;
   dark: ThemeColors;
 };
 
 export type AccountAI = {
-  avatar_url: string;
+  avatarUrl: string;
   enabled: boolean;
   greeting: string;
   name: string;
@@ -188,7 +169,7 @@ export type PersonaEnabled = {
   enabled: true;
   name: string;
   greeting: string;
-  conversation_starters: string[];
+  conversationStarters: string[];
 };
 
 export type PersonaDisabled = {
@@ -199,49 +180,41 @@ export type Persona = PersonaEnabled | PersonaDisabled;
 
 export type Account = {
   ai: AccountAI;
-  ai_search: AccountAISearch;
+  aiSearch: AccountAISearch;
   name: string;
   persona: Persona;
   slug: string;
 };
 
 export type Settings = {
-  // Existing top-level arrays
-  featured_playlists: Playlist[];
-  menu_items: MenuItem[];
+  featuredPlaylists: Playlist[];
+  menuItems: MenuItem[];
 
-  // Existing flat AI fields (kept for backward compatibility)
-  ai_avatar: string;
-  ai_name: string;
-  ai_greeting?: string;
-  has_ai: boolean;
+  aiAvatar: string;
+  aiName: string;
+  aiGreeting?: string;
+  hasAi: boolean;
 
-  // New: Account object with nested AI config
   account: Account;
 
-  // New: Top-level URL fields
-  favicon_url?: string;
-  logo_dark_url?: string;
-  logo_url?: string;
+  faviconUrl?: string;
+  logoDarkUrl?: string;
+  logoUrl?: string;
 
-  // Updated: meta_data with additional fields
-  meta_data: {
-    channel_name: string;
+  metaData: {
+    channelName: string;
     description: string;
     image: string | null;
-    no_seo: boolean;
-    social_graph_image_url?: string;
+    noSeo: boolean;
+    socialGraphImageUrl?: string;
     title: string;
-    title_suffix: string;
+    titleSuffix: string;
   };
 
-  // New: Portal object with all nested structures
   portal: Portal;
 
-  // New: Theme configuration
-  theme_config: ThemeConfig;
+  themeConfig: ThemeConfig;
 
-  // New: API version
   version: string;
 };
 

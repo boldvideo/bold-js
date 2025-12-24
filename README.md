@@ -269,26 +269,32 @@ import type {
 
 ---
 
-## Migration from v1.6.x
+## Migration from v1.7.x
 
-### Breaking: Response types now use camelCase
+### Breaking: All response types now use camelCase
 
-All API responses are now transformed to use idiomatic TypeScript/JavaScript naming:
+**All API responses** (videos, playlists, settings, AI) are now transformed to use idiomatic TypeScript/JavaScript naming:
 
 ```typescript
-// Before (v1.6.x)
-source.video_id
-source.timestamp_end
-source.playback_id
-usage.input_tokens
-event.conversation_id
+// Before (v1.7.x and earlier)
+video.playback_id
+video.published_at
+video.stream_url
+video.meta_data
+settings.featured_playlists
+settings.menu_items
+settings.theme_config
+playlist.is_private
 
-// After (v1.7.0)
-source.videoId
-source.timestampEnd
-source.playbackId
-usage.inputTokens
-event.conversationId
+// After (v1.8.0)
+video.playbackId
+video.publishedAt
+video.streamUrl
+video.metaData
+settings.featuredPlaylists
+settings.menuItems
+settings.themeConfig
+playlist.isPrivate
 ```
 
 ### Method Changes
