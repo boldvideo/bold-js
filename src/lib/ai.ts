@@ -46,8 +46,8 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
           const raw = JSON.parse(json);
           const event = camelizeKeys(raw) as AIEvent;
           yield event;
-          // Terminate on message_complete, complete, or error
-          if (event.type === 'message_complete' || event.type === 'complete' || event.type === 'error') {
+          // Terminate on message_complete or error
+          if (event.type === 'message_complete' || event.type === 'error') {
             await reader.cancel();
             return;
           }
