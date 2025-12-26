@@ -221,18 +221,28 @@ export type Settings = {
 // AI Streaming Types (Unified API)
 
 /**
- * Source citation from AI responses
+ * Video segment from AI responses (used for both sources and citations)
  */
-export interface Source {
-  id: string;               // Chunk identifier
-  videoId: string;          // Bold video ID
-  title: string;            // Video title
-  text: string;             // Transcript excerpt
-  timestamp: number;        // Start time in seconds
-  timestampEnd: number;     // End time in seconds
-  playbackId: string;       // Mux playback ID for embedding
-  speaker?: string;         // Speaker name if detected
+export interface Segment {
+  id: string;              // Segment identifier
+  videoId: string;         // Bold video ID
+  title: string;           // Video title
+  text: string;            // Transcript excerpt
+  timestamp: number;       // Start time in seconds
+  timestampEnd: number;    // End time in seconds
+  playbackId: string;      // Mux playback ID for embedding
+  speaker?: string;        // Speaker name if detected
 }
+
+/**
+ * @deprecated Use Segment instead
+ */
+export type Source = Segment;
+
+/**
+ * Alias for Segment - represents chunks the LLM actually cited
+ */
+export type Citation = Segment;
 
 /**
  * Token usage statistics
@@ -243,27 +253,14 @@ export interface AIUsage {
 }
 
 /**
- * Metadata included with answer events
- */
-export interface AnswerMetadata {
-  topScore: number;
-  chunksFound: number;
-  videosSearched: number;
-}
-
-/**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
-  | { type: "sources"; sources: Source[] }
+  | { type: "sources"; sources: Segment[] }
   | { type: "text_delta"; delta: string }
-  | { type: "token"; content: string }
-  | { type: "clarification"; content: string; questions: string[] }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "answer"; content: string; metadata: AnswerMetadata; usage?: AIUsage; confidence?: string; responseStrategy?: string; citations?: Source[] }
-  | { type: "message_complete"; conversationId?: string; content: string; sources: Source[]; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
-  | { type: "complete" }
+  | { type: "message_complete"; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean };
 
 /**
