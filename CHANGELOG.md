@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.11.1
+
+### Patch Changes
+
+- 0428b78: Add `cited` boolean field to Segment type for stable citation ordering
+
 ## 1.11.0
 
 ### Minor Changes
