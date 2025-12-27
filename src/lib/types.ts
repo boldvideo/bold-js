@@ -232,6 +232,7 @@ export interface Segment {
   timestampEnd: number;    // End time in seconds
   playbackId: string;      // Mux playback ID for embedding
   speaker?: string;        // Speaker name if detected
+  cited?: boolean;         // Whether this segment is cited in the answer text
 }
 
 /**
