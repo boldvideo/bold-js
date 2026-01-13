@@ -37,6 +37,7 @@ export type Video = {
   description: string | null;
   duration: number;
   id: string;
+  slug?: string;
   importedFrom: string | null;
   legacyVideoUrl: string | null;
   playbackId: string;

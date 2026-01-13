@@ -62,8 +62,9 @@ console.log(recs.guidance);
 // List latest videos
 const videos = await bold.videos.list();
 
-// Get a single video
+// Get a single video by ID or slug
 const video = await bold.videos.get('video-id');
+const videoBySlug = await bold.videos.get('my-video-slug');
 
 // Search videos
 const results = await bold.videos.search('pricing strategies');

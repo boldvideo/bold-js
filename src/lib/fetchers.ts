@@ -63,6 +63,11 @@ export function searchVideos(client: ApiClient) {
   };
 }
 
+/**
+ * Fetches a single video by ID or slug.
+ * @param id - The video ID (UUID) or slug
+ * @returns The video data
+ */
 export function fetchVideo(client: ApiClient) {
   return async (id: string) => {
     try {
