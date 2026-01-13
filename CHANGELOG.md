@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.12.0
+
+### Minor Changes
+
+- ccd71c9: Add slug field to Video type
+
 ## 1.11.1
 
 ### Patch Changes
