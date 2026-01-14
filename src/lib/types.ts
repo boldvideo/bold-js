@@ -133,6 +133,14 @@ export type PortalHero = {
   type: 'none' | 'custom';
 };
 
+export type CustomRedirect = {
+  path: string;
+  url: string;
+  permanent: boolean;
+};
+
+export type AnalyticsProvider = 'plausible' | 'ga4' | 'fathom';
+
 export type Portal = {
   colorScheme?: 'toggle' | 'light' | 'dark';
   display: PortalDisplay;
@@ -140,6 +148,9 @@ export type Portal = {
   layout: PortalLayout;
   navigation: PortalNavigation;
   theme: PortalTheme;
+  customRedirects?: CustomRedirect[];
+  analyticsProvider?: AnalyticsProvider;
+  analyticsId?: string;
 };
 
 export type ThemeColors = {

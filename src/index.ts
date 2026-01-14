@@ -14,6 +14,8 @@ export type {
   Portal,
   PortalDisplay,
   PortalHero,
+  CustomRedirect,
+  AnalyticsProvider,
   PortalLayout,
   PortalNavigation,
   PortalTheme,
