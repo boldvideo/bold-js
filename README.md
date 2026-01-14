@@ -220,6 +220,19 @@ const stream = await bold.ai.chat({
 });
 ```
 
+### Get Conversation History
+
+Retrieve a conversation by ID to display message history:
+
+```typescript
+const conversation = await bold.ai.getConversation('550e8400-e29b-41d4-a716-446655440000');
+
+console.log(`Created: ${conversation.createdAt}`);
+for (const msg of conversation.messages) {
+  console.log(`${msg.role}: ${msg.content}`);
+}
+```
+
 ### Multi-turn Conversations
 
 Use the `context` parameter for follow-up questions:
@@ -279,6 +292,8 @@ import type {
   RecommendationsOptions,
   RecommendationsResponse,
   Recommendation,
+  Conversation,
+  ConversationMessage,
   Source
 } from '@boldvideo/bold-js';
 ```

@@ -406,3 +406,35 @@ export interface RecommendationsResponse {
  * @deprecated Use RecommendationsResponse instead
  */
 export type RecommendResponse = RecommendationsResponse;
+
+/**
+ * A message in a conversation
+ */
+export interface ConversationMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  sources: Segment[];
+  insertedAt: string;
+}
+
+/**
+ * Conversation metadata
+ */
+export interface ConversationMetadata {
+  originalQuery: string;
+  status: string;
+  confidence: string;
+  chunksFound: number;
+}
+
+/**
+ * Full conversation with message history
+ */
+export interface Conversation {
+  conversationId: string;
+  messages: ConversationMessage[];
+  metadata: ConversationMetadata;
+  createdAt: string;
+  updatedAt: string;
+}

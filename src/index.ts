@@ -41,4 +41,7 @@ export type {
   AskOptions,
   RecommendOptions,
   RecommendResponse,
+  Conversation,
+  ConversationMessage,
+  ConversationMetadata,
 } from "./lib/types";

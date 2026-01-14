@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse } from './types';
+import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation } from './types';
 import { camelizeKeys } from '../util/camelize';
 
 export interface AIConfig {
@@ -127,6 +127,31 @@ async function jsonRequest<T = AIResponse>(
 }
 
 /**
+ * Make GET request to AI endpoint
+ */
+async function getRequest<T>(
+  path: string,
+  config: AIConfig
+): Promise<T> {
+  const url = buildURL(config.baseURL, path);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      ...config.headers,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const raw = await response.json();
+  return camelizeKeys(raw) as T;
+}
+
+/**
  * AI client interface for type-safe method overloading
  */
 export interface AIClient {
@@ -208,6 +233,17 @@ export interface AIClient {
   recommend(options: RecommendOptions & { stream: false }): Promise<RecommendResponse>;
   recommend(options: RecommendOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
   recommend(options: RecommendOptions): Promise<AsyncIterable<AIEvent> | RecommendResponse>;
+
+  /**
+   * Get conversation history by ID
+   *
+   * @example
+   * const conversation = await bold.ai.getConversation("550e8400-e29b-41d4-a716-446655440000");
+   * for (const msg of conversation.messages) {
+   *   console.log(`${msg.role}: ${msg.content}`);
+   * }
+   */
+  getConversation(conversationId: string): Promise<Conversation>;
 }
 
 /**
@@ -288,6 +324,13 @@ export function createAI(config: AIConfig): AIClient {
     return recommendations(options);
   }
 
+  async function getConversation(conversationId: string): Promise<Conversation> {
+    if (!conversationId) {
+      throw new Error('conversationId is required');
+    }
+    return getRequest<Conversation>(`ai/chat/${conversationId}`, config);
+  }
+
   return {
     chat: chat as AIClient['chat'],
     ask: ask as AIClient['ask'],
@@ -295,5 +338,6 @@ export function createAI(config: AIConfig): AIClient {
     search: search as AIClient['search'],
     recommendations: recommendations as AIClient['recommendations'],
     recommend: recommend as AIClient['recommend'],
+    getConversation,
   };
 }
