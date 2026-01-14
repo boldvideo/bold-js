@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.15.0
+
+### Minor Changes
+
+- d7e0675: Add `bold.ai.getConversation(conversationId)` method to fetch conversation history by ID. Returns the full conversation including messages, metadata, and timestamps.
+
 ## 1.14.0
 
 ### Minor Changes
