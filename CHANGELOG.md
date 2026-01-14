@@ -1,5 +1,15 @@
 # @boldvideo/bold-js
 
+## 1.13.0
+
+### Minor Changes
+
+- 4030a6e: Add portal hero configuration and menu item blank property
+
+  - Added `portal.hero` configuration with `type: 'none' | 'custom'` to control hero section display
+  - Added `blank` property to `MenuItem` type for opening links in new windows/tabs
+  - Updated `MenuItem.icon` to allow `null` values
+
 ## 1.12.0
 
 ### Minor Changes
