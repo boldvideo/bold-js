@@ -85,6 +85,18 @@ const playlist = await bold.playlists.get('playlist-id');
 ```typescript
 // Fetch channel settings, menus, and featured playlists
 const settings = await bold.settings();
+
+// Access portal hero configuration
+if (settings.portal.hero.type === 'custom') {
+  // Render custom hero section
+}
+
+// Menu items with external link handling
+settings.menuItems.forEach(item => {
+  // item.blank: true opens in a new window/tab
+  // item.isExt: true indicates an external URL
+  // item.icon: optional icon path (can be null)
+});
 ```
 
 ---
@@ -257,6 +269,9 @@ import type {
   Video, 
   Playlist, 
   Settings,
+  Portal,
+  PortalHero,
+  MenuItem,
   AIEvent,
   AIResponse,
   ChatOptions,

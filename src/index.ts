@@ -13,6 +13,7 @@ export type {
   Settings,
   Portal,
   PortalDisplay,
+  PortalHero,
   PortalLayout,
   PortalNavigation,
   PortalTheme,

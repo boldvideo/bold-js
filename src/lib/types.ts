@@ -79,10 +79,11 @@ export type Playlist = {
 };
 
 export type MenuItem = {
-  icon: string;
+  icon: string | null;
   isExt: boolean;
   label: string;
   url: string;
+  blank: boolean;
 };
 
 export type PortalDisplay = {
@@ -128,9 +129,14 @@ export type PortalTheme = {
   cssOverrides: string | null;
 };
 
+export type PortalHero = {
+  type: 'none' | 'custom';
+};
+
 export type Portal = {
   colorScheme?: 'toggle' | 'light' | 'dark';
   display: PortalDisplay;
+  hero: PortalHero;
   layout: PortalLayout;
   navigation: PortalNavigation;
   theme: PortalTheme;
