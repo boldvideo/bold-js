@@ -1,5 +1,15 @@
 # @boldvideo/bold-js
 
+## 1.14.0
+
+### Minor Changes
+
+- 4bfba45: Add Portal analytics and custom redirects support
+
+  - Add `analyticsProvider` and `analyticsId` fields to Portal type for Plausible, GA4, and Fathom integrations
+  - Add `customRedirects` field to Portal type for custom redirect configuration
+  - Export new types: `AnalyticsProvider`, `CustomRedirect`
+
 ## 1.13.0
 
 ### Minor Changes
