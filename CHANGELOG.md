@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.15.1
+
+### Patch Changes
+
+- d8a142c: Add `chatDisclaimer` field to Settings type for displaying custom disclaimer text in the chat interface.
+
 ## 1.15.0
 
 ### Minor Changes
