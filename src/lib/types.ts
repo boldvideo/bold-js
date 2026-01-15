@@ -211,6 +211,7 @@ export type Settings = {
   aiAvatar: string;
   aiName: string;
   aiGreeting?: string;
+  chatDisclaimer?: string;
   hasAi: boolean;
 
   account: Account;
