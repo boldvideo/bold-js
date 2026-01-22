@@ -2,6 +2,12 @@
 
 > TypeScript client for the Bold Video API. Fetch videos, playlists, settings. Stream AI responses. Track analytics.
 
+## Installation
+
+```bash
+npm install @boldvideo/bold-js
+```
+
 ## Quick Start
 
 ```typescript
@@ -9,53 +15,86 @@ import { createClient } from '@boldvideo/bold-js';
 
 const bold = createClient('your-api-key');
 
-// Fetch videos
-const videos = await bold.videos.list();
-const video = await bold.videos.get('video-id');
+// Content methods return { data: T }
+const { data: videos } = await bold.videos.list();
+const { data: video } = await bold.videos.get('video-id-or-slug');
 
-// AI-powered recommendations
-const recs = await bold.ai.recommendations({ topics: ['sales', 'negotiation'], stream: false });
-console.log(recs.guidance);
-
-// AI streaming
+// AI streaming (default)
 const stream = await bold.ai.chat({ prompt: 'How do I price my SaaS?' });
 for await (const event of stream) {
-  if (event.type === 'text_delta') process.stdout.write(event.delta);
+  switch (event.type) {
+    case 'text_delta': process.stdout.write(event.delta); break;
+    case 'sources': console.log('Found:', event.sources.length); break;
+    case 'message_complete': console.log('Done:', event.conversationId); break;
+    case 'error': console.error(event.message); break;
+  }
+}
+
+// AI non-streaming
+const response = await bold.ai.recommendations({
+  topics: ['sales', 'negotiation'],
+  stream: false
+});
+console.log(response.guidance);
+```
+
+## Client Configuration
+
+```typescript
+createClient(apiKey: string, options?: ClientOptions)
+
+interface ClientOptions {
+  baseURL?: string;                  // Default: 'https://app.boldvideo.io/api/v1/'
+  debug?: boolean;                   // Log requests (default: false)
+  headers?: Record<string, string>;  // Additional headers
 }
 ```
 
-## API Reference
+## Content Methods
 
-### Client
+All content methods return `Promise<{ data: T }>`.
 
-- `createClient(apiKey, options?)` - Create SDK instance
-
-### Content
-
-- `bold.settings()` - Channel settings, menus, featured playlists
-- `bold.videos.list()` - List videos
-- `bold.videos.get(id)` - Get video by ID
+- `bold.settings(videoLimit?)` - Channel settings, menus, featured playlists
+- `bold.videos.list(limit?)` - List videos (default limit: 12)
+- `bold.videos.get(id)` - Get video by ID or slug
 - `bold.videos.search(query)` - Search videos
 - `bold.playlists.list()` - List playlists
-- `bold.playlists.get(id)` - Get playlist by ID
+- `bold.playlists.get(id)` - Get playlist with videos
 
-### AI Methods
+## AI Methods
 
 All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIResponse>` (non-streaming).
+Default is streaming (`stream: true`).
 
-- `bold.ai.chat(options)` - Conversational AI for Q&A (pass `videoId` to scope to a video)
-- `bold.ai.search(options)` - Semantic search with synthesis
-- `bold.ai.recommendations(options)` - AI-powered video recommendations based on topics
+- `bold.ai.chat(options: ChatOptions)` - Conversational Q&A (library-wide or video-scoped)
+- `bold.ai.search(options: SearchOptions)` - Semantic search with AI summary
+- `bold.ai.recommendations(options: RecommendationsOptions)` - Topic-based video recommendations
+- `bold.ai.getConversation(id: string)` - Retrieve conversation history by ID
 
-**Deprecated aliases** (still work but will be removed):
-- `bold.ai.ask(options)` → use `chat()`
-- `bold.ai.coach(options)` → use `chat()`
-- `bold.ai.recommend(options)` → use `recommendations()`
+**Deprecated aliases** (still work):
+- `bold.ai.ask()` -> use `chat()`
+- `bold.ai.coach()` -> use `chat()`
+- `bold.ai.recommend()` -> use `recommendations()`
 
-### Analytics
+## AI Streaming Events
 
-- `bold.trackEvent(event)` - Track video events (play, pause, complete)
-- `bold.trackPageView(data)` - Track page views
+```typescript
+type AIEvent =
+  | { type: "message_start"; conversationId?: string; videoId?: string }
+  | { type: "sources"; sources: Segment[] }
+  | { type: "text_delta"; delta: string }
+  | { type: "recommendations"; recommendations: Recommendation[] }
+  | { type: "message_complete";
+      conversationId?: string;
+      content: string;
+      citations: Segment[];
+      responseType: "answer" | "clarification";
+      usage?: AIUsage;
+      context?: AIContextMessage[];
+      recommendations?: Recommendation[];
+      guidance?: string }
+  | { type: "error"; code: string; message: string; retryable: boolean }
+```
 
 ## AI Options
 
@@ -63,13 +102,13 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
 
 ```typescript
 {
-  prompt: string;             // Question to ask (required)
-  stream?: boolean;           // Default: true
-  videoId?: string;           // If set, scope to this video
-  currentTime?: number;       // Current playback position (with videoId)
-  conversationId?: string;    // Continue existing conversation
-  collectionId?: string;      // Filter to collection
-  tags?: string[];            // Filter by tags
+  prompt: string;              // Required
+  stream?: boolean;            // Default: true
+  videoId?: string;            // Scope to specific video
+  currentTime?: number;        // Playback position (with videoId)
+  conversationId?: string;     // Continue conversation
+  collectionId?: string;       // Filter to collection
+  tags?: string[];             // Filter by tags
 }
 ```
 
@@ -77,13 +116,13 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
 
 ```typescript
 {
-  prompt: string;             // Search query (required)
-  stream?: boolean;           // Default: true
-  limit?: number;             // Max results
-  collectionId?: string;      // Filter to collection
-  videoId?: string;           // Search within specific video
-  tags?: string[];            // Filter by tags
-  context?: AIContextMessage[]; // Conversation context
+  prompt: string;              // Required
+  stream?: boolean;            // Default: true
+  limit?: number;              // Max results
+  collectionId?: string;
+  videoId?: string;            // Search within video
+  tags?: string[];
+  context?: AIContextMessage[];
 }
 ```
 
@@ -91,26 +130,118 @@ All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIRespons
 
 ```typescript
 {
-  topics: string[];           // Topics to find content for (required)
-  stream?: boolean;           // Default: true
-  limit?: number;             // Max videos per topic (default: 5, max: 20)
-  collectionId?: string;      // Filter to collection
-  tags?: string[];            // Filter by tags
-  includeGuidance?: boolean;  // Include AI learning path narrative (default: true)
-  context?: AIContextMessage[]; // Previous conversation turns for follow-ups
+  topics: string[];            // Required (max: 10)
+  stream?: boolean;            // Default: true
+  limit?: number;              // Max per topic (default: 5, max: 20)
+  collectionId?: string;
+  tags?: string[];
+  includeGuidance?: boolean;   // Default: true
+  context?: AIContextMessage[];
 }
 ```
 
-## Types
+## Core Types
 
-Key types exported:
+### Video
 
-- `Video`, `Playlist`, `Settings`, `Portal`
-- `AIEvent`, `AIResponse`, `Source`, `AIUsage`
-- `ChatOptions`, `SearchOptions`
-- `RecommendationsOptions`, `RecommendationsResponse`, `Recommendation`, `RecommendationVideo`
+```typescript
+{
+  id: string;
+  slug?: string;
+  title: string;
+  description: string | null;
+  duration: number;
+  publishedAt: string;
+  playbackId: string;
+  streamUrl: string;
+  thumbnail: string;
+  tags?: string[];
+  metaData: { title: string; description: string; image: string | null };
+  chapters?: string;
+  attachments?: VideoAttachment[];
+  transcript?: { text: string; json: any };
+}
+```
 
-All response types use camelCase (e.g., `video.playbackId`, `video.publishedAt`, `settings.featuredPlaylists`, `source.videoId`).
+### Segment (for sources/citations)
+
+```typescript
+{
+  id: string;
+  videoId: string;
+  title: string;
+  text: string;              // Transcript excerpt
+  timestamp: number;         // Start seconds
+  timestampEnd: number;      // End seconds
+  playbackId: string;
+  speaker?: string;
+  cited?: boolean;
+}
+```
+
+### Recommendation
+
+```typescript
+{
+  topic: string;
+  videos: Array<{
+    videoId: string;
+    title: string;
+    playbackId: string;
+    relevance: number;
+    reason: string;
+  }>;
+}
+```
+
+### Other types exported
+
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`
+
+## Error Handling
+
+### HTTP Errors
+
+SDK throws on non-2xx responses:
+- 401: Invalid API key
+- 403: Forbidden (check permissions)
+- 429: Rate limited (retry with backoff)
+- 500: Server error (retry)
+
+```typescript
+try {
+  const { data } = await bold.videos.list();
+} catch (error) {
+  if (error.response?.status === 401) {
+    console.error('Invalid API key');
+  }
+}
+```
+
+### Streaming Errors
+
+Handle error events in stream:
+
+```typescript
+for await (const event of stream) {
+  if (event.type === 'error') {
+    console.error(`[${event.code}] ${event.message}`);
+    if (event.retryable) { /* retry logic */ }
+  }
+}
+```
+
+## Analytics (Browser Only)
+
+These methods require browser globals (`window`, `document`, `navigator`).
+Do not use in Node.js.
+
+- `bold.trackEvent(video, event)` - Track video playback
+  - `video`: `{ id, title, duration }`
+  - `event`: DOM Event (`play`, `pause`, `timeupdate`, `loadedmetadata`)
+  - Note: `timeupdate` throttled to 5 seconds
+
+- `bold.trackPageView(title: string)` - Track page views
 
 ## Links
 

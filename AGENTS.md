@@ -134,6 +134,7 @@ bold.trackPageView()      // Track page views
 - Follow existing patterns in the codebase
 - Run `pnpm run lint` before committing
 - Keep the SDK lightweight (minimal dependencies)
+- **Keep `llms.txt` up to date** when adding/changing public API methods or types
 
 **Ask first:**
 - Adding new dependencies
