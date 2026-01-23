@@ -44,4 +44,8 @@ export type {
   Conversation,
   ConversationMessage,
   ConversationMetadata,
+  // Viewers API
+  Viewer,
+  ViewerProgress,
+  ListProgressOptions,
 } from "./lib/types";

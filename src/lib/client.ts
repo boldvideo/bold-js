@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
+import { fetchViewers, fetchViewer, createViewer, updateViewer, fetchViewerProgress, fetchProgress, saveProgress } from './viewers'
 import { trackEvent, trackPageView } from './tracking'
 import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
@@ -53,6 +54,15 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
     playlists: {
       list: fetchPlaylists(apiClient),
       get: fetchPlaylist(apiClient),
+    },
+    viewers: {
+      list: fetchViewers(apiClient),
+      get: fetchViewer(apiClient),
+      create: createViewer(apiClient),
+      update: updateViewer(apiClient),
+      listProgress: fetchViewerProgress(apiClient),
+      getProgress: fetchProgress(apiClient),
+      saveProgress: saveProgress(apiClient),
     },
     ai: createAI(aiConfig),
     trackEvent: trackEvent(apiClient, userId, { debug }),

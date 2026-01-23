@@ -439,3 +439,50 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// Viewers API Types
+// ============================================
+
+/**
+ * Viewer represents an external user from a course platform
+ */
+export type Viewer = {
+  id: string;
+  name: string;
+  email?: string;
+  externalId?: string;
+  /** Key-value metadata. Keys must start with letter/underscore, contain only alphanumeric/underscore */
+  traits?: Record<string, unknown>;
+  insertedAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Progress record for a viewer-video pair
+ */
+export type ViewerProgress = {
+  id: string;
+  viewerId: string;
+  videoId: string;
+  /** Current playback position in seconds */
+  currentTime: number;
+  /** Total video duration in seconds */
+  duration: number;
+  /** Calculated: (currentTime / duration) * 100 */
+  percentage: number;
+  completed: boolean;
+  completedAt?: string;
+  insertedAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Options for listing viewer progress
+ */
+export type ListProgressOptions = {
+  /** Filter by completion status */
+  completed?: boolean;
+  /** Filter to videos in a specific collection */
+  collectionId?: string;
+};
