@@ -63,7 +63,7 @@ All content methods return `Promise<{ data: T }>`.
 
 ## Viewers API
 
-Manage external users and track video progress. Returns `Promise<{ viewer: Viewer }>` or `Promise<{ viewers: Viewer[] }>`.
+Manage external users and track video progress. Returns `Promise<{ data: T }>` (consistent with other SDK methods).
 
 ### Viewer CRUD
 
@@ -82,9 +82,9 @@ Manage external users and track video progress. Returns `Promise<{ viewer: Viewe
 
 ```typescript
 // Example: Course platform integration
-const { viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
+const { data: viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
 await bold.viewers.saveProgress(viewer.id, 'video-id', { currentTime: 120, duration: 600 });
-const { progress, meta } = await bold.viewers.listProgress(viewer.id, { collectionId: 'course-id' });
+const { data: progress, meta } = await bold.viewers.listProgress(viewer.id, { collectionId: 'course-id' });
 console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 ```
 

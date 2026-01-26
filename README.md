@@ -109,7 +109,7 @@ Manage external users and track their video watch progress. Ideal for course pla
 
 ```typescript
 // Create a viewer (e.g., when user signs up)
-const { viewer } = await bold.viewers.create({
+const { data: viewer } = await bold.viewers.create({
   name: 'John Doe',
   externalId: 'user_123',  // Your platform's user ID
   email: 'john@example.com',
@@ -117,10 +117,10 @@ const { viewer } = await bold.viewers.create({
 });
 
 // Find viewer by external ID (common for syncing users)
-const { viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
+const { data: viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
 
 // Or find by email
-const { viewer } = await bold.viewers.lookup({ email: 'john@example.com' });
+const { data: viewer } = await bold.viewers.lookup({ email: 'john@example.com' });
 
 // Update viewer
 await bold.viewers.update(viewer.id, { 
@@ -128,7 +128,7 @@ await bold.viewers.update(viewer.id, {
 });
 
 // List all viewers
-const { viewers } = await bold.viewers.list();
+const { data: viewers } = await bold.viewers.list();
 ```
 
 ### Progress Tracking
@@ -147,11 +147,11 @@ await bold.viewers.saveProgress(viewerId, videoId, {
 });
 
 // Get progress for a specific video
-const { progress } = await bold.viewers.getProgress(viewerId, videoId);
+const { data: progress } = await bold.viewers.getProgress(viewerId, videoId);
 console.log(`${progress.percentage}% complete`);
 
 // List all progress for a viewer (e.g., for a course dashboard)
-const { progress, meta } = await bold.viewers.listProgress(viewerId, {
+const { data: progress, meta } = await bold.viewers.listProgress(viewerId, {
   collectionId: 'course-collection-id',  // Filter to a course
   completed: false  // Only in-progress videos
 });

@@ -1,6 +1,14 @@
 import { AxiosInstance, AxiosError } from "axios";
 import { camelizeKeys, type CamelizeOptions } from "../util/camelize";
-import type { Viewer, ViewerProgress, ListProgressOptions } from "./types";
+import type {
+  Viewer,
+  ViewerProgress,
+  ListProgressOptions,
+  CreateViewerData,
+  UpdateViewerData,
+  SaveProgressData,
+  ProgressListMeta,
+} from "./types";
 
 type ApiClient = AxiosInstance;
 
@@ -58,14 +66,14 @@ async function patch<T>(client: ApiClient, url: string, data: Record<string, unk
 
 export function fetchViewers(client: ApiClient) {
   return async () => {
-    return get<{ viewers: Viewer[] }>(client, 'viewers', VIEWER_CAMELIZE_OPTIONS);
+    return get<{ data: Viewer[] }>(client, 'viewers', VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
 export function fetchViewer(client: ApiClient) {
   return async (id: string) => {
     if (!id) throw new Error('Viewer ID is required');
-    return get<{ viewer: Viewer }>(client, `viewers/${id}`, VIEWER_CAMELIZE_OPTIONS);
+    return get<{ data: Viewer }>(client, `viewers/${id}`, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
@@ -85,14 +93,14 @@ export function lookupViewer(client: ApiClient) {
     if (!qs.toString()) {
       throw new Error('Either externalId or email is required');
     }
-    return get<{ viewer: Viewer }>(client, `viewers/lookup?${qs.toString()}`, VIEWER_CAMELIZE_OPTIONS);
+    return get<{ data: Viewer }>(client, `viewers/lookup?${qs.toString()}`, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
 export function createViewer(client: ApiClient) {
-  return async (data: { name: string; email?: string; externalId?: string; traits?: Record<string, unknown> }) => {
+  return async (data: CreateViewerData) => {
     if (!data.name) throw new Error('Viewer name is required');
-    return post<{ viewer: Viewer }>(client, 'viewers', {
+    return post<{ data: Viewer }>(client, 'viewers', {
       viewer: {
         name: data.name,
         email: data.email,
@@ -104,14 +112,14 @@ export function createViewer(client: ApiClient) {
 }
 
 export function updateViewer(client: ApiClient) {
-  return async (id: string, data: { name?: string; email?: string; externalId?: string; traits?: Record<string, unknown> }) => {
+  return async (id: string, data: UpdateViewerData) => {
     if (!id) throw new Error('Viewer ID is required');
     const body: Record<string, unknown> = {};
     if (data.name !== undefined) body.name = data.name;
     if (data.email !== undefined) body.email = data.email;
     if (data.externalId !== undefined) body.external_id = data.externalId;
     if (data.traits !== undefined) body.traits = data.traits;
-    return patch<{ viewer: Viewer }>(client, `viewers/${id}`, { viewer: body }, VIEWER_CAMELIZE_OPTIONS);
+    return patch<{ data: Viewer }>(client, `viewers/${id}`, { viewer: body }, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
@@ -125,7 +133,7 @@ export function fetchViewerProgress(client: ApiClient) {
     if (options?.collectionId) params.set('collection_id', options.collectionId);
     const query = params.toString();
     const url = query ? `viewers/${viewerId}/progress?${query}` : `viewers/${viewerId}/progress`;
-    return get<{ progress: ViewerProgress[]; meta: { total: number; completed: number; inProgress: number } }>(client, url);
+    return get<{ data: ViewerProgress[]; meta: ProgressListMeta }>(client, url);
   };
 }
 
@@ -133,17 +141,21 @@ export function fetchProgress(client: ApiClient) {
   return async (viewerId: string, videoId: string) => {
     if (!viewerId) throw new Error('Viewer ID is required');
     if (!videoId) throw new Error('Video ID is required');
-    return get<{ progress: ViewerProgress }>(client, `viewers/${viewerId}/progress/${videoId}`);
+    return get<{ data: ViewerProgress }>(client, `viewers/${viewerId}/progress/${videoId}`);
   };
 }
 
 export function saveProgress(client: ApiClient) {
-  return async (viewerId: string, videoId: string, data: { currentTime: number; duration: number }) => {
+  return async (viewerId: string, videoId: string, data: SaveProgressData) => {
     if (!viewerId) throw new Error('Viewer ID is required');
     if (!videoId) throw new Error('Video ID is required');
-    if (data.currentTime === undefined) throw new Error('currentTime is required');
-    if (data.duration === undefined) throw new Error('duration is required');
-    return post<{ progress: ViewerProgress }>(client, `viewers/${viewerId}/progress/${videoId}`, {
+    if (!Number.isFinite(data.currentTime) || data.currentTime < 0) {
+      throw new Error('currentTime must be a non-negative number');
+    }
+    if (!Number.isFinite(data.duration) || data.duration <= 0) {
+      throw new Error('duration must be a positive number');
+    }
+    return post<{ data: ViewerProgress }>(client, `viewers/${viewerId}/progress/${videoId}`, {
       progress: {
         current_time: data.currentTime,
         duration: data.duration,

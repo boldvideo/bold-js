@@ -48,6 +48,10 @@ export type {
   Viewer,
   ViewerProgress,
   ListProgressOptions,
+  CreateViewerData,
+  UpdateViewerData,
+  SaveProgressData,
+  ProgressListMeta,
 } from "./lib/types";
 
 export type { ViewerLookupParams } from "./lib/viewers";
