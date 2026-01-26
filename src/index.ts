@@ -44,4 +44,15 @@ export type {
   Conversation,
   ConversationMessage,
   ConversationMetadata,
+  // Viewers API
+  Viewer,
+  ViewerProgress,
+  ListProgressOptions,
+  CreateViewerData,
+  UpdateViewerData,
+  SaveProgressData,
+  ProgressListMeta,
 } from "./lib/types";
+
+export type { ViewerLookupParams } from "./lib/viewers";
+export { ViewerAPIError } from "./lib/viewers";

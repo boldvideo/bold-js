@@ -101,6 +101,65 @@ settings.menuItems.forEach(item => {
 
 ---
 
+## Viewers API
+
+Manage external users and track their video watch progress. Ideal for course platforms integrating with Bold Video.
+
+### Viewer Management
+
+```typescript
+// Create a viewer (e.g., when user signs up)
+const { data: viewer } = await bold.viewers.create({
+  name: 'John Doe',
+  externalId: 'user_123',  // Your platform's user ID
+  email: 'john@example.com',
+  traits: { plan: 'pro', company_name: 'Acme Inc' }
+});
+
+// Find viewer by external ID (common for syncing users)
+const { data: viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
+
+// Or find by email
+const { data: viewer } = await bold.viewers.lookup({ email: 'john@example.com' });
+
+// Update viewer
+await bold.viewers.update(viewer.id, { 
+  traits: { plan: 'enterprise' }  // Note: traits are replaced, not merged
+});
+
+// List all viewers
+const { data: viewers } = await bold.viewers.list();
+```
+
+### Progress Tracking
+
+```typescript
+// Save progress as video plays (call every 5-10 seconds)
+await bold.viewers.saveProgress(viewerId, videoId, {
+  currentTime: 120,  // seconds
+  duration: 600      // total video duration
+});
+
+// Mark video complete by setting currentTime = duration
+await bold.viewers.saveProgress(viewerId, videoId, {
+  currentTime: 600,
+  duration: 600
+});
+
+// Get progress for a specific video
+const { data: progress } = await bold.viewers.getProgress(viewerId, videoId);
+console.log(`${progress.percentage}% complete`);
+
+// List all progress for a viewer (e.g., for a course dashboard)
+const { data: progress, meta } = await bold.viewers.listProgress(viewerId, {
+  collectionId: 'course-collection-id',  // Filter to a course
+  completed: false  // Only in-progress videos
+});
+console.log(`Completed ${meta.completed} of ${meta.total} videos`);
+```
+
+---
+
 ## AI Methods
 
 All AI methods support both streaming (default) and non-streaming modes.
@@ -294,7 +353,11 @@ import type {
   Recommendation,
   Conversation,
   ConversationMessage,
-  Source
+  Source,
+  Viewer,
+  ViewerProgress,
+  ViewerLookupParams,
+  ListProgressOptions
 } from '@boldvideo/bold-js';
 ```
 

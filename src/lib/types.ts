@@ -439,3 +439,97 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
 }
+
+// ============================================
+// Viewers API Types
+// ============================================
+
+/**
+ * Viewer represents an external user from a course platform
+ */
+export type Viewer = {
+  id: string;
+  name: string;
+  email?: string;
+  externalId?: string;
+  /** Key-value metadata. Keys must start with letter/underscore, contain only alphanumeric/underscore */
+  traits?: Record<string, unknown>;
+  insertedAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Progress record for a viewer-video pair
+ */
+export type ViewerProgress = {
+  id: string;
+  viewerId: string;
+  videoId: string;
+  /** Current playback position in seconds */
+  currentTime: number;
+  /** Total video duration in seconds */
+  duration: number;
+  /** Calculated: (currentTime / duration) * 100 */
+  percentage: number;
+  completed: boolean;
+  completedAt?: string;
+  insertedAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Options for listing viewer progress
+ */
+export type ListProgressOptions = {
+  /** Filter by completion status */
+  completed?: boolean;
+  /** Filter to videos in a specific collection */
+  collectionId?: string;
+};
+
+/**
+ * Data for creating a new viewer
+ */
+export type CreateViewerData = {
+  /** Display name (required) */
+  name: string;
+  /** Email address for lookup */
+  email?: string;
+  /** Your platform's user ID for lookup */
+  externalId?: string;
+  /** Key-value metadata. Keys must start with letter/underscore, contain only alphanumeric/underscore */
+  traits?: Record<string, unknown>;
+};
+
+/**
+ * Data for updating an existing viewer
+ */
+export type UpdateViewerData = {
+  name?: string;
+  email?: string;
+  externalId?: string;
+  /** Note: traits are replaced entirely, not merged */
+  traits?: Record<string, unknown>;
+};
+
+/**
+ * Data for saving video progress
+ */
+export type SaveProgressData = {
+  /** Current playback position in seconds (must be non-negative) */
+  currentTime: number;
+  /** Total video duration in seconds (must be positive) */
+  duration: number;
+};
+
+/**
+ * Metadata returned with progress list
+ */
+export type ProgressListMeta = {
+  /** Total number of progress records */
+  total: number;
+  /** Number of completed videos */
+  completed: number;
+  /** Number of in-progress videos */
+  inProgress: number;
+};
