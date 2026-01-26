@@ -49,3 +49,6 @@ export type {
   ViewerProgress,
   ListProgressOptions,
 } from "./lib/types";
+
+export type { ViewerLookupParams } from "./lib/viewers";
+export { ViewerAPIError } from "./lib/viewers";

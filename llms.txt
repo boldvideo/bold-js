@@ -61,6 +61,33 @@ All content methods return `Promise<{ data: T }>`.
 - `bold.playlists.list()` - List playlists
 - `bold.playlists.get(id)` - Get playlist with videos
 
+## Viewers API
+
+Manage external users and track video progress. Returns `Promise<{ viewer: Viewer }>` or `Promise<{ viewers: Viewer[] }>`.
+
+### Viewer CRUD
+
+- `bold.viewers.list()` - List all viewers
+- `bold.viewers.get(id)` - Get viewer by UUID
+- `bold.viewers.lookup({ externalId })` - Find viewer by external ID
+- `bold.viewers.lookup({ email })` - Find viewer by email
+- `bold.viewers.create({ name, email?, externalId?, traits? })` - Create viewer
+- `bold.viewers.update(id, { name?, email?, externalId?, traits? })` - Update viewer (traits replaced, not merged)
+
+### Progress Tracking
+
+- `bold.viewers.listProgress(viewerId, { completed?, collectionId? }?)` - List progress records
+- `bold.viewers.getProgress(viewerId, videoId)` - Get progress for specific video
+- `bold.viewers.saveProgress(viewerId, videoId, { currentTime, duration })` - Upsert progress
+
+```typescript
+// Example: Course platform integration
+const { viewer } = await bold.viewers.lookup({ externalId: 'user_123' });
+await bold.viewers.saveProgress(viewer.id, 'video-id', { currentTime: 120, duration: 600 });
+const { progress, meta } = await bold.viewers.listProgress(viewer.id, { collectionId: 'course-id' });
+console.log(`Completed ${meta.completed} of ${meta.total} videos`);
+```
+
 ## AI Methods
 
 All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIResponse>` (non-streaming).
@@ -194,9 +221,40 @@ type AIEvent =
 }
 ```
 
+### Viewer
+
+```typescript
+{
+  id: string;
+  name: string;
+  email?: string;
+  externalId?: string;
+  traits?: Record<string, unknown>;  // User-defined metadata (keys preserved as-is)
+  insertedAt: string;
+  updatedAt: string;
+}
+```
+
+### ViewerProgress
+
+```typescript
+{
+  id: string;
+  viewerId: string;
+  videoId: string;
+  currentTime: number;     // Playback position in seconds
+  duration: number;        // Video duration in seconds
+  percentage: number;      // 0-100
+  completed: boolean;
+  completedAt?: string;
+  insertedAt: string;
+  updatedAt: string;
+}
+```
+
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`
 
 ## Error Handling
 

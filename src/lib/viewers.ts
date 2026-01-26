@@ -1,37 +1,56 @@
-import { AxiosInstance } from "axios";
-import { camelizeKeys } from "../util/camelize";
+import { AxiosInstance, AxiosError } from "axios";
+import { camelizeKeys, type CamelizeOptions } from "../util/camelize";
 import type { Viewer, ViewerProgress, ListProgressOptions } from "./types";
 
 type ApiClient = AxiosInstance;
 
-// Re-use the get helper pattern from fetchers.ts
-async function get<T>(client: ApiClient, url: string): Promise<T> {
+const VIEWER_CAMELIZE_OPTIONS: CamelizeOptions = { preserveKeys: ['traits'] };
+
+export class ViewerAPIError extends Error {
+  readonly status?: number;
+  readonly originalError?: Error;
+
+  constructor(method: string, url: string, error: unknown) {
+    if (error instanceof AxiosError) {
+      const status = error.response?.status;
+      const message = error.response?.data?.error || error.message;
+      super(`${method} ${url} failed (${status}): ${message}`);
+      this.status = status;
+      this.originalError = error;
+    } else if (error instanceof Error) {
+      super(`${method} ${url} failed: ${error.message}`);
+      this.originalError = error;
+    } else {
+      super(`${method} ${url} failed: ${String(error)}`);
+    }
+    this.name = 'ViewerAPIError';
+  }
+}
+
+async function get<T>(client: ApiClient, url: string, options?: CamelizeOptions): Promise<T> {
   try {
     const res = await client.get(url);
-    return camelizeKeys(res.data) as T;
+    return camelizeKeys(res.data, options) as T;
   } catch (error) {
-    console.error(`Error fetching from ${url}`, error);
-    throw error;
+    throw new ViewerAPIError('GET', url, error);
   }
 }
 
-async function post<T>(client: ApiClient, url: string, data?: Record<string, unknown>): Promise<T> {
+async function post<T>(client: ApiClient, url: string, data?: Record<string, unknown>, options?: CamelizeOptions): Promise<T> {
   try {
     const res = await client.post(url, data);
-    return camelizeKeys(res.data) as T;
+    return camelizeKeys(res.data, options) as T;
   } catch (error) {
-    console.error(`Error posting to ${url}`, error);
-    throw error;
+    throw new ViewerAPIError('POST', url, error);
   }
 }
 
-async function patch<T>(client: ApiClient, url: string, data: Record<string, unknown>): Promise<T> {
+async function patch<T>(client: ApiClient, url: string, data: Record<string, unknown>, options?: CamelizeOptions): Promise<T> {
   try {
     const res = await client.patch(url, data);
-    return camelizeKeys(res.data) as T;
+    return camelizeKeys(res.data, options) as T;
   } catch (error) {
-    console.error(`Error patching ${url}`, error);
-    throw error;
+    throw new ViewerAPIError('PATCH', url, error);
   }
 }
 
@@ -39,14 +58,34 @@ async function patch<T>(client: ApiClient, url: string, data: Record<string, unk
 
 export function fetchViewers(client: ApiClient) {
   return async () => {
-    return get<{ viewers: Viewer[] }>(client, 'viewers');
+    return get<{ viewers: Viewer[] }>(client, 'viewers', VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
 export function fetchViewer(client: ApiClient) {
   return async (id: string) => {
     if (!id) throw new Error('Viewer ID is required');
-    return get<{ viewer: Viewer }>(client, `viewers/${id}`);
+    return get<{ viewer: Viewer }>(client, `viewers/${id}`, VIEWER_CAMELIZE_OPTIONS);
+  };
+}
+
+export type ViewerLookupParams =
+  | { externalId: string; email?: never }
+  | { email: string; externalId?: never };
+
+export function lookupViewer(client: ApiClient) {
+  return async (params: ViewerLookupParams) => {
+    const qs = new URLSearchParams();
+    if ('externalId' in params && params.externalId) {
+      qs.set('external_id', params.externalId);
+    }
+    if ('email' in params && params.email) {
+      qs.set('email', params.email);
+    }
+    if (!qs.toString()) {
+      throw new Error('Either externalId or email is required');
+    }
+    return get<{ viewer: Viewer }>(client, `viewers/lookup?${qs.toString()}`, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
@@ -60,7 +99,7 @@ export function createViewer(client: ApiClient) {
         external_id: data.externalId,
         traits: data.traits,
       }
-    });
+    }, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
@@ -72,7 +111,7 @@ export function updateViewer(client: ApiClient) {
     if (data.email !== undefined) body.email = data.email;
     if (data.externalId !== undefined) body.external_id = data.externalId;
     if (data.traits !== undefined) body.traits = data.traits;
-    return patch<{ viewer: Viewer }>(client, `viewers/${id}`, { viewer: body });
+    return patch<{ viewer: Viewer }>(client, `viewers/${id}`, { viewer: body }, VIEWER_CAMELIZE_OPTIONS);
   };
 }
 
