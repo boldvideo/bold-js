@@ -59,8 +59,26 @@ console.log(recs.guidance);
 ### Videos
 
 ```typescript
-// List latest videos
+// List latest videos (default: 12)
 const videos = await bold.videos.list();
+
+// With limit (backwards compatible)
+const videos = await bold.videos.list(20);
+
+// With filters
+const videos = await bold.videos.list({ 
+  limit: 20,
+  tag: 'sales',
+  collectionId: 'col_123',
+  viewerId: 'viewer_123'  // Include watch progress
+});
+
+// Paginated index (uses /videos endpoint)
+const videos = await bold.videos.list({ 
+  page: 2,
+  tag: 'sales',
+  collectionId: 'col_123'
+});
 
 // Get a single video by ID or slug
 const video = await bold.videos.get('video-id');
@@ -357,7 +375,10 @@ import type {
   Viewer,
   ViewerProgress,
   ViewerLookupParams,
-  ListProgressOptions
+  ListProgressOptions,
+  ListVideosOptions,
+  ListVideosLatestOptions,
+  ListVideosIndexOptions
 } from '@boldvideo/bold-js';
 ```
 

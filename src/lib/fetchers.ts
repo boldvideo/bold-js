@@ -1,4 +1,4 @@
-import { Video, Playlist, Settings } from "./types";
+import { Video, Playlist, Settings, ListVideosOptions } from "./types";
 import { AxiosInstance } from "axios";
 import { camelizeKeys } from "../util/camelize";
 
@@ -7,6 +7,15 @@ type Response<T> = {
 };
 
 type ApiClient = AxiosInstance;
+
+function toQuery(params: Record<string, string | number | undefined>): string {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== undefined && v !== null) qs.set(k, String(v));
+  }
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+}
 
 async function get<TResponse>(
   client: ApiClient,
@@ -39,14 +48,53 @@ export function fetchSettings(client: ApiClient) {
 }
 
 export function fetchVideos(client: ApiClient) {
-  return async (videoLimit = 12) => {
+  return async (arg: number | ListVideosOptions = 12) => {
     try {
+      if (typeof arg === "number") {
+        return await get<Response<Video[]>>(
+          client,
+          `videos/latest${toQuery({ limit: arg })}`
+        );
+      }
+
+      const opts = arg as ListVideosOptions;
+      const hasPage = "page" in opts && opts.page !== undefined;
+
+      if (hasPage && ("limit" in opts || "viewerId" in opts)) {
+        throw new Error(
+          "videos.list(): cannot use `page` with `limit` or `viewerId` (these belong to different endpoints)"
+        );
+      }
+
+      if (hasPage) {
+        const { page, tag, collectionId } = opts as { page?: number; tag?: string; collectionId?: string };
+        return await get<Response<Video[]>>(
+          client,
+          `videos${toQuery({
+            page,
+            tag,
+            collection_id: collectionId,
+          })}`
+        );
+      }
+
+      const { limit, tag, collectionId, viewerId } = opts as {
+        limit?: number;
+        tag?: string;
+        collectionId?: string;
+        viewerId?: string;
+      };
       return await get<Response<Video[]>>(
         client,
-        `videos/latest?limit=${videoLimit}`
+        `videos/latest${toQuery({
+          limit: limit ?? 12,
+          tag,
+          collection_id: collectionId,
+          viewer_id: viewerId,
+        })}`
       );
     } catch (error) {
-      console.error(`Error fetching videos with limit: ${videoLimit}`, error);
+      console.error(`Error fetching videos`, error);
       throw error;
     }
   };

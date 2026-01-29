@@ -533,3 +533,45 @@ export type ProgressListMeta = {
   /** Number of in-progress videos */
   inProgress: number;
 };
+
+// ============================================
+// Video List Options
+// ============================================
+
+/**
+ * Options for listing videos from /videos/latest endpoint
+ */
+export type ListVideosLatestOptions = {
+  /** Max videos to return (default: 12) */
+  limit?: number;
+  /** Filter by tag */
+  tag?: string;
+  /** Filter to videos in a specific collection */
+  collectionId?: string;
+  /** Viewer UUID for watch progress */
+  viewerId?: string;
+};
+
+/**
+ * Options for listing videos from /videos (index) endpoint with pagination
+ */
+export type ListVideosIndexOptions = {
+  /** Page number for pagination */
+  page?: number;
+  /** Filter by tag */
+  tag?: string;
+  /** Filter to videos in a specific collection */
+  collectionId?: string;
+};
+
+/**
+ * Combined options for bold.videos.list()
+ * 
+ * If `page` is provided, uses /videos (index) endpoint.
+ * Otherwise, uses /videos/latest endpoint.
+ * 
+ * Note: `page` and `limit`/`viewerId` are mutually exclusive.
+ */
+export type ListVideosOptions =
+  | (ListVideosLatestOptions & { page?: never })
+  | (ListVideosIndexOptions & { limit?: never; viewerId?: never });

@@ -52,6 +52,10 @@ export type {
   UpdateViewerData,
   SaveProgressData,
   ProgressListMeta,
+  // Video list options
+  ListVideosOptions,
+  ListVideosLatestOptions,
+  ListVideosIndexOptions,
 } from "./lib/types";
 
 export type { ViewerLookupParams } from "./lib/viewers";

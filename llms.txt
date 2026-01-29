@@ -55,11 +55,34 @@ interface ClientOptions {
 All content methods return `Promise<{ data: T }>`.
 
 - `bold.settings(videoLimit?)` - Channel settings, menus, featured playlists
-- `bold.videos.list(limit?)` - List videos (default limit: 12)
+- `bold.videos.list()` - List latest videos (default limit: 12)
+- `bold.videos.list(limit)` - List with numeric limit (backwards compatible)
+- `bold.videos.list(options)` - List with full options (see ListVideosOptions)
 - `bold.videos.get(id)` - Get video by ID or slug
 - `bold.videos.search(query)` - Search videos
 - `bold.playlists.list()` - List playlists
 - `bold.playlists.get(id)` - Get playlist with videos
+
+### ListVideosOptions
+
+```typescript
+// For /videos/latest endpoint (default)
+{
+  limit?: number;           // Max videos (default: 12)
+  tag?: string;             // Filter by tag
+  collectionId?: string;    // Filter to collection
+  viewerId?: string;        // Include watch progress
+}
+
+// For /videos (index) endpoint - use when you need pagination
+{
+  page?: number;            // Page number
+  tag?: string;
+  collectionId?: string;
+}
+```
+
+Note: If `page` is provided, SDK uses `/videos` (index); otherwise uses `/videos/latest`.
 
 ## Viewers API
 
@@ -254,7 +277,7 @@ type AIEvent =
 
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`
 
 ## Error Handling
 
