@@ -56,7 +56,17 @@ export type {
   ListVideosOptions,
   ListVideosLatestOptions,
   ListVideosIndexOptions,
+  // Community API
+  Post,
+  PostAuthor,
+  Comment,
+  ReactionResponse,
+  ListPostsOptions,
+  CreatePostData,
+  UpdatePostData,
+  CreateCommentData,
 } from "./lib/types";
 
 export type { ViewerLookupParams } from "./lib/viewers";
 export { ViewerAPIError } from "./lib/viewers";
+export { CommunityAPIError } from "./lib/community";

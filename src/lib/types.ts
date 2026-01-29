@@ -575,3 +575,107 @@ export type ListVideosIndexOptions = {
 export type ListVideosOptions =
   | (ListVideosLatestOptions & { page?: never })
   | (ListVideosIndexOptions & { limit?: never; viewerId?: never });
+
+// ============================================
+// Community API Types
+// ============================================
+
+/**
+ * Author information for posts and comments
+ */
+export type PostAuthor = {
+  id: string;
+  name: string;
+  email?: string;
+  isAdmin: boolean;
+};
+
+/**
+ * A comment on a community post
+ */
+export type Comment = {
+  id: string;
+  content: string;
+  /** Nesting depth (0 = top-level) */
+  depth: number;
+  reactionsCount: number;
+  /** Whether current viewer has reacted (only present when X-Viewer-ID header sent) */
+  viewerReacted?: boolean;
+  viewer: PostAuthor;
+  /** Nested replies */
+  replies: Comment[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * A community post
+ */
+export type Post = {
+  id: string;
+  content: string;
+  category: string;
+  pinned: boolean;
+  pinnedAt?: string | null;
+  reactionsCount: number;
+  commentsCount: number;
+  /** Whether current viewer has reacted (only present when X-Viewer-ID header sent) */
+  viewerReacted?: boolean;
+  viewer: PostAuthor;
+  /** Comments (only present on single post fetch) */
+  comments?: Comment[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Response from react endpoints (toggle)
+ */
+export type ReactionResponse = {
+  reacted: boolean;
+  reactionsCount: number;
+};
+
+/**
+ * Options for listing community posts
+ */
+export type ListPostsOptions = {
+  /** Filter by category (e.g., "announcements", "general") */
+  category?: string;
+  /** Max posts to return (default: 20) */
+  limit?: number;
+  /** Pagination offset */
+  offset?: number;
+  /** Viewer ID to include viewerReacted in response */
+  viewerId?: string;
+};
+
+/**
+ * Data for creating a community post
+ */
+export type CreatePostData = {
+  /** Post content (supports markdown) */
+  content: string;
+  /** Category for the post */
+  category?: string;
+};
+
+/**
+ * Data for updating a community post
+ */
+export type UpdatePostData = {
+  /** Post content (supports markdown) */
+  content?: string;
+  /** Category for the post */
+  category?: string;
+};
+
+/**
+ * Data for creating a comment
+ */
+export type CreateCommentData = {
+  /** Comment content */
+  content: string;
+  /** Parent comment ID for replies */
+  parentId?: string;
+};

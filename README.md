@@ -178,6 +178,69 @@ console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 
 ---
 
+## Community API
+
+Build community features with posts, comments, and reactions. All write operations require a `viewerId` (the viewer performing the action).
+
+### Posts
+
+```typescript
+// List posts (optionally filter by category)
+const { data: posts } = await bold.community.posts.list({ 
+  category: 'announcements',
+  limit: 20,
+  offset: 0,
+  viewerId: 'viewer-uuid'  // Include viewerReacted in response
+});
+
+// Get a single post with comments
+const { data: post } = await bold.community.posts.get('post-id', 'viewer-uuid');
+
+// Create a post (requires viewerId)
+const { data: newPost } = await bold.community.posts.create('viewer-uuid', {
+  content: 'Hello community! **Markdown** supported.',
+  category: 'general'
+});
+
+// Update a post (owner or admin only)
+await bold.community.posts.update('viewer-uuid', 'post-id', {
+  content: 'Updated content'
+});
+
+// Delete a post (owner or admin only)
+await bold.community.posts.delete('viewer-uuid', 'post-id');
+
+// React to a post (toggle like/unlike)
+const reaction = await bold.community.posts.react('viewer-uuid', 'post-id');
+console.log(reaction.reacted, reaction.reactionsCount);
+```
+
+### Comments
+
+```typescript
+// Create a comment on a post
+const { data: comment } = await bold.community.comments.create(
+  'viewer-uuid',
+  'post-id',
+  { content: 'Great post!' }
+);
+
+// Reply to a comment (nested)
+const { data: reply } = await bold.community.comments.create(
+  'viewer-uuid',
+  'post-id',
+  { content: 'I agree!', parentId: 'parent-comment-id' }
+);
+
+// Delete a comment (owner or admin only)
+await bold.community.comments.delete('viewer-uuid', 'comment-id');
+
+// React to a comment (toggle)
+const reaction = await bold.community.comments.react('viewer-uuid', 'comment-id');
+```
+
+---
+
 ## AI Methods
 
 All AI methods support both streaming (default) and non-streaming modes.
@@ -378,7 +441,16 @@ import type {
   ListProgressOptions,
   ListVideosOptions,
   ListVideosLatestOptions,
-  ListVideosIndexOptions
+  ListVideosIndexOptions,
+  // Community API
+  Post,
+  PostAuthor,
+  Comment,
+  ReactionResponse,
+  ListPostsOptions,
+  CreatePostData,
+  UpdatePostData,
+  CreateCommentData
 } from '@boldvideo/bold-js';
 ```
 

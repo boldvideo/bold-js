@@ -111,6 +111,33 @@ const { data: progress, meta } = await bold.viewers.listProgress(viewer.id, { co
 console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 ```
 
+## Community API
+
+Build community features with posts, comments, and reactions. Write operations require `viewerId`.
+
+### Posts
+
+- `bold.community.posts.list(opts?)` - List posts with optional filters
+- `bold.community.posts.get(id, viewerId?)` - Get post with comments
+- `bold.community.posts.create(viewerId, data)` - Create a post
+- `bold.community.posts.update(viewerId, id, data)` - Update post (owner/admin)
+- `bold.community.posts.delete(viewerId, id)` - Delete post (owner/admin)
+- `bold.community.posts.react(viewerId, id)` - Toggle reaction
+
+### Comments
+
+- `bold.community.comments.create(viewerId, postId, data)` - Create comment
+- `bold.community.comments.delete(viewerId, id)` - Delete comment (owner/admin)
+- `bold.community.comments.react(viewerId, id)` - Toggle reaction
+
+```typescript
+// Example
+const { data: posts } = await bold.community.posts.list({ category: 'general', limit: 20 });
+await bold.community.posts.create(viewerId, { content: 'Hello!', category: 'general' });
+await bold.community.posts.react(viewerId, posts[0].id);
+await bold.community.comments.create(viewerId, posts[0].id, { content: 'Great post!' });
+```
+
 ## AI Methods
 
 All AI methods return `AsyncIterable<AIEvent>` (streaming) or `Promise<AIResponse>` (non-streaming).
@@ -275,9 +302,44 @@ type AIEvent =
 }
 ```
 
+### Post
+
+```typescript
+{
+  id: string;
+  content: string;             // Markdown content
+  category: string;
+  pinned: boolean;
+  pinnedAt?: string | null;
+  reactionsCount: number;
+  commentsCount: number;
+  viewerReacted?: boolean;     // Only with X-Viewer-ID
+  viewer: PostAuthor;
+  comments?: Comment[];        // Only on single post fetch
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### Comment
+
+```typescript
+{
+  id: string;
+  content: string;
+  depth: number;               // Nesting level (0 = top-level)
+  reactionsCount: number;
+  viewerReacted?: boolean;
+  viewer: PostAuthor;
+  replies: Comment[];          // Nested replies
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `CommunityAPIError`
 
 ## Error Handling
 
