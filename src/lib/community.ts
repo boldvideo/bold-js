@@ -8,6 +8,7 @@ import type {
   CreatePostData,
   UpdatePostData,
   CreateCommentData,
+  PaginatedResponse,
 } from "./types";
 
 type ApiClient = AxiosInstance;
@@ -110,16 +111,16 @@ async function del<T>(
 // --- Posts ---
 
 /**
- * List community posts with optional filters
+ * List community posts with optional filters and pagination
  */
 export function listPosts(client: ApiClient) {
-  return async (opts: ListPostsOptions = {}) => {
-    return get<{ data: Post[] }>(
+  return async (opts: ListPostsOptions = {}): Promise<PaginatedResponse<Post>> => {
+    return get<PaginatedResponse<Post>>(
       client,
       `community/posts${toQuery({
         category: opts.category,
-        limit: opts.limit,
-        offset: opts.offset,
+        page: opts.page,
+        page_size: opts.pageSize,
       })}`,
       opts.viewerId
     );

@@ -59,12 +59,19 @@ export type {
   // Community API
   Post,
   PostAuthor,
+  UserSummary,
+  ReactionSummary,
+  CommentSummary,
+  CommentThread,
+  Reply,
   Comment,
   ReactionResponse,
   ListPostsOptions,
   CreatePostData,
   UpdatePostData,
   CreateCommentData,
+  PaginationMeta,
+  PaginatedResponse,
 } from "./lib/types";
 
 export type { ViewerLookupParams } from "./lib/viewers";

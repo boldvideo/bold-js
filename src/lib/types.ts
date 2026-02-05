@@ -581,17 +581,69 @@ export type ListVideosOptions =
 // ============================================
 
 /**
- * Author information for posts and comments
+ * Minimal profile object for list contexts
  */
-export type PostAuthor = {
+export type UserSummary = {
   id: string;
   name: string;
-  email?: string;
-  isAdmin: boolean;
+  avatar_url: string | null;
 };
 
 /**
- * A comment on a community post
+ * Author information for posts and comments (extended for admin context)
+ */
+export type PostAuthor = UserSummary & {
+  email?: string;
+  isAdmin?: boolean;
+};
+
+/**
+ * Reaction summary with users who reacted
+ */
+export type ReactionSummary = {
+  count: number;
+  /** Users who reacted (capped to 10 from API) */
+  reacted_by: UserSummary[];
+  /** Present when viewer context exists */
+  viewer_has_reacted?: boolean;
+};
+
+/**
+ * Comment summary with users who commented
+ */
+export type CommentSummary = {
+  count: number;
+  /** Users who commented (capped to 10 from API) */
+  commented_by: UserSummary[];
+  /** Full comment threads (present in detail only) */
+  items?: CommentThread[];
+};
+
+/**
+ * A reply to a comment
+ */
+export type Reply = {
+  id: string;
+  content: string;
+  created_at: string;
+  author: UserSummary;
+  parent_comment_id: string;
+};
+
+/**
+ * A top-level comment with replies
+ */
+export type CommentThread = {
+  id: string;
+  content: string;
+  created_at: string;
+  author: UserSummary;
+  replies: Reply[];
+};
+
+/**
+ * @deprecated Use CommentThread instead
+ * A comment on a community post (legacy format)
  */
 export type Comment = {
   id: string;
@@ -601,7 +653,9 @@ export type Comment = {
   reactionsCount: number;
   /** Whether current viewer has reacted (only present when X-Viewer-ID header sent) */
   viewerReacted?: boolean;
+  /** @deprecated Use author instead */
   viewer: PostAuthor;
+  author: PostAuthor;
   /** Nested replies */
   replies: Comment[];
   createdAt: string;
@@ -609,23 +663,29 @@ export type Comment = {
 };
 
 /**
- * A community post
+ * A community post (list view)
  */
 export type Post = {
   id: string;
   content: string;
-  category: string;
-  pinned: boolean;
+  category?: string;
+  pinned?: boolean;
   pinnedAt?: string | null;
-  reactionsCount: number;
-  commentsCount: number;
-  /** Whether current viewer has reacted (only present when X-Viewer-ID header sent) */
+  created_at: string;
+  author: PostAuthor;
+  reactions: ReactionSummary;
+  comments: CommentSummary;
+  /** @deprecated Use created_at */
+  createdAt?: string;
+  /** @deprecated Use reactions.count */
+  reactionsCount?: number;
+  /** @deprecated Use comments.count */
+  commentsCount?: number;
+  /** @deprecated Use reactions.viewer_has_reacted */
   viewerReacted?: boolean;
-  viewer: PostAuthor;
-  /** Comments (only present on single post fetch) */
-  comments?: Comment[];
-  createdAt: string;
-  updatedAt: string;
+  /** @deprecated Use author */
+  viewer?: PostAuthor;
+  updatedAt?: string;
 };
 
 /**
@@ -637,16 +697,38 @@ export type ReactionResponse = {
 };
 
 /**
+ * Pagination metadata from API
+ */
+export type PaginationMeta = {
+  /** Current page (1-indexed) */
+  page: number;
+  /** Items per page */
+  page_size: number;
+  /** Total items across all pages */
+  total_entries: number;
+  /** Total number of pages */
+  total_pages: number;
+};
+
+/**
+ * Paginated response wrapper
+ */
+export type PaginatedResponse<T> = {
+  data: T[];
+  meta: PaginationMeta;
+};
+
+/**
  * Options for listing community posts
  */
 export type ListPostsOptions = {
   /** Filter by category (e.g., "announcements", "general") */
   category?: string;
-  /** Max posts to return (default: 20) */
-  limit?: number;
-  /** Pagination offset */
-  offset?: number;
-  /** Viewer ID to include viewerReacted in response */
+  /** Page number (1-indexed, default: 1) */
+  page?: number;
+  /** Items per page (default: 20, max: 100) */
+  pageSize?: number;
+  /** Viewer ID to include viewer_has_reacted in response */
   viewerId?: string;
 };
 

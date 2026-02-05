@@ -117,8 +117,8 @@ Build community features with posts, comments, and reactions. Write operations r
 
 ### Posts
 
-- `bold.community.posts.list(opts?)` - List posts with optional filters
-- `bold.community.posts.get(id, viewerId?)` - Get post with comments
+- `bold.community.posts.list(opts?)` - List posts with pagination (returns `PaginatedResponse<Post>`)
+- `bold.community.posts.get(id, viewerId?)` - Get post with full comments
 - `bold.community.posts.create(viewerId, data)` - Create a post
 - `bold.community.posts.update(viewerId, id, data)` - Update post (owner/admin)
 - `bold.community.posts.delete(viewerId, id)` - Delete post (owner/admin)
@@ -131,11 +131,21 @@ Build community features with posts, comments, and reactions. Write operations r
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
 
 ```typescript
-// Example
-const { data: posts } = await bold.community.posts.list({ category: 'general', limit: 20 });
+// Example: List posts with pagination
+const response = await bold.community.posts.list({ page: 1, pageSize: 20, viewerId });
+// response.data = Post[]
+// response.meta = { page, page_size, total_entries, total_pages }
+
+// Access users who reacted/commented (for avatar display)
+const post = response.data[0];
+post.reactions.reacted_by;      // UserSummary[] (up to 10)
+post.comments.commented_by;     // UserSummary[] (up to 10)
+post.reactions.viewer_has_reacted; // boolean (when viewerId provided)
+
+// Create and interact
 await bold.community.posts.create(viewerId, { content: 'Hello!', category: 'general' });
-await bold.community.posts.react(viewerId, posts[0].id);
-await bold.community.comments.create(viewerId, posts[0].id, { content: 'Great post!' });
+await bold.community.posts.react(viewerId, post.id);
+await bold.community.comments.create(viewerId, post.id, { content: 'Great post!' });
 ```
 
 ## AI Methods
@@ -302,44 +312,94 @@ type AIEvent =
 }
 ```
 
+### UserSummary
+
+```typescript
+{
+  id: string;
+  name: string;
+  avatar_url: string | null;
+}
+```
+
 ### Post
 
 ```typescript
 {
   id: string;
   content: string;             // Markdown content
-  category: string;
-  pinned: boolean;
+  created_at: string;
+  author: PostAuthor;          // Creator of the post
+  reactions: ReactionSummary;  // { count, reacted_by, viewer_has_reacted? }
+  comments: CommentSummary;    // { count, commented_by, items? }
+  category?: string;
+  pinned?: boolean;
   pinnedAt?: string | null;
-  reactionsCount: number;
-  commentsCount: number;
-  viewerReacted?: boolean;     // Only with X-Viewer-ID
-  viewer: PostAuthor;
-  comments?: Comment[];        // Only on single post fetch
-  createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 ```
 
-### Comment
+### ReactionSummary
+
+```typescript
+{
+  count: number;
+  reacted_by: UserSummary[];       // Capped to 10 from API
+  viewer_has_reacted?: boolean;    // Present when viewerId provided
+}
+```
+
+### CommentSummary
+
+```typescript
+{
+  count: number;
+  commented_by: UserSummary[];     // Capped to 10 from API
+  items?: CommentThread[];         // Full threads (detail view only)
+}
+```
+
+### CommentThread
 
 ```typescript
 {
   id: string;
   content: string;
-  depth: number;               // Nesting level (0 = top-level)
-  reactionsCount: number;
-  viewerReacted?: boolean;
-  viewer: PostAuthor;
-  replies: Comment[];          // Nested replies
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  author: UserSummary;
+  replies: Reply[];                // Nested replies
+}
+```
+
+### Reply
+
+```typescript
+{
+  id: string;
+  content: string;
+  created_at: string;
+  author: UserSummary;
+  parent_comment_id: string;
+}
+```
+
+### PaginatedResponse<T>
+
+```typescript
+{
+  data: T[];
+  meta: {
+    page: number;              // Current page (1-indexed)
+    page_size: number;
+    total_entries: number;
+    total_pages: number;
+  };
 }
 ```
 
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `CommunityAPIError`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `CommunityAPIError`
 
 ## Error Handling
 
