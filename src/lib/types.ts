@@ -277,6 +277,7 @@ export interface AIUsage {
  */
 export type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
+  | { type: "progress"; stage: string; message: string }
   | { type: "sources"; sources: Segment[] }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
