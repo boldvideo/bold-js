@@ -35,11 +35,14 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
       // Keep incomplete chunk in buffer only if stream is still open
       buffer = done ? '' : (lines.pop() || '');
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith('data:')) continue;
+      for (const block of lines) {
+        if (!block.trim()) continue;
 
-        const json = trimmed.slice(5).trim();
+        const blockLines = block.split(/\r?\n/);
+        const dataLine = blockLines.find(l => l.trim().startsWith('data:'));
+        if (!dataLine) continue;
+
+        const json = dataLine.trim().slice(5).trim();
         if (!json) continue;
 
         try {
