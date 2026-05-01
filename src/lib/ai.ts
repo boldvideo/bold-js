@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation } from './types';
+import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 
 export interface AIConfig {
@@ -189,6 +189,140 @@ async function getRequest<T>(
 }
 
 /**
+ * Encode a Blob to a raw base64 string (no data URL prefix).
+ * Isomorphic: prefers FileReader.readAsDataURL when available, falls back to
+ * arrayBuffer() + btoa() for environments without FileReader (Node, Deno, edge).
+ */
+async function blobToBase64(blob: Blob): Promise<string> {
+  if (typeof FileReader !== 'undefined') {
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        if (typeof result !== 'string') {
+          reject(new Error('FileReader did not produce a string result'));
+          return;
+        }
+        const commaIdx = result.indexOf(',');
+        resolve(commaIdx >= 0 ? result.slice(commaIdx + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error ?? new Error('FileReader error'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  // Avoid `String.fromCharCode(...bytes)` — splat blows up for large buffers.
+  const CHUNK = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode.apply(
+      null,
+      Array.from(bytes.subarray(i, i + CHUNK)) as number[],
+    );
+  }
+  if (typeof btoa === 'undefined') {
+    throw new Error('Cannot encode image: neither FileReader nor btoa is available');
+  }
+  return btoa(binary);
+}
+
+/**
+ * Normalize an ImageInput to the snake_case wire shape the server expects.
+ * Pre-encoded items are renamed in place; File/Blob are encoded via blobToBase64.
+ */
+async function encodeImageInput(
+  img: ImageInput,
+): Promise<{ type: 'base64'; media_type: string; data: string }> {
+  if (!(img instanceof Blob) && typeof img === 'object' && 'mediaType' in img) {
+    return { type: 'base64', media_type: img.mediaType, data: img.data };
+  }
+  // File | Blob
+  const blob = img as Blob;
+  const mediaType = blob.type || 'image/png';
+  const data = await blobToBase64(blob);
+  return { type: 'base64', media_type: mediaType, data };
+}
+
+/**
+ * Convert a File or Blob into an ImageInput ready to drop into `images: [...]`.
+ * Returns the camelCase shape (`mediaType`); the wire rename happens during
+ * request building.
+ */
+async function imageFromFile(file: File | Blob): Promise<ImageInput> {
+  const mediaType = file.type || 'image/png';
+  const data = await blobToBase64(file);
+  return { type: 'base64', mediaType, data };
+}
+
+type CanvasLike =
+  | HTMLCanvasElement
+  | OffscreenCanvas
+  | {
+      toBlob?: (cb: (b: Blob | null) => void, type?: string, quality?: number) => void;
+      convertToBlob?: (options?: { type?: string; quality?: number }) => Promise<Blob>;
+    };
+
+/**
+ * Convert a canvas (HTMLCanvasElement, OffscreenCanvas, or any object exposing
+ * toBlob / convertToBlob) to an ImageInput.
+ */
+async function imageFromCanvas(
+  canvas: CanvasLike,
+  options?: { type?: string; quality?: number },
+): Promise<ImageInput> {
+  const type = options?.type ?? 'image/png';
+  const quality = options?.quality;
+
+  const c = canvas as {
+    toBlob?: (cb: (b: Blob | null) => void, type?: string, quality?: number) => void;
+    convertToBlob?: (o?: { type?: string; quality?: number }) => Promise<Blob>;
+  };
+
+  let blob: Blob | null;
+  if (typeof c.convertToBlob === 'function') {
+    blob = await c.convertToBlob({ type, quality });
+  } else if (typeof c.toBlob === 'function') {
+    blob = await new Promise<Blob | null>((resolve) =>
+      c.toBlob!((b) => resolve(b), type, quality),
+    );
+  } else {
+    throw new TypeError(
+      'imageFromCanvas: canvas must expose toBlob() or convertToBlob()',
+    );
+  }
+
+  if (!blob) {
+    throw new Error('imageFromCanvas: canvas produced no blob');
+  }
+
+  return imageFromFile(blob);
+}
+
+/**
+ * Pure validator that checks a File/Blob against the multimodal capability
+ * limits the caller fetched from `bold.settings()`. Returns `{ valid: true }`
+ * when limits are missing, disabled, or do not constrain media types.
+ */
+function validateImage(
+  file: File | Blob,
+  limits: MultimodalCapability,
+): { valid: boolean; error?: string } {
+  if (!limits || limits.enabled === false) return { valid: true };
+  const accepted = limits.acceptedMediaTypes;
+  if (!accepted || accepted.length === 0) return { valid: true };
+  const mediaType = file.type || '';
+  if (!accepted.includes(mediaType)) {
+    return {
+      valid: false,
+      error: `Unsupported media type "${mediaType || '(unknown)'}". Accepted: ${accepted.join(', ')}`,
+    };
+  }
+  return { valid: true };
+}
+
+/**
  * AI client interface for type-safe method overloading
  */
 export interface AIClient {
@@ -281,6 +415,37 @@ export interface AIClient {
    * }
    */
   getConversation(conversationId: string): Promise<Conversation>;
+
+  /**
+   * Convert a File or Blob into a base64 ImageInput payload for use with
+   * `images: [...]` on chat / ask / coach / search.
+   */
+  imageFromFile(file: File | Blob): Promise<ImageInput>;
+
+  /**
+   * Convert an HTMLCanvasElement / OffscreenCanvas (or any object exposing
+   * toBlob / convertToBlob) into a base64 ImageInput payload.
+   */
+  imageFromCanvas(
+    canvas:
+      | HTMLCanvasElement
+      | OffscreenCanvas
+      | {
+          toBlob?: (cb: (b: Blob | null) => void, type?: string, quality?: number) => void;
+          convertToBlob?: (options?: { type?: string; quality?: number }) => Promise<Blob>;
+        },
+    options?: { type?: string; quality?: number },
+  ): Promise<ImageInput>;
+
+  /**
+   * Pure client-side validator. Pass the multimodal limits from
+   * `(await bold.settings()).data.account.multimodal`. Returns `{ valid: true }`
+   * when limits are missing or disabled.
+   */
+  validateImage(
+    file: File | Blob,
+    limits: MultimodalCapability,
+  ): { valid: boolean; error?: string };
 }
 
 /**
@@ -376,5 +541,8 @@ export function createAI(config: AIConfig): AIClient {
     recommendations: recommendations as AIClient['recommendations'],
     recommend: recommend as AIClient['recommend'],
     getConversation,
+    imageFromFile,
+    imageFromCanvas,
+    validateImage,
   };
 }
