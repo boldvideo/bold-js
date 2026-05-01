@@ -7,6 +7,40 @@ export interface AIConfig {
 }
 
 /**
+ * Typed error thrown by AI HTTP failures (non-2xx responses or fetch errors).
+ * Mirrors ViewerAPIError / CommunityAPIError but adapted for fetch.
+ */
+export class AIAPIError extends Error {
+  readonly status?: number;
+  readonly originalError?: Error;
+
+  constructor(method: string, url: string, response?: Response, error?: unknown) {
+    let status: number | undefined;
+    let message: string;
+
+    if (response) {
+      status = response.status;
+      message = response.statusText || `HTTP ${response.status}`;
+    } else if (error instanceof Error) {
+      message = error.message;
+    } else if (error !== undefined) {
+      message = String(error);
+    } else {
+      message = 'unknown error';
+    }
+
+    super(
+      status !== undefined
+        ? `${method} ${url} failed (${status}): ${message}`
+        : `${method} ${url} failed: ${message}`,
+    );
+    this.name = 'AIAPIError';
+    this.status = status;
+    if (error instanceof Error) this.originalError = error;
+  }
+}
+
+/**
  * Parse SSE stream into typed events
  */
 async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
@@ -95,7 +129,7 @@ async function streamRequest(
   });
 
   if (!response.ok) {
-    throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
+    throw new AIAPIError('POST', url.toString(), response);
   }
 
   return parseSSE(response);
@@ -122,7 +156,7 @@ async function jsonRequest<T = AIResponse>(
   });
 
   if (!response.ok) {
-    throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
+    throw new AIAPIError('POST', url.toString(), response);
   }
 
   const raw = await response.json();
@@ -147,7 +181,7 @@ async function getRequest<T>(
   });
 
   if (!response.ok) {
-    throw new Error(`AI request failed: ${response.status} ${response.statusText}`);
+    throw new AIAPIError('GET', url.toString(), response);
   }
 
   const raw = await response.json();
