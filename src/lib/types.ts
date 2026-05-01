@@ -347,6 +347,14 @@ export interface ChatOptions {
    * Helps AI understand what the viewer just watched.
    */
   currentTime?: number;
+
+  /**
+   * Optional image attachments. File/Blob items are auto-encoded to base64.
+   * Pre-encoded `{ type: 'base64', mediaType, data }` items are passed through.
+   * Server-side limits (count, media types) are exposed on
+   * `settings.account.multimodal`.
+   */
+  images?: ImageInput[];
 }
 
 /**
@@ -373,6 +381,9 @@ export interface SearchOptions {
   videoId?: string;
   tags?: string[];           // Filter by tags
   context?: AIContextMessage[];
+
+  /** Optional image attachments. See ChatOptions.images. */
+  images?: ImageInput[];
 }
 
 /**

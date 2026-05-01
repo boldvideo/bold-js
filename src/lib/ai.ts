@@ -469,6 +469,9 @@ export function createAI(config: AIConfig): AIClient {
     if (isVideoScoped && options.currentTime !== undefined) {
       body.current_time = options.currentTime;
     }
+    if (options.images?.length) {
+      body.images = await Promise.all(options.images.map(encodeImageInput));
+    }
 
     if (options.stream === false) {
       body.stream = false;
@@ -495,6 +498,9 @@ export function createAI(config: AIConfig): AIClient {
     if (options.videoId) body.video_id = options.videoId;
     if (options.tags) body.tags = options.tags;
     if (options.context) body.context = options.context;
+    if (options.images?.length) {
+      body.images = await Promise.all(options.images.map(encodeImageInput));
+    }
 
     if (options.stream === false) {
       body.stream = false;
