@@ -183,6 +183,16 @@ export type AccountAISearch = {
   enabled: boolean;
 };
 
+/**
+ * Multimodal (image upload) capability for the account. Server emits this on
+ * `account.multimodal`. Older API instances may omit it entirely.
+ */
+export type MultimodalCapability = {
+  enabled: boolean;
+  maxImages?: number;
+  acceptedMediaTypes?: string[];
+};
+
 export type PersonaEnabled = {
   enabled: true;
   name: string;
@@ -199,6 +209,7 @@ export type Persona = PersonaEnabled | PersonaDisabled;
 export type Account = {
   ai: AccountAI;
   aiSearch: AccountAISearch;
+  multimodal?: MultimodalCapability;
   name: string;
   persona: Persona;
   slug: string;
@@ -282,7 +293,21 @@ export type AIEvent =
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete"; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
-  | { type: "error"; code: string; message: string; retryable: boolean };
+  | { type: "error"; code: string; message: string; retryable: boolean }
+  | { type: "image_analysis"; status: "analyzing" }
+  | { type: "image_analysis"; status: "complete"; description: string };
+
+/**
+ * Image attachment payload accepted by bold.ai.chat / ask / coach / search.
+ *
+ * - `File` and `Blob` are auto-encoded to base64 by the SDK.
+ * - The pre-encoded form lets callers cache encoded payloads or build them
+ *   from non-DOM sources.
+ */
+export type ImageInput =
+  | File
+  | Blob
+  | { type: 'base64'; mediaType: string; data: string };
 
 /**
  * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
@@ -322,6 +347,14 @@ export interface ChatOptions {
    * Helps AI understand what the viewer just watched.
    */
   currentTime?: number;
+
+  /**
+   * Optional image attachments. File/Blob items are auto-encoded to base64.
+   * Pre-encoded `{ type: 'base64', mediaType, data }` items are passed through.
+   * Server-side limits (count, media types) are exposed on
+   * `settings.account.multimodal`.
+   */
+  images?: ImageInput[];
 }
 
 /**
@@ -348,6 +381,9 @@ export interface SearchOptions {
   videoId?: string;
   tags?: string[];           // Filter by tags
   context?: AIContextMessage[];
+
+  /** Optional image attachments. See ChatOptions.images. */
+  images?: ImageInput[];
 }
 
 /**

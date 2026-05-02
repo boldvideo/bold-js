@@ -24,12 +24,14 @@ export type {
   ThemeColors,
   Account,
   AccountAI,
+  MultimodalCapability,
   Segment,
   Source,
   Citation,
   AIUsage,
   AIEvent,
   AIResponse,
+  ImageInput,
   ChatOptions,
   SearchOptions,
   AIContextMessage,
@@ -77,3 +79,4 @@ export type {
 export type { ViewerLookupParams } from "./lib/viewers";
 export { ViewerAPIError } from "./lib/viewers";
 export { CommunityAPIError } from "./lib/community";
+export { AIAPIError } from "./lib/ai";
