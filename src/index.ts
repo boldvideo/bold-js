@@ -1,5 +1,5 @@
-export { createClient } from "lib/client";
-export type { ClientOptions } from "lib/client";
+export { createClient } from "./lib/client";
+export type { ClientOptions } from "./lib/client";
 export { DEFAULT_API_BASE_URL, DEFAULT_INTERNAL_API_BASE_URL } from "./lib/constants";
 export type {
   Video,
