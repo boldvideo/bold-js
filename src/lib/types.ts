@@ -623,7 +623,7 @@ export type ListVideosOptions =
 export type UserSummary = {
   id: string;
   name: string;
-  avatar_url: string | null;
+  avatarUrl: string | null;
 };
 
 /**
@@ -640,9 +640,19 @@ export type PostAuthor = UserSummary & {
 export type ReactionSummary = {
   count: number;
   /** Users who reacted (capped to 10 from API) */
-  reacted_by: UserSummary[];
+  reactedBy: UserSummary[];
   /** Present when viewer context exists */
-  viewer_has_reacted?: boolean;
+  viewerHasReacted?: boolean;
+};
+
+/**
+ * Per-comment reaction state.
+ * Comments do not return a `reactedBy` list (unlike post reactions).
+ */
+export type CommentReactionSummary = {
+  count: number;
+  /** Present when viewer context (X-Viewer-ID) exists */
+  viewerHasReacted?: boolean;
 };
 
 /**
@@ -651,7 +661,7 @@ export type ReactionSummary = {
 export type CommentSummary = {
   count: number;
   /** Users who commented (capped to 10 from API) */
-  commented_by: UserSummary[];
+  commentedBy: UserSummary[];
   /** Full comment threads (present in detail only) */
   items?: CommentThread[];
 };
@@ -662,9 +672,10 @@ export type CommentSummary = {
 export type Reply = {
   id: string;
   content: string;
-  created_at: string;
+  createdAt: string;
   author: UserSummary;
-  parent_comment_id: string;
+  parentCommentId: string;
+  reactions: CommentReactionSummary;
 };
 
 /**
@@ -673,9 +684,10 @@ export type Reply = {
 export type CommentThread = {
   id: string;
   content: string;
-  created_at: string;
+  createdAt: string;
   author: UserSummary;
   replies: Reply[];
+  reactions: CommentReactionSummary;
 };
 
 /**
@@ -708,21 +720,19 @@ export type Post = {
   category?: string;
   pinned?: boolean;
   pinnedAt?: string | null;
-  created_at: string;
+  createdAt: string;
+  updatedAt?: string;
   author: PostAuthor;
   reactions: ReactionSummary;
   comments: CommentSummary;
-  /** @deprecated Use created_at */
-  createdAt?: string;
   /** @deprecated Use reactions.count */
   reactionsCount?: number;
   /** @deprecated Use comments.count */
   commentsCount?: number;
-  /** @deprecated Use reactions.viewer_has_reacted */
+  /** @deprecated Use reactions.viewerHasReacted */
   viewerReacted?: boolean;
   /** @deprecated Use author */
   viewer?: PostAuthor;
-  updatedAt?: string;
 };
 
 /**
@@ -740,11 +750,11 @@ export type PaginationMeta = {
   /** Current page (1-indexed) */
   page: number;
   /** Items per page */
-  page_size: number;
+  pageSize: number;
   /** Total items across all pages */
-  total_entries: number;
+  totalEntries: number;
   /** Total number of pages */
-  total_pages: number;
+  totalPages: number;
 };
 
 /**
@@ -765,7 +775,7 @@ export type ListPostsOptions = {
   page?: number;
   /** Items per page (default: 20, max: 100) */
   pageSize?: number;
-  /** Viewer ID to include viewer_has_reacted in response */
+  /** Viewer ID to include viewerHasReacted in response */
   viewerId?: string;
 };
 
