@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.21.2
+
+### Patch Changes
+
+- 1d8f317: Internal toolchain modernization: upgrade TypeScript to 6.0 and migrate off the deprecated `baseUrl` compiler option (internal imports are now relative). No changes to the published API, types, or runtime behavior.
+
 ## 1.21.1
 
 ### Patch Changes
