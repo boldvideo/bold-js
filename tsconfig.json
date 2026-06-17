@@ -9,7 +9,10 @@
     "skipLibCheck": true,
     "noUncheckedIndexedAccess": true,
     "noEmit": true,
-    "baseUrl": "src",
-    "declaration": true
+    "declaration": true,
+    // tsup's dts builder injects `baseUrl`, which TS 6 deprecates (TS5101).
+    // This silences it until tsup drops the injection / we move to TS 7.
+    // Our own config sets no baseUrl (imports are relative).
+    "ignoreDeprecations": "6.0"
   }
 }

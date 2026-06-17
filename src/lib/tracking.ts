@@ -1,5 +1,5 @@
 import { AxiosInstance } from "axios";
-import { throttle } from "util/throttle";
+import { throttle } from "../util/throttle";
 
 type ApiClient = AxiosInstance;
 
