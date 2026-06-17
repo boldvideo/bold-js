@@ -1,5 +1,33 @@
 # @boldvideo/bold-js
 
+## 1.21.0
+
+### Minor Changes
+
+- 6742f33: Fix community API types to match the camelCase runtime (BOLD-1577) and add nested comment reactions (BOLD-1580)
+
+  The SDK camelizes every API response at the transport boundary, but since 1.19.0 the community types declared snake_case fields as canonical, so those fields were `undefined` at runtime (e.g. `post.created_at`). All community read types now declare camelCase fields, matching what the SDK actually returns:
+
+  - `Post.created_at` → `createdAt` (the always-undefined snake_case field is removed)
+  - `UserSummary.avatar_url` → `avatarUrl`
+  - `ReactionSummary.reacted_by` / `viewer_has_reacted` → `reactedBy` / `viewerHasReacted`
+  - `CommentSummary.commented_by` → `commentedBy`
+  - `Reply.created_at` / `parent_comment_id` → `createdAt` / `parentCommentId`
+  - `CommentThread.created_at` → `createdAt`
+  - `PaginationMeta.page_size` / `total_entries` / `total_pages` → `pageSize` / `totalEntries` / `totalPages`
+
+  Comments and replies now expose nested reaction state via a new `CommentReactionSummary` type (`{ count, viewerHasReacted? }`): `CommentThread.reactions` and `Reply.reactions`.
+
+- 0c9d184: Add image-upload support to `bold.ai` (chat / ask / coach / search)
+
+  - New `images?: ImageInput[]` parameter on `ChatOptions` and `SearchOptions` — accepts `File`, `Blob`, or pre-encoded `{ type: 'base64', mediaType, data }` items. `ask` and `coach` inherit support via delegation to `chat`.
+  - New helpers: `bold.ai.imageFromFile(file)`, `bold.ai.imageFromCanvas(canvas, options?)`, `bold.ai.validateImage(file, limits)`.
+  - New `MultimodalCapability` type, exposed on `Account.multimodal?` from `GET /api/v1/settings`.
+  - New `image_analysis` SSE event on the typed `AIEvent` union (`{ status: "analyzing" }` and `{ status: "complete", description }`).
+  - New typed `AIAPIError` thrown on non-2xx responses from all AI HTTP paths (replaces generic `Error`).
+
+  Wire format for images is snake_case (`{ type: 'base64', media_type, data }`); the SDK handles the rename transparently.
+
 ## 1.20.0
 
 ### Minor Changes
