@@ -714,11 +714,11 @@ export type PaginationMeta = {
   /** Current page (1-indexed) */
   page: number;
   /** Items per page */
-  page_size: number;
+  pageSize: number;
   /** Total items across all pages */
-  total_entries: number;
+  totalEntries: number;
   /** Total number of pages */
-  total_pages: number;
+  totalPages: number;
 };
 
 /**

@@ -12,5 +12,6 @@ The SDK camelizes every API response at the transport boundary, but since 1.19.0
 - `CommentSummary.commented_by` → `commentedBy`
 - `Reply.created_at` / `parent_comment_id` → `createdAt` / `parentCommentId`
 - `CommentThread.created_at` → `createdAt`
+- `PaginationMeta.page_size` / `total_entries` / `total_pages` → `pageSize` / `totalEntries` / `totalPages`
 
 Comments and replies now expose nested reaction state via a new `CommentReactionSummary` type (`{ count, viewerHasReacted? }`): `CommentThread.reactions` and `Reply.reactions`.

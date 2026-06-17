@@ -134,13 +134,20 @@ Build community features with posts, comments, and reactions. Write operations r
 // Example: List posts with pagination
 const response = await bold.community.posts.list({ page: 1, pageSize: 20, viewerId });
 // response.data = Post[]
-// response.meta = { page, page_size, total_entries, total_pages }
+// response.meta = { page, pageSize, totalEntries, totalPages }
 
 // Access users who reacted/commented (for avatar display)
 const post = response.data[0];
-post.reactions.reacted_by;      // UserSummary[] (up to 10)
-post.comments.commented_by;     // UserSummary[] (up to 10)
-post.reactions.viewer_has_reacted; // boolean (when viewerId provided)
+post.reactions.reactedBy;       // UserSummary[] (up to 10)
+post.comments.commentedBy;      // UserSummary[] (up to 10)
+post.reactions.viewerHasReacted; // boolean (when viewerId provided)
+
+// Read nested reaction state on comments/replies (detail view)
+const detail = await bold.community.posts.get(post.id, viewerId);
+for (const thread of detail.data.comments.items ?? []) {
+  thread.reactions.count;            // number
+  thread.reactions.viewerHasReacted; // boolean (when viewerId provided)
+}
 
 // Create and interact
 await bold.community.posts.create(viewerId, { content: 'Hello!', category: 'general' });
@@ -319,7 +326,7 @@ type AIEvent =
 {
   id: string;
   name: string;
-  avatar_url: string | null;
+  avatarUrl: string | null;
 }
 ```
 
@@ -329,10 +336,10 @@ type AIEvent =
 {
   id: string;
   content: string;             // Markdown content
-  created_at: string;
+  createdAt: string;
   author: PostAuthor;          // Creator of the post
-  reactions: ReactionSummary;  // { count, reacted_by, viewer_has_reacted? }
-  comments: CommentSummary;    // { count, commented_by, items? }
+  reactions: ReactionSummary;  // { count, reactedBy, viewerHasReacted? }
+  comments: CommentSummary;    // { count, commentedBy, items? }
   category?: string;
   pinned?: boolean;
   pinnedAt?: string | null;
@@ -345,8 +352,8 @@ type AIEvent =
 ```typescript
 {
   count: number;
-  reacted_by: UserSummary[];       // Capped to 10 from API
-  viewer_has_reacted?: boolean;    // Present when viewerId provided
+  reactedBy: UserSummary[];        // Capped to 10 from API
+  viewerHasReacted?: boolean;      // Present when viewerId provided
 }
 ```
 
@@ -355,7 +362,7 @@ type AIEvent =
 ```typescript
 {
   count: number;
-  commented_by: UserSummary[];     // Capped to 10 from API
+  commentedBy: UserSummary[];      // Capped to 10 from API
   items?: CommentThread[];         // Full threads (detail view only)
 }
 ```
@@ -366,9 +373,10 @@ type AIEvent =
 {
   id: string;
   content: string;
-  created_at: string;
+  createdAt: string;
   author: UserSummary;
   replies: Reply[];                // Nested replies
+  reactions: CommentReactionSummary;
 }
 ```
 
@@ -378,9 +386,19 @@ type AIEvent =
 {
   id: string;
   content: string;
-  created_at: string;
+  createdAt: string;
   author: UserSummary;
-  parent_comment_id: string;
+  parentCommentId: string;
+  reactions: CommentReactionSummary;
+}
+```
+
+### CommentReactionSummary
+
+```typescript
+{
+  count: number;
+  viewerHasReacted?: boolean;      // Present when viewerId provided
 }
 ```
 
@@ -391,16 +409,16 @@ type AIEvent =
   data: T[];
   meta: {
     page: number;              // Current page (1-indexed)
-    page_size: number;
-    total_entries: number;
-    total_pages: number;
+    pageSize: number;
+    totalEntries: number;
+    totalPages: number;
   };
 }
 ```
 
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `CommunityAPIError`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentReactionSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `CommunityAPIError`
 
 ## Error Handling
 
