@@ -237,6 +237,12 @@ await bold.community.comments.delete('viewer-uuid', 'comment-id');
 
 // React to a comment (toggle)
 const reaction = await bold.community.comments.react('viewer-uuid', 'comment-id');
+
+// Read nested reaction state on comments/replies (viewerId enables viewerHasReacted)
+const { data: post } = await bold.community.posts.get('post-id', 'viewer-uuid');
+for (const thread of post.comments.items ?? []) {
+  console.log(thread.createdAt, thread.reactions.count, thread.reactions.viewerHasReacted);
+}
 ```
 
 ---

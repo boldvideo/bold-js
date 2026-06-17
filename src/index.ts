@@ -62,6 +62,7 @@ export type {
   UserSummary,
   ReactionSummary,
   CommentSummary,
+  CommentReactionSummary,
   CommentThread,
   Reply,
   Comment,
