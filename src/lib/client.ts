@@ -6,6 +6,7 @@ import { listPosts, getPost, createPost, updatePost, deletePost, reactToPost, cr
 import { trackEvent, trackPageView } from './tracking'
 import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
+import { createSessionManagement } from './session-management'
 
 export type ClientOptions = {
   baseURL?: string
@@ -66,6 +67,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
       getProgress: fetchProgress(apiClient),
       saveProgress: saveProgress(apiClient),
     },
+    sessionManagement: createSessionManagement(apiClient),
     ai: createAI(aiConfig),
     community: {
       posts: {

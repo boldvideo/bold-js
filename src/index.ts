@@ -1,5 +1,7 @@
 export { createClient } from "./lib/client";
 export type { ClientOptions } from "./lib/client";
+export { createAuthClient } from "./lib/auth";
+export type { AuthClientOptions, AuthRequestOptions } from "./lib/auth";
 export { DEFAULT_API_BASE_URL, DEFAULT_INTERNAL_API_BASE_URL } from "./lib/constants";
 export type {
   Video,
@@ -54,6 +56,24 @@ export type {
   UpdateViewerData,
   SaveProgressData,
   ProgressListMeta,
+  // Session Management API
+  AuthSessionPlatform,
+  AuthSessionCreateData,
+  AuthActiveSession,
+  AuthSessionCreatedResponse,
+  AuthSessionBypassedResponse,
+  AuthSessionChallengeResponse,
+  AuthSessionCreateResponse,
+  AuthSessionListResponse,
+  AuthSessionVerifyResponse,
+  AuthSessionRevokeResponse,
+  AuthSessionRevokeOthersResponse,
+  AuthChallengeResendResponse,
+  SessionManagementViewerResolveResponse,
+  SessionManagementSession,
+  SessionManagementViewerSessionsResponse,
+  SessionManagementRevokeSessionResponse,
+  SessionManagementRevokeAllResponse,
   // Video list options
   ListVideosOptions,
   ListVideosLatestOptions,
@@ -79,5 +99,8 @@ export type {
 
 export type { ViewerLookupParams } from "./lib/viewers";
 export { ViewerAPIError } from "./lib/viewers";
+export type { SessionManagementRevokeOptions } from "./lib/session-management";
+export { SessionManagementAPIError } from "./lib/session-management";
+export { AuthAPIError } from "./lib/auth";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";

@@ -572,6 +572,116 @@ export type ProgressListMeta = {
 };
 
 // ============================================
+// Session Management API Types
+// ============================================
+
+export type AuthSessionPlatform = "web" | "ios" | "android";
+
+export type AuthSessionCreateData = {
+  /** Stable browser/native device identifier from your app */
+  deviceId: string;
+  platform: AuthSessionPlatform;
+  userAgent?: string;
+};
+
+export type AuthActiveSession = {
+  id: string;
+  deviceId: string;
+  deviceLabel?: string | null;
+  platform: AuthSessionPlatform | string;
+  lastSeenAt: string;
+  insertedAt: string;
+};
+
+export type AuthSessionCreatedResponse = {
+  sessionId: string;
+  expiresAt: string;
+  bypassed?: never;
+  challengeRequired?: never;
+};
+
+export type AuthSessionBypassedResponse = {
+  sessionId: null;
+  bypassed: true;
+  expiresAt?: never;
+  challengeRequired?: never;
+};
+
+export type AuthSessionChallengeResponse = {
+  challengeRequired: true;
+  challengeId: string;
+  emailHint: string | null;
+  sessionId?: never;
+};
+
+export type AuthSessionCreateResponse =
+  | AuthSessionCreatedResponse
+  | AuthSessionBypassedResponse
+  | AuthSessionChallengeResponse;
+
+export type AuthSessionListResponse = {
+  data: AuthActiveSession[];
+};
+
+export type AuthSessionVerifyResponse =
+  | { valid: true; reason?: never }
+  | {
+      valid: false;
+      reason: "session_not_found" | "session_revoked" | "session_expired" | string;
+    };
+
+export type AuthSessionRevokeResponse = {
+  ok: boolean;
+  sessionId: string;
+};
+
+export type AuthSessionRevokeOthersResponse = {
+  ok: boolean;
+  revokedCount: number;
+};
+
+export type AuthChallengeResendResponse = {
+  ok: boolean;
+  challengeId: string;
+  emailHint: string | null;
+  resendCount: number;
+  expiresAt: string;
+};
+
+export type SessionManagementViewerResolveResponse = {
+  data: {
+    viewerId: string;
+    externalId: string;
+  };
+};
+
+export type SessionManagementSession = {
+  id: string;
+  deviceId: string;
+  deviceLabel?: string | null;
+  platform: AuthSessionPlatform | string;
+  lastSeenAt: string;
+  insertedAt: string;
+  revokedAt?: string | null;
+  revokedBy?: string | null;
+  revokedReason?: string | null;
+};
+
+export type SessionManagementViewerSessionsResponse = {
+  data: SessionManagementSession[];
+};
+
+export type SessionManagementRevokeSessionResponse = {
+  ok: boolean;
+  sessionId: string;
+};
+
+export type SessionManagementRevokeAllResponse = {
+  ok: boolean;
+  revokedCount: number;
+};
+
+// ============================================
 // Video List Options
 // ============================================
 
