@@ -178,6 +178,94 @@ console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 
 ---
 
+## Session Management
+
+Use BOLD Session Management as a headless password-sharing prevention layer.
+Your app still owns login, membership, product access, and staff/admin checks.
+Call BOLD only after your app has decided the viewer may access protected
+content.
+
+### Runtime Sessions
+
+Runtime session calls use the customer's upstream JWT, not a BOLD API key. This
+factory is safe for browser/native runtime code when the upstream JWT is already
+available to that runtime.
+
+```typescript
+import { createAuthClient } from '@boldvideo/bold-js';
+
+const auth = createAuthClient({
+  tenantSlug: 'hrtu',
+  upstreamJwt: outsetaJwt
+});
+
+const result = await auth.sessions.create({
+  deviceId: browserDeviceId,
+  platform: 'web',
+  userAgent: navigator.userAgent
+});
+
+let sessionId: string | undefined;
+
+if ('challengeRequired' in result) {
+  // Show an email-code challenge UI, then verify the code.
+  const verified = await auth.challenges.verify(result.challengeId, '123456');
+  sessionId = verified.sessionId ?? undefined;
+} else if (result.sessionId) {
+  sessionId = result.sessionId;
+}
+
+if (sessionId) {
+  localStorage.setItem('bold_session_id', sessionId);
+}
+
+if (sessionId) {
+  const verification = await auth.sessions.verify(sessionId);
+  if (!verification.valid) {
+    // session_not_found, session_revoked, or session_expired
+  }
+}
+```
+
+For refreshed JWTs, pass an override per call:
+
+```typescript
+await auth.sessions.verify(sessionId, { upstreamJwt: freshJwt });
+```
+
+Viewer self-management methods require policy support:
+
+```typescript
+const { data: sessions } = await auth.sessions.list();
+await auth.sessions.revoke(sessionId);
+await auth.sessions.revokeOthers(currentSessionId);
+```
+
+### Server-Side Session Management
+
+Customer servers can inspect and revoke BOLD device sessions by upstream
+external ID using the normal BOLD tenant API key. Keep this API key server-side.
+Do not put a BOLD tenant key or admin key in browser code.
+
+```typescript
+import { createClient } from '@boldvideo/bold-js';
+
+const bold = createClient(process.env.BOLD_TENANT_API_KEY!);
+
+const { data: sessions } =
+  await bold.sessionManagement.listViewerSessionsByExternalId(outsetaPersonUid);
+
+await bold.sessionManagement.revokeAllViewerSessionsByExternalId(
+  outsetaPersonUid,
+  { reason: 'outseta:membership_changed' }
+);
+```
+
+The server-side session-management methods cannot update policy, JWT config,
+feature flags, viewer device-limit overrides, or exemptions.
+
+---
+
 ## Community API
 
 Build community features with posts, comments, and reactions. All write operations require a `viewerId` (the viewer performing the action).
