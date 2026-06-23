@@ -243,14 +243,38 @@ await auth.sessions.revokeOthers(currentSessionId);
 
 ### Server-Side Session Management
 
-Customer servers can inspect and revoke BOLD device sessions by upstream
-external ID using the normal BOLD tenant API key. Keep this API key server-side.
-Do not put a BOLD tenant key or admin key in browser code.
+Customer servers can inspect BOLD device state, revoke sessions, and manage
+per-viewer device-limit overrides or exemptions by upstream external ID using
+the normal BOLD tenant API key. Keep this API key server-side. Do not put a
+BOLD tenant key or admin key in browser code.
 
 ```typescript
 import { createClient } from '@boldvideo/bold-js';
 
 const bold = createClient(process.env.BOLD_TENANT_API_KEY!);
+
+const { data: state } =
+  await bold.sessionManagement.getViewerSessionManagementStateByExternalId(
+    outsetaPersonUid
+  );
+
+if (state.canUpdateDeviceLimitOverride) {
+  await bold.sessionManagement.setViewerDeviceLimitOverrideByExternalId(
+    outsetaPersonUid,
+    5
+  );
+
+  await bold.sessionManagement.clearViewerDeviceLimitOverrideByExternalId(
+    outsetaPersonUid
+  );
+}
+
+if (state.canUpdateSessionManagementExemption) {
+  await bold.sessionManagement.setViewerSessionManagementExemptionByExternalId(
+    outsetaPersonUid,
+    true
+  );
+}
 
 const { data: sessions } =
   await bold.sessionManagement.listViewerSessionsByExternalId(outsetaPersonUid);
@@ -261,8 +285,12 @@ await bold.sessionManagement.revokeAllViewerSessionsByExternalId(
 );
 ```
 
-The server-side session-management methods cannot update policy, JWT config,
-feature flags, viewer device-limit overrides, or exemptions.
+`setViewerDeviceLimitOverrideByExternalId` requires a positive safe integer.
+Use `clearViewerDeviceLimitOverrideByExternalId` for explicit clearing.
+
+The server-side session-management methods cannot update JWT config, account
+feature flags, session TTL, or email template setup. Those remain BOLD operator
+controls.
 
 ---
 
