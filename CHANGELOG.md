@@ -1,5 +1,12 @@
 # @boldvideo/bold-js
 
+## 1.22.0
+
+### Minor Changes
+
+- 734e5dd: Add server-side session-management helpers for viewer state, device-limit overrides, and viewer exemptions.
+- 22798d8: Add browser-safe auth session methods and server-side session-management helpers for password-sharing prevention.
+
 ## 1.21.2
 
 ### Patch Changes
