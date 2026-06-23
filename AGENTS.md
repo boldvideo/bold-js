@@ -21,6 +21,7 @@ This is the Bold JavaScript SDK (`@boldvideo/bold-js`) - a TypeScript client lib
 pnpm install          # Install dependencies
 pnpm run build        # Build to dist/ (ESM + CJS + type declarations)
 pnpm run lint         # Type checking with tsc
+pnpm test             # Build and run Node test-runner smoke tests
 pnpm changeset        # Create a changeset for versioning
 ```
 
@@ -123,8 +124,9 @@ bold.trackPageView()      // Track page views
 ## Testing
 
 - Run `pnpm run lint` before committing
+- Run `pnpm test` when changing runtime SDK methods
 - Ensure TypeScript compilation succeeds with no errors
-- No test framework currently configured - manual testing required
+- Runtime smoke tests use Node's built-in test runner under `test/`
 
 ## Boundaries
 
@@ -144,4 +146,4 @@ bold.trackPageView()      // Track page views
 **Never:**
 - Commit API keys or secrets
 - Remove or change existing public type exports without versioning
-- Add test files without setting up a test framework first
+- Add test files without wiring them into `pnpm test`

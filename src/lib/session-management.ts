@@ -4,6 +4,7 @@ import { camelizeKeys } from "../util/camelize";
 import type {
   SessionManagementRevokeAllResponse,
   SessionManagementRevokeSessionResponse,
+  SessionManagementViewerStateResponse,
   SessionManagementViewerResolveResponse,
   SessionManagementViewerSessionsResponse,
 } from "./types";
@@ -44,6 +45,12 @@ function byExternalIdPath(externalId: string): string {
   return `session-management/viewers/by-external-id/${encodeURIComponent(externalId)}`;
 }
 
+function assertDeviceLimitOverride(limit: number): void {
+  if (!Number.isSafeInteger(limit) || limit <= 0) {
+    throw new Error("Device-limit override must be a positive safe integer");
+  }
+}
+
 async function get<T>(client: ApiClient, url: string): Promise<T> {
   try {
     const res = await client.get(url);
@@ -66,6 +73,19 @@ async function post<T>(
   }
 }
 
+async function put<T>(
+  client: ApiClient,
+  url: string,
+  data?: Record<string, unknown>
+): Promise<T> {
+  try {
+    const res = await client.put(url, data);
+    return camelizeKeys(res.data) as T;
+  } catch (error) {
+    throw new SessionManagementAPIError("PUT", url, error);
+  }
+}
+
 export function createSessionManagement(client: ApiClient) {
   return {
     resolveViewerByExternalId: (externalId: string) => {
@@ -74,10 +94,52 @@ export function createSessionManagement(client: ApiClient) {
         byExternalIdPath(externalId)
       );
     },
+    getViewerSessionManagementStateByExternalId: (externalId: string) => {
+      return get<SessionManagementViewerStateResponse>(
+        client,
+        byExternalIdPath(externalId)
+      );
+    },
     listViewerSessionsByExternalId: (externalId: string) => {
       return get<SessionManagementViewerSessionsResponse>(
         client,
         `${byExternalIdPath(externalId)}/sessions`
+      );
+    },
+    setViewerDeviceLimitOverrideByExternalId: (
+      externalId: string,
+      limit: number
+    ) => {
+      assertDeviceLimitOverride(limit);
+
+      return put<SessionManagementViewerStateResponse>(
+        client,
+        `${byExternalIdPath(externalId)}/device-limit`,
+        { limit }
+      );
+    },
+    clearViewerDeviceLimitOverrideByExternalId: (externalId: string) => {
+      return put<SessionManagementViewerStateResponse>(
+        client,
+        `${byExternalIdPath(externalId)}/device-limit`,
+        { limit: null }
+      );
+    },
+    setViewerSessionManagementExemptionByExternalId: (
+      externalId: string,
+      exempt: boolean
+    ) => {
+      return put<SessionManagementViewerStateResponse>(
+        client,
+        `${byExternalIdPath(externalId)}/session-management-exemption`,
+        { exempt }
+      );
+    },
+    clearViewerSessionManagementExemptionByExternalId: (externalId: string) => {
+      return put<SessionManagementViewerStateResponse>(
+        client,
+        `${byExternalIdPath(externalId)}/session-management-exemption`,
+        { exempt: false }
       );
     },
     revokeViewerSessionByExternalId: (

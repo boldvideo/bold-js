@@ -18,6 +18,9 @@ pnpm run build
 # Run type checking/linting
 pnpm run lint
 
+# Build and run Node test-runner smoke tests
+pnpm test
+
 # Create a changeset (for versioning)
 pnpm changeset
 ```
@@ -77,6 +80,7 @@ The SDK uses a factory pattern where `createClient(apiKey)` returns an object wi
 2. When making changes:
    - Ensure TypeScript types are properly defined
    - Run `pnpm run lint` before committing
+   - Run `pnpm test` when changing runtime SDK methods
    - The SDK supports both ESM and CommonJS consumers
 
 3. API Integration:
@@ -91,7 +95,7 @@ The SDK uses a factory pattern where `createClient(apiKey)` returns an object wi
 
 ## Important Notes
 
-- No test framework is currently configured
+- Runtime smoke tests use Node's built-in test runner under `/test`
 - The SDK is designed to be lightweight with minimal dependencies (only axios)
 - All API responses follow the type definitions in `/src/lib/types.ts`
 - The tracking system includes automatic throttling to handle high-frequency events like video progress updates

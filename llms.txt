@@ -159,8 +159,35 @@ const bold = createClient(process.env.BOLD_TENANT_API_KEY!);
 const { data: viewer } =
   await bold.sessionManagement.resolveViewerByExternalId(outsetaPersonUid);
 
+const { data: state } =
+  await bold.sessionManagement.getViewerSessionManagementStateByExternalId(
+    outsetaPersonUid
+  );
+
 const { data: sessions } =
   await bold.sessionManagement.listViewerSessionsByExternalId(outsetaPersonUid);
+
+if (state.canUpdateDeviceLimitOverride) {
+  await bold.sessionManagement.setViewerDeviceLimitOverrideByExternalId(
+    outsetaPersonUid,
+    5
+  );
+
+  await bold.sessionManagement.clearViewerDeviceLimitOverrideByExternalId(
+    outsetaPersonUid
+  );
+}
+
+if (state.canUpdateSessionManagementExemption) {
+  await bold.sessionManagement.setViewerSessionManagementExemptionByExternalId(
+    outsetaPersonUid,
+    true
+  );
+
+  await bold.sessionManagement.clearViewerSessionManagementExemptionByExternalId(
+    outsetaPersonUid
+  );
+}
 
 await bold.sessionManagement.revokeViewerSessionByExternalId(
   outsetaPersonUid,
@@ -175,8 +202,11 @@ await bold.sessionManagement.revokeAllViewerSessionsByExternalId(
 ```
 
 Server-side session-management methods can inspect and revoke sessions by
-upstream external ID. They cannot update policy, JWT config, feature flags,
-viewer device-limit overrides, or exemptions.
+upstream external ID, and can manage per-viewer device-limit overrides and
+session-management exemptions when the returned `canUpdate*` flags allow it.
+`setViewerDeviceLimitOverrideByExternalId` requires a positive safe integer; use
+the clear helper for explicit clearing. These methods cannot update policy, JWT
+config, feature flags, session TTLs, or BOLD operator provisioning.
 
 ## Community API
 
