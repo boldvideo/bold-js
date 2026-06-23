@@ -648,11 +648,29 @@ export type AuthChallengeResendResponse = {
   expiresAt: string;
 };
 
-export type SessionManagementViewerResolveResponse = {
-  data: {
-    viewerId: string;
-    externalId: string;
-  };
+export type SessionManagementViewerState = {
+  viewerId: string;
+  externalId: string;
+  activeSessionCount: number;
+  policyDefaultDeviceLimit: number;
+  effectiveDeviceLimit: number | null;
+  effectiveDeviceLimitSource: "policy" | "override" | "exempt";
+  deviceLimitOverride: number | null;
+  sessionManagementExempt: boolean;
+  adminOverridesAllowed: boolean;
+  canUpdateDeviceLimitOverride: boolean;
+  canUpdateSessionManagementExemption: boolean;
+};
+
+export type SessionManagementViewerStateResponse = {
+  data: SessionManagementViewerState;
+};
+
+export type SessionManagementViewerResolveResponse = SessionManagementViewerStateResponse;
+
+export type SessionManagementViewerSessionsResponse = {
+  viewer: SessionManagementViewerState;
+  data: SessionManagementSession[];
 };
 
 export type SessionManagementSession = {
@@ -665,10 +683,6 @@ export type SessionManagementSession = {
   revokedAt?: string | null;
   revokedBy?: string | null;
   revokedReason?: string | null;
-};
-
-export type SessionManagementViewerSessionsResponse = {
-  data: SessionManagementSession[];
 };
 
 export type SessionManagementRevokeSessionResponse = {

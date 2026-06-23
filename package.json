@@ -18,7 +18,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --target es2020",
-    "lint": "tsc"
+    "lint": "tsc",
+    "test": "pnpm build && node --test test/*.test.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
