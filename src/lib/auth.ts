@@ -22,7 +22,7 @@ const CONTROLLED_AUTH_HEADERS = new Set([
 export type AuthClientOptions = {
   baseURL?: string;
   tenantSlug: string;
-  upstreamJwt?: string;
+  upstreamJwt: string;
   headers?: AuthHeaders;
 };
 
@@ -66,7 +66,7 @@ function requireValue(value: string | undefined, message: string): string {
 }
 
 function bearer(value: string): string {
-  return value.startsWith("Bearer ") ? value : `Bearer ${value}`;
+  return /^bearer\s+/i.test(value) ? value : `Bearer ${value}`;
 }
 
 function customHeaders(...sources: Array<AuthHeaders | undefined>): AuthHeaders {
@@ -140,13 +140,17 @@ async function post<T>(
 
 export function createAuthClient(options: AuthClientOptions) {
   const tenantSlug = requireValue(options.tenantSlug, "Tenant slug is required");
+  const upstreamJwt = requireValue(
+    options.upstreamJwt,
+    "Upstream JWT is required"
+  );
   const client = axios.create({
     baseURL: options.baseURL ?? DEFAULT_API_BASE_URL,
   });
 
   const config: AuthClientConfig = {
     tenantSlug,
-    upstreamJwt: options.upstreamJwt,
+    upstreamJwt,
     headers: options.headers ?? {},
   };
 
