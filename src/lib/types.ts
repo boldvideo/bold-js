@@ -582,6 +582,15 @@ export type AuthSessionCreateData = {
   deviceId: string;
   platform: AuthSessionPlatform;
   userAgent?: string;
+  /**
+   * End-user IP address to attribute the session to, for coarse geo
+   * resolution (`location`/region on session objects). Same trust model as
+   * `userAgent`: caller-supplied. Server-authoritative integrators should set
+   * this to the viewer's IP (e.g. the leftmost `x-forwarded-for` entry), since
+   * the transport IP Bold sees is the datacenter egress. When omitted, the
+   * backend falls back to the proxy-aware transport IP.
+   */
+  clientIp?: string;
 };
 
 export type AuthActiveSession = {

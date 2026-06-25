@@ -168,6 +168,7 @@ export function createAuthClient(options: AuthClientOptions) {
             device_id: data.deviceId,
             platform: data.platform,
             user_agent: data.userAgent,
+            client_ip: data.clientIp,
           },
           requestOptions
         );
