@@ -50,6 +50,31 @@ before(async () => {
               revoked_at: null,
               revoked_by: null,
               revoked_reason: null,
+              travel_verdict: "impossible_travel",
+            },
+            {
+              id: "session-2",
+              device_id: "device-2",
+              device_label: "Phone",
+              platform: "ios",
+              last_seen_at: "2026-06-23T10:05:00Z",
+              inserted_at: "2026-06-23T09:05:00Z",
+              revoked_at: null,
+              revoked_by: null,
+              revoked_reason: null,
+              travel_verdict: null,
+            },
+            {
+              // Older backend during rollout: omits travel_verdict entirely.
+              id: "session-3",
+              device_id: "device-3",
+              device_label: "Tablet",
+              platform: "android",
+              last_seen_at: "2026-06-23T10:10:00Z",
+              inserted_at: "2026-06-23T09:10:00Z",
+              revoked_at: null,
+              revoked_by: null,
+              revoked_reason: null,
             },
           ],
         })
@@ -158,6 +183,23 @@ test("camelizes viewer state on session-list responses", async () => {
   assert.equal(response.viewer.deviceLimitOverride, 5);
   assert.equal(response.data[0].deviceId, "device-1");
   assert.equal(response.data[0].revokedAt, null);
+});
+
+test("exposes the impossible-travel verdict label, defaulting absent to null", async () => {
+  const response =
+    await createSessionManagementClient().listViewerSessionsByExternalId(
+      "outseta:p/one"
+    );
+
+  const byId = Object.fromEntries(response.data.map((s) => [s.id, s]));
+
+  // Flagged session passes the label through.
+  assert.equal(byId["session-1"].travelVerdict, "impossible_travel");
+  // Unflagged session is an explicit null.
+  assert.equal(byId["session-2"].travelVerdict, null);
+  // Older backend omits the field → normalized to a stable null (not undefined).
+  assert.ok("travelVerdict" in byId["session-3"]);
+  assert.equal(byId["session-3"].travelVerdict, null);
 });
 
 test("wraps failed PUT requests with status and server error code", async () => {

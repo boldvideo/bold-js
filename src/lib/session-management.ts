@@ -51,6 +51,25 @@ function assertDeviceLimitOverride(limit: number): void {
   }
 }
 
+/**
+ * Normalize the impossible-travel verdict to a stable `null` default.
+ *
+ * Backends that predate the verdict field omit it entirely; coercing the
+ * missing value to `null` means consumers only ever switch on the label vs.
+ * `null` (never `undefined`).
+ */
+function normalizeViewerSessions(
+  response: SessionManagementViewerSessionsResponse
+): SessionManagementViewerSessionsResponse {
+  return {
+    ...response,
+    data: response.data.map((session) => ({
+      ...session,
+      travelVerdict: session.travelVerdict ?? null,
+    })),
+  };
+}
+
 async function get<T>(client: ApiClient, url: string): Promise<T> {
   try {
     const res = await client.get(url);
@@ -100,11 +119,12 @@ export function createSessionManagement(client: ApiClient) {
         byExternalIdPath(externalId)
       );
     },
-    listViewerSessionsByExternalId: (externalId: string) => {
-      return get<SessionManagementViewerSessionsResponse>(
+    listViewerSessionsByExternalId: async (externalId: string) => {
+      const response = await get<SessionManagementViewerSessionsResponse>(
         client,
         `${byExternalIdPath(externalId)}/sessions`
       );
+      return normalizeViewerSessions(response);
     },
     setViewerDeviceLimitOverrideByExternalId: (
       externalId: string,

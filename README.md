@@ -279,6 +279,12 @@ if (state.canUpdateSessionManagementExemption) {
 const { data: sessions } =
   await bold.sessionManagement.listViewerSessionsByExternalId(outsetaPersonUid);
 
+for (const session of sessions) {
+  if (session.travelVerdict === 'impossible_travel') {
+    // Bold flagged this sign-in as physically implausible.
+  }
+}
+
 await bold.sessionManagement.revokeAllViewerSessionsByExternalId(
   outsetaPersonUid,
   { reason: 'outseta:membership_changed' }
@@ -287,6 +293,12 @@ await bold.sessionManagement.revokeAllViewerSessionsByExternalId(
 
 `setViewerDeviceLimitOverrideByExternalId` requires a positive safe integer.
 Use `clearViewerDeviceLimitOverrideByExternalId` for explicit clearing.
+
+Each session item carries `travelVerdict: 'impossible_travel' | null` — Bold's
+authoritative impossible-travel signal, exposed by these admin-scoped
+session-management methods. It is a **label only**: the SDK never returns
+coordinates, the raw IP, or derived distance/speed. It is `null` when the
+sign-in was not flagged (and for backends that predate the field).
 
 The server-side session-management methods cannot update JWT config, account
 feature flags, session TTL, or email template setup. Those remain BOLD operator

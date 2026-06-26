@@ -73,6 +73,7 @@ export type {
   SessionManagementViewerStateResponse,
   SessionManagementViewerResolveResponse,
   SessionManagementSession,
+  TravelVerdict,
   SessionManagementViewerSessionsResponse,
   SessionManagementRevokeSessionResponse,
   SessionManagementRevokeAllResponse,
