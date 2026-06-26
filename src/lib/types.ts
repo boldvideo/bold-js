@@ -705,10 +705,14 @@ export type SessionManagementSession = {
   /**
    * Impossible-travel verdict label: `"impossible_travel"` when the sign-in
    * was flagged, otherwise `null`. Surfaced by the admin-scoped
-   * session-management viewer-sessions API. `null` when unflagged or when the
-   * backend predates this field.
+   * session-management viewer-sessions API.
+   *
+   * Optional on the type (consistent with the other nullable fields here, so
+   * the field stays additive), but SDK responses always populate it:
+   * `listViewerSessionsByExternalId` normalizes a missing value to `null`,
+   * whether the session is unflagged or the backend predates the field.
    */
-  travelVerdict: TravelVerdict | null;
+  travelVerdict?: TravelVerdict | null;
 };
 
 export type SessionManagementRevokeSessionResponse = {
