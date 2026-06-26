@@ -682,6 +682,16 @@ export type SessionManagementViewerSessionsResponse = {
   data: SessionManagementSession[];
 };
 
+/**
+ * Bold's impossible-travel verdict for a session, exposed as a label only.
+ *
+ * `"impossible_travel"` means Bold flagged the sign-in as physically
+ * implausible (two sessions too far apart to travel between in the elapsed
+ * time). Label only — the SDK never exposes coordinates, the raw IP, or
+ * derived distance/speed metrics.
+ */
+export type TravelVerdict = "impossible_travel";
+
 export type SessionManagementSession = {
   id: string;
   deviceId: string;
@@ -692,6 +702,17 @@ export type SessionManagementSession = {
   revokedAt?: string | null;
   revokedBy?: string | null;
   revokedReason?: string | null;
+  /**
+   * Impossible-travel verdict label: `"impossible_travel"` when the sign-in
+   * was flagged, otherwise `null`. Surfaced by the admin-scoped
+   * session-management viewer-sessions API.
+   *
+   * Optional on the type (consistent with the other nullable fields here, so
+   * the field stays additive), but SDK responses always populate it:
+   * `listViewerSessionsByExternalId` normalizes a missing value to `null`,
+   * whether the session is unflagged or the backend predates the field.
+   */
+  travelVerdict?: TravelVerdict | null;
 };
 
 export type SessionManagementRevokeSessionResponse = {
