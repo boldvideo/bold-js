@@ -657,6 +657,19 @@ export type AuthChallengeResendResponse = {
   expiresAt: string;
 };
 
+export type NotificationProvider = "expo" | "fcm" | "apns";
+
+export type RegisterDeviceData = {
+  provider: NotificationProvider;
+  token: string;
+};
+
+export type RegisterDeviceResponse = {
+  ok: boolean;
+  sessionId: string;
+  provider: NotificationProvider;
+};
+
 export type SessionManagementViewerState = {
   viewerId: string;
   externalId: string;
@@ -766,6 +779,27 @@ export type ListVideosIndexOptions = {
 export type ListVideosOptions =
   | (ListVideosLatestOptions & { page?: never })
   | (ListVideosIndexOptions & { limit?: never; viewerId?: never });
+
+// ============================================
+// Notification API Types
+// ============================================
+
+export type NotificationChannels = {
+  email: boolean;
+  push: boolean;
+};
+
+export type NotificationPreferencesResponse = {
+  channels: NotificationChannels;
+};
+
+export type NotificationChannelUpdate =
+  | { email: boolean; push?: boolean }
+  | { email?: boolean; push: boolean };
+
+export type UpdateNotificationPreferencesData = {
+  channels: NotificationChannelUpdate;
+};
 
 // ============================================
 // Community API Types
@@ -897,6 +931,30 @@ export type ReactionResponse = {
   reactionsCount: number;
 };
 
+export type MentionSkippedReport = {
+  skipped: string[];
+};
+
+export type CommunityPostCreateResponse = {
+  data: Post;
+  mentions?: MentionSkippedReport;
+};
+
+export type CommunityCommentCreateResponse = {
+  data: Comment;
+  mentions?: MentionSkippedReport;
+};
+
+export type Mention = {
+  id: string;
+  postId: string;
+  commentId: string | null;
+  author: UserSummary;
+  excerpt: string | null;
+  createdAt: string;
+  readAt: string | null;
+};
+
 /**
  * Pagination metadata from API
  */
@@ -933,6 +991,30 @@ export type ListPostsOptions = {
   viewerId?: string;
 };
 
+export type ListMentionsOptions = {
+  /** Page number (1-indexed, default: 1) */
+  page?: number;
+  /** Items per page (default: 20, max: 100) */
+  pageSize?: number;
+};
+
+export type MentionsUnreadCountResponse = {
+  data: {
+    count: number;
+  };
+};
+
+export type MarkMentionsReadData =
+  | { ids: string[]; all?: never }
+  | { all: true; ids?: never };
+
+export type MarkMentionsReadResponse = {
+  data: {
+    markedRead: number;
+    unreadCount: number;
+  };
+};
+
 /**
  * Data for creating a community post
  */
@@ -941,6 +1023,8 @@ export type CreatePostData = {
   content: string;
   /** Category for the post */
   category?: string;
+  /** Customer external IDs to mention */
+  mentions?: string[];
 };
 
 /**
@@ -961,4 +1045,6 @@ export type CreateCommentData = {
   content: string;
   /** Parent comment ID for replies */
   parentId?: string;
+  /** Customer external IDs to mention */
+  mentions?: string[];
 };
