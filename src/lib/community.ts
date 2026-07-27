@@ -265,7 +265,7 @@ export function reactToComment(client: ApiClient) {
  * List mentions for a viewer with optional pagination
  */
 export function listMentions(client: ApiClient) {
-  return (
+  return async (
     viewerId: string,
     opts: ListMentionsOptions = {}
   ): Promise<PaginatedResponse<Mention>> => {
@@ -285,7 +285,7 @@ export function listMentions(client: ApiClient) {
  * Get a viewer's unread mention count
  */
 export function unreadMentionCount(client: ApiClient) {
-  return (viewerId: string): Promise<MentionsUnreadCountResponse> => {
+  return async (viewerId: string): Promise<MentionsUnreadCountResponse> => {
     requireViewerId(viewerId);
     return get<MentionsUnreadCountResponse>(
       client,
@@ -299,7 +299,7 @@ export function unreadMentionCount(client: ApiClient) {
  * Mark selected mentions, or every mention, as read
  */
 export function markMentionsRead(client: ApiClient) {
-  return (
+  return async (
     viewerId: string,
     data: MarkMentionsReadData
   ): Promise<MarkMentionsReadResponse> => {

@@ -97,6 +97,14 @@ function toAuthAPIError(
   return new AuthAPIError(method, url, error);
 }
 
+function logAuthAPIError(method: string, error: AuthAPIError): void {
+  console.error("Bold auth API request failed", {
+    method,
+    status: error.status,
+    code: error.code,
+  });
+}
+
 function requireValue(value: string | undefined, message: string): string {
   if (!value || typeof value !== "string") throw new Error(message);
   return value;
@@ -153,7 +161,9 @@ async function get<T>(
     const res = await client.get(url, { headers: authHeaders(config, options) });
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw toAuthAPIError("GET", url, error);
+    const authError = toAuthAPIError("GET", url, error);
+    logAuthAPIError("GET", authError);
+    throw authError;
   }
 }
 
@@ -171,7 +181,9 @@ async function post<T>(
     });
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw toAuthAPIError("POST", url, error);
+    const authError = toAuthAPIError("POST", url, error);
+    logAuthAPIError("POST", authError);
+    throw authError;
   }
 }
 
@@ -245,7 +257,7 @@ export function createAuthClient(options: AuthClientOptions) {
       },
     },
     notifications: {
-      registerDevice: (
+      registerDevice: async (
         sessionId: string,
         data: RegisterDeviceData,
         requestOptions?: AuthRequestOptions

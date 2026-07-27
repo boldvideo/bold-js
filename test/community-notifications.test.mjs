@@ -205,18 +205,17 @@ test("updates only the supplied notification channel", async () => {
   });
 });
 
-test("rejects missing viewer IDs before notification requests", () => {
+test("rejects missing viewer IDs before notification requests", async () => {
   const notifications = createNotificationsClient();
 
-  assert.throws(
-    () => notifications.getPreferences(""),
+  await assert.rejects(
+    notifications.getPreferences(""),
     /Viewer ID is required/
   );
-  assert.throws(
-    () =>
-      notifications.updatePreferences("", {
-        channels: { push: false },
-      }),
+  await assert.rejects(
+    notifications.updatePreferences("", {
+      channels: { push: false },
+    }),
     /Viewer ID is required/
   );
   assert.equal(requests.length, 0);
@@ -347,20 +346,19 @@ test("marks selected or all mentions read", async () => {
   });
 });
 
-test("rejects invalid mention inbox requests before sending", () => {
+test("rejects invalid mention inbox requests before sending", async () => {
   const mentions = createCommunityClient().mentions;
 
-  assert.throws(() => mentions.list(""), /Viewer ID is required/);
-  assert.throws(
-    () => mentions.markRead("viewer-1", {}),
+  await assert.rejects(mentions.list(""), /Viewer ID is required/);
+  await assert.rejects(
+    mentions.markRead("viewer-1", {}),
     /Mention IDs or all: true is required/
   );
-  assert.throws(
-    () =>
-      mentions.markRead("viewer-1", {
-        ids: ["mention-1"],
-        all: true,
-      }),
+  await assert.rejects(
+    mentions.markRead("viewer-1", {
+      ids: ["mention-1"],
+      all: true,
+    }),
     /Mention IDs and all: true are mutually exclusive/
   );
   assert.equal(requests.length, 0);

@@ -33,6 +33,16 @@ export class NotificationsAPIError extends Error {
   }
 }
 
+function logNotificationsAPIError(
+  method: string,
+  error: NotificationsAPIError
+): void {
+  console.error("Bold notification API request failed", {
+    method,
+    status: error.status,
+  });
+}
+
 function notificationPreferencesPath(viewerId: string): string {
   if (!viewerId) throw new Error("Viewer ID is required");
   return `viewers/${encodeURIComponent(viewerId)}/notification-preferences`;
@@ -43,7 +53,9 @@ async function get<T>(client: ApiClient, url: string): Promise<T> {
     const res = await client.get(url);
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw new NotificationsAPIError("GET", url, error);
+    const notificationError = new NotificationsAPIError("GET", url, error);
+    logNotificationsAPIError("GET", notificationError);
+    throw notificationError;
   }
 }
 
@@ -56,19 +68,21 @@ async function patch<T>(
     const res = await client.patch(url, data);
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw new NotificationsAPIError("PATCH", url, error);
+    const notificationError = new NotificationsAPIError("PATCH", url, error);
+    logNotificationsAPIError("PATCH", notificationError);
+    throw notificationError;
   }
 }
 
 export function createNotifications(client: ApiClient) {
   return {
-    getPreferences: (viewerId: string) => {
+    getPreferences: async (viewerId: string) => {
       return get<NotificationPreferencesResponse>(
         client,
         notificationPreferencesPath(viewerId)
       );
     },
-    updatePreferences: (
+    updatePreferences: async (
       viewerId: string,
       data: UpdateNotificationPreferencesData
     ) => {

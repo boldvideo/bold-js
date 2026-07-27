@@ -193,43 +193,39 @@ test("uses request-level auth overrides for device registration", async () => {
   assert.equal(requests[0].tenantSlug, "globex");
 });
 
-test("rejects incomplete device registrations before sending", () => {
+test("rejects incomplete device registrations before sending", async () => {
   const auth = createAuthClient({
     baseURL,
     tenantSlug: "acme",
     upstreamJwt: "jwt-123",
   });
 
-  assert.throws(
-    () =>
-      auth.notifications.registerDevice("", {
-        provider: "expo",
-        token: "token",
-      }),
+  await assert.rejects(
+    auth.notifications.registerDevice("", {
+      provider: "expo",
+      token: "token",
+    }),
     /Session ID is required/
   );
-  assert.throws(
-    () =>
-      auth.notifications.registerDevice("session-1", {
-        provider: undefined,
-        token: "token",
-      }),
+  await assert.rejects(
+    auth.notifications.registerDevice("session-1", {
+      provider: undefined,
+      token: "token",
+    }),
     /Notification provider is required/
   );
-  assert.throws(
-    () =>
-      auth.notifications.registerDevice("session-1", {
-        provider: "expo",
-        token: "",
+  await assert.rejects(
+    auth.notifications.registerDevice("session-1", {
+      provider: "expo",
+      token: "",
     }),
     /Device token is required/
   );
-  assert.throws(
-    () =>
-      auth.notifications.registerDevice("session-1", {
-        provider: "web",
-        token: "token",
-      }),
+  await assert.rejects(
+    auth.notifications.registerDevice("session-1", {
+      provider: "web",
+      token: "token",
+    }),
     /Notification provider must be expo, fcm, or apns/
   );
   assert.equal(requests.length, 0);
