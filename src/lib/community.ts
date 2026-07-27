@@ -2,7 +2,6 @@ import { AxiosInstance, AxiosError } from "axios";
 import { camelizeKeys } from "../util/camelize";
 import type {
   Post,
-  Comment,
   ReactionResponse,
   ListPostsOptions,
   CreatePostData,
