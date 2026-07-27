@@ -304,7 +304,11 @@ await bold.community.mentions.markRead(viewerId, { all: true });
 ```
 
 The optional `mentions` create-response report exists only when the request
-included a `mentions` array.
+included a `mentions` array. Bold processes at most 25 external IDs; malformed,
+unresolved, or beyond-cap IDs appear in `skipped`, while duplicates and
+self-mentions are omitted silently. A skipped ID never fails content creation.
+Mention `excerpt` values are unsanitized display data; clients must escape or
+sanitize them before rendering as HTML.
 
 ## AI Methods
 

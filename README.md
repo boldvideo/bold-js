@@ -436,7 +436,13 @@ await bold.community.mentions.markRead('viewer-uuid', { all: true });
 ```
 
 The optional `mentions` result is returned on post/comment creation only when
-the request included a `mentions` array.
+the request included a `mentions` array. Bold processes at most 25 supplied
+external IDs; malformed, unresolved, or beyond-cap IDs appear in `skipped`,
+while duplicates and self-mentions are omitted silently. A skipped ID never
+fails content creation.
+
+Mention `excerpt` values are plain, unsanitized content. Escape or sanitize
+them before rendering as HTML.
 
 ---
 
@@ -643,6 +649,7 @@ import type {
   ListVideosIndexOptions,
   NotificationChannels,
   NotificationPreferencesResponse,
+  NotificationChannelUpdate,
   UpdateNotificationPreferencesData,
   NotificationProvider,
   RegisterDeviceData,
