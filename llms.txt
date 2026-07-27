@@ -111,6 +111,21 @@ const { data: progress, meta } = await bold.viewers.listProgress(viewer.id, { co
 console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 ```
 
+## Notification Preferences
+
+Use the tenant API-key client to read or partially update a viewer's
+notification channels:
+
+- `bold.notifications.getPreferences(viewerId)` - Get email and push settings
+- `bold.notifications.updatePreferences(viewerId, { channels })` - Update one or both channels
+
+```typescript
+const preferences = await bold.notifications.getPreferences(viewerId);
+await bold.notifications.updatePreferences(viewerId, {
+  channels: { push: true }
+});
+```
+
 ## Session Management
 
 Session Management is BOLD's headless password-sharing prevention layer.
@@ -145,7 +160,17 @@ const status = await auth.sessions.verify(sessionId, { upstreamJwt: freshJwt });
 const { data: activeSessions } = await auth.sessions.list();
 await auth.sessions.revoke(sessionId);
 await auth.sessions.revokeOthers(currentSessionId);
+
+await auth.notifications.registerDevice(sessionId, {
+  provider: 'expo', // 'expo' | 'fcm' | 'apns'
+  token: expoPushToken
+});
 ```
+
+`registerDevice` accepts the same per-request auth overrides as session methods.
+A 403 with code `session_management_unavailable` throws
+`SessionManagementUnavailableError`, which extends `AuthAPIError` and exposes
+`status`, `code`, `retryable`, and `originalError`.
 
 ### Server-Side Tenant API Key Methods
 
@@ -216,16 +241,23 @@ Build community features with posts, comments, and reactions. Write operations r
 
 - `bold.community.posts.list(opts?)` - List posts with pagination (returns `PaginatedResponse<Post>`)
 - `bold.community.posts.get(id, viewerId?)` - Get post with full comments
-- `bold.community.posts.create(viewerId, data)` - Create a post
+- `bold.community.posts.create(viewerId, data)` - Create a post; `data.mentions` accepts customer external IDs
 - `bold.community.posts.update(viewerId, id, data)` - Update post (owner/admin)
 - `bold.community.posts.delete(viewerId, id)` - Delete post (owner/admin)
 - `bold.community.posts.react(viewerId, id)` - Toggle reaction
 
 ### Comments
 
-- `bold.community.comments.create(viewerId, postId, data)` - Create comment
+- `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs
 - `bold.community.comments.delete(viewerId, id)` - Delete comment (owner/admin)
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
+
+### Mentions
+
+- `bold.community.mentions.list(viewerId, opts?)` - List the viewer's paginated mention inbox
+- `bold.community.mentions.unreadCount(viewerId)` - Get unread count
+- `bold.community.mentions.markRead(viewerId, { ids })` - Mark selected mentions read
+- `bold.community.mentions.markRead(viewerId, { all: true })` - Mark all unread mentions read
 
 ```typescript
 // Example: List posts with pagination
@@ -246,11 +278,33 @@ for (const thread of detail.data.comments.items ?? []) {
   thread.reactions.viewerHasReacted; // boolean (when viewerId provided)
 }
 
-// Create and interact
-await bold.community.posts.create(viewerId, { content: 'Hello!', category: 'general' });
+// Create and interact. Mention values are customer external IDs.
+const created = await bold.community.posts.create(viewerId, {
+  content: 'Hello!',
+  category: 'general',
+  mentions: ['customer-user-123']
+});
+created.mentions?.skipped; // malformed or unresolved external IDs
+
 await bold.community.posts.react(viewerId, post.id);
-await bold.community.comments.create(viewerId, post.id, { content: 'Great post!' });
+await bold.community.comments.create(viewerId, post.id, {
+  content: 'Great post!',
+  mentions: ['customer-user-456']
+});
+
+const inbox = await bold.community.mentions.list(viewerId, {
+  page: 1,
+  pageSize: 20
+});
+const unread = await bold.community.mentions.unreadCount(viewerId);
+await bold.community.mentions.markRead(viewerId, {
+  ids: inbox.data.map((mention) => mention.id)
+});
+await bold.community.mentions.markRead(viewerId, { all: true });
 ```
+
+The optional `mentions` create-response report exists only when the request
+included a `mentions` array.
 
 ## AI Methods
 
@@ -515,7 +569,7 @@ type AIEvent =
 
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentReactionSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `ListPostsOptions`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `CommunityAPIError`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `NotificationChannels`, `NotificationPreferencesResponse`, `NotificationChannelUpdate`, `UpdateNotificationPreferencesData`, `NotificationProvider`, `RegisterDeviceData`, `RegisterDeviceResponse`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentReactionSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `Mention`, `MentionSkippedReport`, `CommunityPostCreateResponse`, `CommunityCommentCreateResponse`, `ListPostsOptions`, `ListMentionsOptions`, `MentionsUnreadCountResponse`, `MarkMentionsReadData`, `MarkMentionsReadResponse`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `AuthAPIError`, `SessionManagementUnavailableError`, `NotificationsAPIError`, `CommunityAPIError`
 
 ## Error Handling
 

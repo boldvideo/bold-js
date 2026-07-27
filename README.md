@@ -178,6 +178,23 @@ console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 
 ---
 
+## Notification Preferences
+
+Read or partially update a viewer's email and push notification channels with
+the tenant API-key client:
+
+```typescript
+const preferences = await bold.notifications.getPreferences('viewer-uuid');
+console.log(preferences.channels.email, preferences.channels.push);
+
+// Only push is changed; the existing email preference is preserved.
+await bold.notifications.updatePreferences('viewer-uuid', {
+  channels: { push: true }
+});
+```
+
+---
+
 ## Session Management
 
 Use BOLD Session Management as a headless password-sharing prevention layer.
@@ -220,6 +237,12 @@ if (sessionId) {
 }
 
 if (sessionId) {
+  // Register the session for push notifications.
+  await auth.notifications.registerDevice(sessionId, {
+    provider: 'expo', // 'expo' | 'fcm' | 'apns'
+    token: expoPushToken
+  });
+
   const verification = await auth.sessions.verify(sessionId);
   if (!verification.valid) {
     // session_not_found, session_revoked, or session_expired
@@ -239,6 +262,24 @@ Viewer self-management methods require policy support:
 const { data: sessions } = await auth.sessions.list();
 await auth.sessions.revoke(sessionId);
 await auth.sessions.revokeOthers(currentSessionId);
+```
+
+When Session Management is not available for the account, device registration
+returns a typed error:
+
+```typescript
+import { SessionManagementUnavailableError } from '@boldvideo/bold-js';
+
+try {
+  await auth.notifications.registerDevice(sessionId, {
+    provider: 'fcm',
+    token: fcmToken
+  });
+} catch (error) {
+  if (error instanceof SessionManagementUnavailableError) {
+    console.log(error.status, error.code, error.retryable);
+  }
+}
 ```
 
 ### Server-Side Session Management
@@ -324,11 +365,13 @@ const { data: posts } = await bold.community.posts.list({
 // Get a single post with comments
 const { data: post } = await bold.community.posts.get('post-id', 'viewer-uuid');
 
-// Create a post (requires viewerId)
-const { data: newPost } = await bold.community.posts.create('viewer-uuid', {
+// Create a post and notify viewers by their customer external IDs.
+const { data: newPost, mentions } = await bold.community.posts.create('viewer-uuid', {
   content: 'Hello community! **Markdown** supported.',
-  category: 'general'
+  category: 'general',
+  mentions: ['customer-user-123']
 });
+console.log(mentions?.skipped); // malformed or unresolved external IDs
 
 // Update a post (owner or admin only)
 await bold.community.posts.update('viewer-uuid', 'post-id', {
@@ -350,7 +393,7 @@ console.log(reaction.reacted, reaction.reactionsCount);
 const { data: comment } = await bold.community.comments.create(
   'viewer-uuid',
   'post-id',
-  { content: 'Great post!' }
+  { content: 'Great post!', mentions: ['customer-user-456'] }
 );
 
 // Reply to a comment (nested)
@@ -372,6 +415,28 @@ for (const thread of post.comments.items ?? []) {
   console.log(thread.createdAt, thread.reactions.count, thread.reactions.viewerHasReacted);
 }
 ```
+
+### Mention Inbox
+
+```typescript
+const { data: mentionItems, meta } = await bold.community.mentions.list(
+  'viewer-uuid',
+  { page: 1, pageSize: 20 }
+);
+
+const { data: unread } =
+  await bold.community.mentions.unreadCount('viewer-uuid');
+
+await bold.community.mentions.markRead('viewer-uuid', {
+  ids: mentionItems.map((mention) => mention.id)
+});
+
+// Or mark every unread mention as read.
+await bold.community.mentions.markRead('viewer-uuid', { all: true });
+```
+
+The optional `mentions` result is returned on post/comment creation only when
+the request included a `mentions` array.
 
 ---
 
@@ -576,12 +641,26 @@ import type {
   ListVideosOptions,
   ListVideosLatestOptions,
   ListVideosIndexOptions,
+  NotificationChannels,
+  NotificationPreferencesResponse,
+  UpdateNotificationPreferencesData,
+  NotificationProvider,
+  RegisterDeviceData,
+  RegisterDeviceResponse,
   // Community API
   Post,
   PostAuthor,
   Comment,
   ReactionResponse,
+  Mention,
+  MentionSkippedReport,
+  CommunityPostCreateResponse,
+  CommunityCommentCreateResponse,
   ListPostsOptions,
+  ListMentionsOptions,
+  MentionsUnreadCountResponse,
+  MarkMentionsReadData,
+  MarkMentionsReadResponse,
   CreatePostData,
   UpdatePostData,
   CreateCommentData
