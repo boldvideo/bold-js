@@ -10,6 +10,8 @@ import type {
   AuthSessionRevokeResponse,
   AuthSessionRevokeOthersResponse,
   AuthSessionVerifyResponse,
+  RegisterDeviceData,
+  RegisterDeviceResponse,
 } from "./types";
 
 type AuthHeaders = Record<string, string>;
@@ -37,18 +39,30 @@ type AuthClientConfig = Required<Pick<AuthClientOptions, "tenantSlug">> &
 
 export class AuthAPIError extends Error {
   readonly status?: number;
+  readonly code?: string;
+  readonly retryable?: boolean;
   readonly originalError?: Error;
 
   constructor(method: string, url: string, error: unknown) {
     if (error instanceof AxiosError) {
       const status = error.response?.status;
+      const code =
+        typeof error.response?.data?.code === "string"
+          ? error.response.data.code
+          : undefined;
+      const retryable =
+        typeof error.response?.data?.retryable === "boolean"
+          ? error.response.data.retryable
+          : undefined;
       const message =
         error.response?.data?.error ||
         error.response?.data?.message ||
-        error.response?.data?.code ||
+        code ||
         error.message;
       super(`${method} ${url} failed (${status}): ${message}`);
       this.status = status;
+      this.code = code;
+      this.retryable = retryable;
       this.originalError = error;
     } else if (error instanceof Error) {
       super(`${method} ${url} failed: ${error.message}`);
@@ -58,6 +72,29 @@ export class AuthAPIError extends Error {
     }
     this.name = "AuthAPIError";
   }
+}
+
+export class SessionManagementUnavailableError extends AuthAPIError {
+  constructor(method: string, url: string, error: unknown) {
+    super(method, url, error);
+    this.name = "SessionManagementUnavailableError";
+  }
+}
+
+function toAuthAPIError(
+  method: string,
+  url: string,
+  error: unknown
+): AuthAPIError {
+  if (
+    error instanceof AxiosError &&
+    error.response?.status === 403 &&
+    error.response?.data?.code === "session_management_unavailable"
+  ) {
+    return new SessionManagementUnavailableError(method, url, error);
+  }
+
+  return new AuthAPIError(method, url, error);
 }
 
 function requireValue(value: string | undefined, message: string): string {
@@ -116,7 +153,7 @@ async function get<T>(
     const res = await client.get(url, { headers: authHeaders(config, options) });
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw new AuthAPIError("GET", url, error);
+    throw toAuthAPIError("GET", url, error);
   }
 }
 
@@ -134,7 +171,7 @@ async function post<T>(
     });
     return camelizeKeys(res.data) as T;
   } catch (error) {
-    throw new AuthAPIError("POST", url, error);
+    throw toAuthAPIError("POST", url, error);
   }
 }
 
@@ -204,6 +241,31 @@ export function createAuthClient(options: AuthClientOptions) {
           undefined,
           requestOptions,
           { "X-Bold-Session-Id": currentSessionId }
+        );
+      },
+    },
+    notifications: {
+      registerDevice: (
+        sessionId: string,
+        data: RegisterDeviceData,
+        requestOptions?: AuthRequestOptions
+      ) => {
+        if (!sessionId) throw new Error("Session ID is required");
+        if (!data?.provider) throw new Error("Notification provider is required");
+        if (!["expo", "fcm", "apns"].includes(data.provider)) {
+          throw new Error("Notification provider must be expo, fcm, or apns");
+        }
+        if (!data?.token) throw new Error("Device token is required");
+
+        return post<RegisterDeviceResponse>(
+          client,
+          config,
+          `auth/sessions/${encodeURIComponent(sessionId)}/device`,
+          {
+            provider: data.provider,
+            token: data.token,
+          },
+          requestOptions
         );
       },
     },

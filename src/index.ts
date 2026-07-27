@@ -120,7 +120,10 @@ export type { ViewerLookupParams } from "./lib/viewers";
 export { ViewerAPIError } from "./lib/viewers";
 export type { SessionManagementRevokeOptions } from "./lib/session-management";
 export { SessionManagementAPIError } from "./lib/session-management";
-export { AuthAPIError } from "./lib/auth";
+export {
+  AuthAPIError,
+  SessionManagementUnavailableError,
+} from "./lib/auth";
 export { NotificationsAPIError } from "./lib/notifications";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";
