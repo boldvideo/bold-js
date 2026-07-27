@@ -9,6 +9,13 @@ import type {
   UpdatePostData,
   CreateCommentData,
   PaginatedResponse,
+  CommunityPostCreateResponse,
+  CommunityCommentCreateResponse,
+  Mention,
+  ListMentionsOptions,
+  MentionsUnreadCountResponse,
+  MarkMentionsReadData,
+  MarkMentionsReadResponse,
 } from "./types";
 
 type ApiClient = AxiosInstance;
@@ -144,10 +151,15 @@ export function createPost(client: ApiClient) {
   return async (viewerId: string, data: CreatePostData) => {
     requireViewerId(viewerId);
     if (!data?.content) throw new Error("Post content is required");
-    return post<{ data: Post }>(
+    const body: Record<string, unknown> = {
+      content: data.content,
+      category: data.category,
+    };
+    if (data.mentions !== undefined) body.mentions = data.mentions;
+    return post<CommunityPostCreateResponse>(
       client,
       "community/posts",
-      { post: { content: data.content, category: data.category } },
+      { post: body },
       viewerId
     );
   };
@@ -211,7 +223,8 @@ export function createComment(client: ApiClient) {
     if (!data?.content) throw new Error("Comment content is required");
     const body: Record<string, unknown> = { content: data.content };
     if (data.parentId) body.parent_id = data.parentId;
-    return post<{ data: Comment }>(
+    if (data.mentions !== undefined) body.mentions = data.mentions;
+    return post<CommunityCommentCreateResponse>(
       client,
       `community/posts/${postId}/comments`,
       { comment: body },
@@ -242,6 +255,68 @@ export function reactToComment(client: ApiClient) {
       client,
       `community/comments/${id}/react`,
       undefined,
+      viewerId
+    );
+  };
+}
+
+// --- Mentions ---
+
+/**
+ * List mentions for a viewer with optional pagination
+ */
+export function listMentions(client: ApiClient) {
+  return (
+    viewerId: string,
+    opts: ListMentionsOptions = {}
+  ): Promise<PaginatedResponse<Mention>> => {
+    requireViewerId(viewerId);
+    return get<PaginatedResponse<Mention>>(
+      client,
+      `community/mentions${toQuery({
+        page: opts.page,
+        page_size: opts.pageSize,
+      })}`,
+      viewerId
+    );
+  };
+}
+
+/**
+ * Get a viewer's unread mention count
+ */
+export function unreadMentionCount(client: ApiClient) {
+  return (viewerId: string): Promise<MentionsUnreadCountResponse> => {
+    requireViewerId(viewerId);
+    return get<MentionsUnreadCountResponse>(
+      client,
+      "community/mentions/unread-count",
+      viewerId
+    );
+  };
+}
+
+/**
+ * Mark selected mentions, or every mention, as read
+ */
+export function markMentionsRead(client: ApiClient) {
+  return (
+    viewerId: string,
+    data: MarkMentionsReadData
+  ): Promise<MarkMentionsReadResponse> => {
+    requireViewerId(viewerId);
+    const hasIds = Array.isArray(data?.ids);
+    const markAll = data?.all === true;
+    if (hasIds && markAll) {
+      throw new Error("Mention IDs and all: true are mutually exclusive");
+    }
+    if (!hasIds && !markAll) {
+      throw new Error("Mention IDs or all: true is required");
+    }
+    return post<MarkMentionsReadResponse>(
+      client,
+      "community/mentions/read",
+      markAll ? { all: true } : { ids: data.ids },
       viewerId
     );
   };
