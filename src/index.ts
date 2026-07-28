@@ -69,6 +69,9 @@ export type {
   AuthSessionRevokeResponse,
   AuthSessionRevokeOthersResponse,
   AuthChallengeResendResponse,
+  NotificationProvider,
+  RegisterDeviceData,
+  RegisterDeviceResponse,
   SessionManagementViewerState,
   SessionManagementViewerStateResponse,
   SessionManagementViewerResolveResponse,
@@ -81,6 +84,11 @@ export type {
   ListVideosOptions,
   ListVideosLatestOptions,
   ListVideosIndexOptions,
+  // Notification API
+  NotificationChannels,
+  NotificationPreferencesResponse,
+  NotificationChannelUpdate,
+  UpdateNotificationPreferencesData,
   // Community API
   Post,
   PostAuthor,
@@ -92,7 +100,15 @@ export type {
   Reply,
   Comment,
   ReactionResponse,
+  MentionSkippedReport,
+  CommunityPostCreateResponse,
+  CommunityCommentCreateResponse,
+  Mention,
   ListPostsOptions,
+  ListMentionsOptions,
+  MentionsUnreadCountResponse,
+  MarkMentionsReadData,
+  MarkMentionsReadResponse,
   CreatePostData,
   UpdatePostData,
   CreateCommentData,
@@ -104,6 +120,10 @@ export type { ViewerLookupParams } from "./lib/viewers";
 export { ViewerAPIError } from "./lib/viewers";
 export type { SessionManagementRevokeOptions } from "./lib/session-management";
 export { SessionManagementAPIError } from "./lib/session-management";
-export { AuthAPIError } from "./lib/auth";
+export {
+  AuthAPIError,
+  SessionManagementUnavailableError,
+} from "./lib/auth";
+export { NotificationsAPIError } from "./lib/notifications";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";

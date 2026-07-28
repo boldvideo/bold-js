@@ -2,10 +2,11 @@ import axios, { AxiosInstance } from "axios";
 
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { fetchViewers, fetchViewer, lookupViewer, createViewer, updateViewer, fetchViewerProgress, fetchProgress, saveProgress } from './viewers'
-import { listPosts, getPost, createPost, updatePost, deletePost, reactToPost, createComment, deleteComment, reactToComment } from './community'
+import { listPosts, getPost, createPost, updatePost, deletePost, reactToPost, createComment, deleteComment, reactToComment, listMentions, unreadMentionCount, markMentionsRead } from './community'
 import { trackEvent, trackPageView } from './tracking'
 import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
+import { createNotifications } from './notifications'
 import { createSessionManagement } from './session-management'
 
 export type ClientOptions = {
@@ -67,9 +68,15 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
       getProgress: fetchProgress(apiClient),
       saveProgress: saveProgress(apiClient),
     },
+    notifications: createNotifications(apiClient),
     sessionManagement: createSessionManagement(apiClient),
     ai: createAI(aiConfig),
     community: {
+      mentions: {
+        list: listMentions(apiClient),
+        unreadCount: unreadMentionCount(apiClient),
+        markRead: markMentionsRead(apiClient),
+      },
       posts: {
         list: listPosts(apiClient),
         get: getPost(apiClient),
