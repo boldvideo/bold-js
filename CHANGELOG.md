@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.25.0
+
+### Minor Changes
+
+- cd4986a: Expose notification preferences, community mentions, and authenticated push-device registration.
+
 ## 1.24.0
 
 ### Minor Changes
