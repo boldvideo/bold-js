@@ -16,19 +16,17 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0  # Needed for changelog generation
       
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10.12.2
+        uses: pnpm/action-setup@v6
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: 20.x
+          node-version: 24.x
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
       
@@ -60,7 +58,7 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
       
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           body: |
