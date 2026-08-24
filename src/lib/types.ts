@@ -215,6 +215,22 @@ export type Account = {
   slug: string;
 };
 
+// ============================================
+// Conversation Starters API Types
+// ============================================
+
+export type ConversationStarterSource = "collection" | "account";
+
+export type ConversationStarter = {
+  text: string;
+  source: ConversationStarterSource;
+  collectionId: string | null;
+};
+
+export type ListConversationStartersOptions = {
+  collectionIds?: string[];
+};
+
 export type Settings = {
   featuredPlaylists: Playlist[];
   menuItems: MenuItem[];

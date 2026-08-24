@@ -8,6 +8,7 @@ import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
 import { createNotifications } from './notifications'
 import { createSessionManagement } from './session-management'
+import { createConversationStarters } from './conversation-starters'
 
 export type ClientOptions = {
   baseURL?: string
@@ -70,6 +71,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
     },
     notifications: createNotifications(apiClient),
     sessionManagement: createSessionManagement(apiClient),
+    conversationStarters: createConversationStarters(apiClient),
     ai: createAI(aiConfig),
     community: {
       mentions: {
