@@ -597,6 +597,27 @@ const followUp = await bold.ai.search({
 
 ---
 
+## Conversation Starters
+
+Fetch conversation starter prompts, resolved per collection when available and
+falling back to the account-level starters otherwise:
+
+```typescript
+// Account-level starters (no collectionIds)
+const { data: starters } = await bold.conversationStarters.list();
+
+// Resolve starters for one or more collections
+const { data: starters } = await bold.conversationStarters.list({
+  collectionIds: ['collection-uuid-1', 'collection-uuid-2']
+});
+
+starters.forEach((starter) => {
+  console.log(starter.text, starter.source, starter.collectionId);
+});
+```
+
+---
+
 ## Analytics
 
 Track video events and page views for analytics.
@@ -670,7 +691,11 @@ import type {
   MarkMentionsReadResponse,
   CreatePostData,
   UpdatePostData,
-  CreateCommentData
+  CreateCommentData,
+  // Conversation Starters
+  ConversationStarter,
+  ConversationStarterSource,
+  ListConversationStartersOptions
 } from '@boldvideo/bold-js';
 ```
 
