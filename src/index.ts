@@ -27,6 +27,9 @@ export type {
   Account,
   AccountAI,
   MultimodalCapability,
+  ConversationStarter,
+  ConversationStarterSource,
+  ListConversationStartersOptions,
   Segment,
   Source,
   Citation,
@@ -125,5 +128,6 @@ export {
   SessionManagementUnavailableError,
 } from "./lib/auth";
 export { NotificationsAPIError } from "./lib/notifications";
+export { ConversationStartersAPIError } from "./lib/conversation-starters";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";
