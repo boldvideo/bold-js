@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.26.0
+
+### Minor Changes
+
+- 14d7aee: Add conversation starters API with per-collection resolution (`bold.conversationStarters.list`).
+
 ## 1.25.0
 
 ### Minor Changes
