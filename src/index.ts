@@ -42,6 +42,7 @@ export type {
   VoiceCaptionSegment,
   VoiceCaptionTurn,
   VoiceAudioLevels,
+  VoicePlaybackState,
   VoiceSessionOptions,
   VoiceSession,
   ImageInput,
