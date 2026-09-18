@@ -12,6 +12,9 @@ tsconfig.json
 # Development configs
 .changeset
 .github
+.agents
+.amp
+test
 
 # Documentation (except README.md which should be included)
 AGENTS.md
