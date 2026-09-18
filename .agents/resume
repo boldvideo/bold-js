@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This SDK needs no authentication, services, or repairs on resume.
+# Dependencies are restored from the setup snapshot; do not reinstall here.
