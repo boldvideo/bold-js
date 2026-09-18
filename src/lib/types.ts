@@ -1089,6 +1089,12 @@ export interface VoiceAudioLevels {
   output: number;
 }
 
+export interface VoicePlaybackState {
+  playing: boolean;
+  /** Video position in seconds; must be finite and non-negative. */
+  currentTime: number;
+}
+
 export interface VoiceSessionOptions {
   videoId: string;
   /** Viewer UUID or customer external ID. */
@@ -1111,6 +1117,10 @@ export interface VoiceSession {
   start(): Promise<void>;
   /** Can be set before start(); disables microphone tracks locally. */
   setMuted(muted: boolean): void;
+  /** Mutes both directions while the video plays and shares its position with the assistant.
+   * Can be set before start(). Preserves the user's microphone mute choice.
+   */
+  setPlaybackState(state: VoicePlaybackState): void;
   getAudioLevels(): VoiceAudioLevels;
   /** Stops media immediately; waits up to 3s for a close acknowledgement. Idempotent. */
   end(): Promise<void>;

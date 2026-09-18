@@ -496,6 +496,13 @@ its keys. Viewer profiles require the account's viewers feature.
   Check `session.status` if subsequent code requires a live connection. Setup failures
   reject and call `onError`. Concurrent starts share one attempt.
 - `setMuted(boolean)` disables microphone tracks locally, including when set before start.
+- `setPlaybackState({ playing, currentTime })` mutes microphone and assistant audio
+  while a video plays, restores the viewer's microphone mute choice when paused,
+  and shares the video position with the assistant. Call on play, pause, ended, and
+  seeked events (not every timeupdate). `currentTime` must be finite, non-negative
+  seconds; context is deduplicated at whole-second precision. Pre-start updates are
+  applied to new media immediately; only the latest context is sent when live.
+  Calls after ending are ignored. This method does not operate your video player.
 - `end(): Promise<void>` stops microphone/audio immediately and waits up to three seconds
   for close acknowledgement. It is idempotent; completion does not confirm final billing.
 - `dispose()` silently releases everything immediately, including during setup or end.
@@ -506,7 +513,8 @@ Connection setup has a 60-second deadline **after microphone permission**; cance
 also settles an unresolved permission prompt and stops any microphone tracks granted
 later. There are no automatic retries of paid session creation. The SDK enforces the
 server's maximum duration and idle limit while the page runs. Audible input/output or
-transcript deltas count as activity; incoming silent audio frames do not. Browser timers
+transcript deltas and video playback count as activity; incoming silent audio frames do not.
+Pausing the video restarts the idle window; playback never extends the maximum duration. Browser timers
 can be throttled or suspended, so backend limits remain authoritative for billing.
 
 Broker failures are `VoiceAPIError` instances with optional `status`, `code`, `retryable`,

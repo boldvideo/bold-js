@@ -435,3 +435,106 @@ test('server close before live is a setup failure, not explicit cancellation', a
   assert.equal(errors.length, 1);
   assert.deepEqual(ended, ['server']);
 });
+
+test('clip playback mutes both media directions and preserves the manual mic choice', async t => {
+  const b = browser(t);
+  const session = b.create();
+  await session.start();
+  b.peers[0].ontrack({ streams: [b.media] });
+  b.contexts[0].analysers.forEach(a => { a.value = 144; });
+  session.setPlaybackState({ playing: true, currentTime: 83.9 });
+  assert.equal(b.track.enabled, false);
+  assert.equal(b.audios[0].muted, true);
+  assert.equal(session.muted, false);
+  assert.deepEqual(session.getAudioLevels(), { input: 0, output: 0 });
+  session.setMuted(true);
+  session.setPlaybackState({ playing: false, currentTime: 90 });
+  assert.equal(b.track.enabled, false);
+  assert.equal(b.audios[0].muted, false);
+  assert.equal(session.muted, true);
+  session.setMuted(false);
+  assert.equal(b.track.enabled, true);
+  assert.deepEqual(session.getAudioLevels(), { input: 0.125, output: 0.125 });
+  session.setPlaybackState({ playing: true, currentTime: 90 });
+  session.setMuted(false);
+  assert.equal(b.track.enabled, false);
+});
+
+test('pre-start and connecting playback state apply to late media and send only the latest context', async t => {
+  const permission = deferred();
+  const b = browser(t, { permission });
+  const session = b.create();
+  session.setPlaybackState({ playing: false, currentTime: 0 });
+  const start = session.start();
+  session.setPlaybackState({ playing: true, currentTime: 3723 });
+  permission.resolve(b.media);
+  await start;
+  assert.equal(b.peers[0].trackEnabledOnAdd, false);
+  assert.equal(b.audios[0].muted, true);
+  assert.deepEqual(b.peers[0].channel.sent, [{
+    type: 'session.thinking.append', delegation_id: null,
+    content: 'The viewer is playing the video at 1:02:03. They cannot hear you while it plays; stay quiet until they pause it.',
+  }]);
+});
+
+test('playback context includes zero, deduplicates whole seconds, and reports seeks', async t => {
+  const b = browser(t);
+  const session = b.create();
+  await session.start();
+  session.setPlaybackState({ playing: false, currentTime: 0 });
+  session.setPlaybackState({ playing: false, currentTime: 0.9 });
+  session.setPlaybackState({ playing: true, currentTime: 83 });
+  session.setPlaybackState({ playing: true, currentTime: 83 });
+  session.setPlaybackState({ playing: true, currentTime: 100 });
+  const sent = b.peers[0].channel.sent;
+  assert.equal(sent.length, 3);
+  assert.equal(sent[0].content, 'The viewer paused the video at 0:00.');
+  assert.match(sent[1].content, /1:23/);
+  assert.match(sent[2].content, /1:40/);
+});
+
+test('invalid playback updates cannot change media state; teardown cannot be undone', async t => {
+  const b = browser(t);
+  const session = b.create();
+  await session.start();
+  for (const currentTime of [-1, NaN, Infinity, '10']) {
+    assert.throws(() => session.setPlaybackState({ playing: true, currentTime }), /currentTime/);
+  }
+  assert.throws(() => session.setPlaybackState({ playing: 'yes', currentTime: 1 }), /playing/);
+  assert.equal(b.track.enabled, true);
+  assert.equal(b.audios[0].muted, false);
+  assert.equal(b.peers[0].channel.sent.length, 0);
+  await session.end();
+  session.setPlaybackState({ playing: false, currentTime: 0 });
+  assert.equal(b.track.stopped, true);
+  assert.equal(b.audios[0].paused, true);
+  assert.deepEqual(b.peers[0].channel.sent, [{ type: 'session.close' }]);
+});
+
+test('clip playback counts as activity but cannot extend the maximum session duration', async t => {
+  clock(t);
+  const b = browser(t, { grant: { ...grant, idle_seconds: 2, max_seconds: 5 } });
+  const ended = [];
+  const session = b.create({ onEnded: reason => ended.push(reason) });
+  await session.start();
+  session.setPlaybackState({ playing: true, currentTime: 0 });
+  t.mock.timers.tick(4999);
+  assert.equal(session.status, 'live');
+  t.mock.timers.tick(1);
+  assert.deepEqual(ended, ['time']);
+});
+
+test('idle timeout resumes when the video pauses', async t => {
+  clock(t);
+  const b = browser(t, { grant: { ...grant, idle_seconds: 2 } });
+  const ended = [];
+  const session = b.create({ onEnded: reason => ended.push(reason) });
+  await session.start();
+  session.setPlaybackState({ playing: true, currentTime: 0 });
+  t.mock.timers.tick(5000);
+  session.setPlaybackState({ playing: false, currentTime: 5 });
+  t.mock.timers.tick(1999);
+  assert.equal(session.status, 'live');
+  t.mock.timers.tick(1);
+  assert.deepEqual(ended, ['idle']);
+});

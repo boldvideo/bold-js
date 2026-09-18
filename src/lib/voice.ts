@@ -1,5 +1,5 @@
 import type { AIConfig } from './ai';
-import type { VoiceCaptionTurn, VoiceEndReason, VoiceSession, VoiceSessionOptions, VoiceStatus } from './types';
+import type { VoiceCaptionTurn, VoiceEndReason, VoicePlaybackState, VoiceSession, VoiceSessionOptions, VoiceStatus } from './types';
 import { appendVoiceCaption } from './voice-captions';
 
 /** Broker HTTP or network failure. Session creation is never automatically retried. */
@@ -55,6 +55,7 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
   let status: VoiceStatus = 'idle';
   let sessionId: string | null = null;
   let muted = false;
+  let playback: VoicePlaybackState | null = null;
   let disposed = false;
   let pc: RTCPeerConnection | null = null;
   let dc: RTCDataChannel | null = null;
@@ -108,6 +109,26 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
     void context?.close().catch(() => {});
     context = null;
     inputAnalyser = outputAnalyser = null;
+  }
+
+  function applyPlayback() {
+    for (const track of stream?.getAudioTracks() ?? []) track.enabled = !muted && !playback?.playing;
+    if (audio) audio.muted = playback?.playing ?? false;
+  }
+
+  function sendPlayback() {
+    if (!playback || status !== 'live') return;
+    const seconds = playback.currentTime;
+    const minutes = Math.floor(seconds / 60);
+    const timestamp = minutes < 60
+      ? `${minutes}:${String(seconds % 60).padStart(2, '0')}`
+      : `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    send({
+      type: 'session.thinking.append', delegation_id: null,
+      content: playback.playing
+        ? `The viewer is playing the video at ${timestamp}. They cannot hear you while it plays; stay quiet until they pause it.`
+        : `The viewer paused the video at ${timestamp}.`,
+    });
   }
 
   function finish(reason: VoiceEndReason) {
@@ -192,7 +213,7 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
       void end('time');
       if (error) notify(callbacks.onError, error);
     } else if (status === 'live') {
-      if (level(outputAnalyser) > 0.02 || (!muted && level(inputAnalyser) > 0.02)) lastActivity = now;
+      if (playback?.playing || level(outputAnalyser) > 0.02 || (!muted && level(inputAnalyser) > 0.02)) lastActivity = now;
       if (now - lastActivity >= idleSeconds * 1000) void end('idle');
     }
   }
@@ -216,6 +237,7 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
       clearTimeout(watchdog);
       status = 'live';
       lastActivity = performance.now();
+      sendPlayback();
       resolveStart?.();
       notify(callbacks.onStatus, status);
     } else if (event.type === 'session.input_transcript.delta' || event.type === 'session.output_transcript.delta') {
@@ -258,7 +280,7 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
       }
       stream = media;
       watchdog = setTimeout(() => fail(new Error('Voice connection timed out')), 60000);
-      for (const track of media.getAudioTracks()) track.enabled = !muted;
+      applyPlayback();
       await resumed;
       if (cancelled()) return;
       inputAnalyser = analyse(media);
@@ -266,6 +288,7 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
       pc = peer;
       audio = new Audio();
       audio.autoplay = true;
+      applyPlayback();
       peer.ontrack = event => {
         if (status !== 'connecting' && status !== 'live') return;
         const remote = event.streams[0] ?? new MediaStream([event.track]);
@@ -346,9 +369,24 @@ function createSession(config: AIConfig, options: VoiceSessionOptions): VoiceSes
     },
     setMuted(value) {
       muted = value;
-      for (const track of stream?.getAudioTracks() ?? []) track.enabled = !muted;
+      applyPlayback();
     },
-    getAudioLevels() { return { input: muted ? 0 : level(inputAnalyser), output: level(outputAnalyser) }; },
+    setPlaybackState(value) {
+      if (status === 'ending' || status === 'ended') return;
+      if (typeof value.playing !== 'boolean') throw new TypeError('playing must be a boolean');
+      if (!Number.isFinite(value.currentTime) || value.currentTime < 0) {
+        throw new TypeError('currentTime must be a finite, non-negative number');
+      }
+      const next = { playing: value.playing, currentTime: Math.floor(value.currentTime) };
+      if (playback?.playing === next.playing && playback.currentTime === next.currentTime) return;
+      playback = next;
+      applyPlayback();
+      if (status === 'live') lastActivity = performance.now();
+      sendPlayback();
+    },
+    getAudioLevels() {
+      return { input: muted || playback?.playing ? 0 : level(inputAnalyser), output: playback?.playing ? 0 : level(outputAnalyser) };
+    },
     end: () => end(),
     dispose,
   };

@@ -359,6 +359,13 @@ session.dispose();
   before assuming live. Setup errors reject AND call onError. Concurrent starts share
   one attempt. Ended/disposed sessions cannot restart; create a new one.
 - `setMuted(boolean)` disables local microphone tracks, even if set before start.
+- `setPlaybackState(state: VoicePlaybackState): void` accepts `{ playing: boolean,
+  currentTime: number }`. Position must be finite, non-negative seconds. Mutes both
+  microphone and assistant audio during playback, preserving the manual mic choice.
+  Shares position context on play/pause/seeked/ended; do not call on every timeupdate.
+  Deduplicates at whole-second precision. Pre-start/connecting updates apply to late
+  media and send only the latest context when live. Calls after ending are ignored.
+  It never operates the host video. Muted audio directions report zero RMS.
 - `end(): Promise<void>` immediately stops media, then waits at most 3 seconds for
   close acknowledgement. Idempotent; completion does not confirm final accounting.
 - `dispose(): void` is silent, immediate cleanup. The SDK automatically calls it on
@@ -371,6 +378,7 @@ session.dispose();
   background timer suspension means backend enforcement remains authoritative.
 - Audible input/output RMS above 0.02 and nonempty caption deltas reset idle. Incoming
   silence frames do not. UI level polling is optional and does not drive enforcement.
+  Video playback counts as activity; pausing restarts idle. The maximum duration is unchanged.
 - `VoiceAPIError extends Error`: optional `status`, `code`, `retryable`, `resetsOn`,
   `retryAfter` (raw header), `originalError`. Handles allowance (402), concurrent
   session (409), rate limiting (429), and other broker failures. Other browser/setup
@@ -389,7 +397,7 @@ session.dispose();
   splits valid m:ss/h:mm:ss (including zero) into text/timestamp segments. Timestamp
   fragments split across deltas are recomputed from the complete turn.
 - Public types: `VoiceSessionOptions`, `VoiceSession`, `VoiceStatus`, `VoiceEndReason`,
-  `VoiceSpeaker`, `VoiceCaptionTurn`, `VoiceCaptionSegment`, `VoiceAudioLevels`.
+  `VoiceSpeaker`, `VoiceCaptionTurn`, `VoiceCaptionSegment`, `VoiceAudioLevels`, `VoicePlaybackState`.
 
 ## AI Streaming Events
 

@@ -1,0 +1,5 @@
+---
+"@boldvideo/bold-js": minor
+---
+
+Add `VoiceSession.setPlaybackState()` to mute microphone and assistant audio during video playback, preserve the viewer's microphone mute choice, and share the current video position with the voice assistant. Video playback counts as activity without extending the server-granted maximum session duration.
