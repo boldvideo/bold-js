@@ -448,7 +448,110 @@ them before rendering as HTML.
 
 ## AI Methods
 
-All AI methods support both streaming (default) and non-streaming modes.
+Chat, search, and recommendations support both streaming (default) and non-streaming modes.
+
+### Voice sessions
+
+Talk to a single video without managing WebRTC, microphone tracks, or caption fragments.
+Voice requires the account's AI and voice features, a video transcript, and a browser
+with microphone permission in a secure context (HTTPS, or localhost for development).
+The factory is synchronous and safe to call during server rendering; only `start()`
+uses browser APIs. No framework or additional dependencies are required.
+
+```typescript
+const session = bold.ai.voice.createSession({
+  videoId: 'lesson-slug',
+  viewer: 'customer-123', // Optional viewer UUID or external ID
+  onStatus: (status) => { statusLabel.textContent = status; },
+  onCaptions: (turns) => {
+    // Each turn has a stable id, speaker ('user' or 'assistant'), text,
+    // startedAt/updatedAt in milliseconds, and seekable timestamp segments.
+    captions.textContent = turns.map(turn => `${turn.speaker}: ${turn.text}`).join('\n');
+  },
+  onEnded: (reason) => console.log('Voice ended:', reason),
+  onError: (error) => { errorLabel.textContent = error.message; },
+});
+
+// Start directly from a user gesture. Handle rejection even when using onError.
+startButton.onclick = () => { void session.start().catch(() => {}); };
+muteButton.onclick = () => session.setMuted(!session.muted);
+endButton.onclick = () => { void session.end(); };
+
+// Optional animation-frame polling: normalized RMS amplitudes, not volume settings.
+const { input, output } = session.getAudioLevels();
+
+// In your component unmount / video replacement callback, call session.dispose().
+```
+
+`createSession(options)` returns a **single-use** `VoiceSession`. Create a new handle
+to reconnect. The broker request happens inside `start()`, after microphone permission
+and SDP negotiation; callers do not supply SDP. Optional `viewerProfile` accepts a
+string or an object of string, number, and boolean values, forwarded without changing
+its keys. Viewer profiles require the account's viewers feature.
+
+- Readonly state: `status`, `sessionId` (null until the broker responds), `muted`.
+- Statuses: `idle → connecting → live → ending → ended`; remote shutdown may go
+  directly to `ended`.
+- `start(): Promise<void>` resolves when live, or when cancelled by `end()`/`dispose()`.
+  Check `session.status` if subsequent code requires a live connection. Setup failures
+  reject and call `onError`. Concurrent starts share one attempt.
+- `setMuted(boolean)` disables microphone tracks locally, including when set before start.
+- `end(): Promise<void>` stops microphone/audio immediately and waits up to three seconds
+  for close acknowledgement. It is idempotent; completion does not confirm final billing.
+- `dispose()` silently releases everything immediately, including during setup or end.
+  The SDK also disposes on `pagehide`; it cannot detect framework unmounts for you.
+- End reasons: `user`, `idle`, `time`, `server`, `connection`, `error`.
+
+Connection setup has a 60-second deadline **after microphone permission**; cancelling
+also settles an unresolved permission prompt and stops any microphone tracks granted
+later. There are no automatic retries of paid session creation. The SDK enforces the
+server's maximum duration and idle limit while the page runs. Audible input/output or
+transcript deltas count as activity; incoming silent audio frames do not. Browser timers
+can be throttled or suspended, so backend limits remain authoritative for billing.
+
+Broker failures are `VoiceAPIError` instances with optional `status`, `code`, `retryable`,
+`retryAfter` (raw HTTP header), `resetsOn`, and `originalError`. This includes
+`voice_allowance_exceeded` (402), `voice_session_limit` (409), and `rate_limited` (429).
+Microphone, playback, and WebRTC failures are ordinary `Error` instances. Provider error
+events call `onError` but do not automatically end a live session.
+
+**Captions and seek buttons.** Fragments from the same speaker within 1,500ms extend
+the same turn, including when speakers overlap. `turn.segments` contains
+`{ type: 'text', text }` and `{ type: 'timestamp', text, seconds }` entries. Render a
+timestamp as a button whose click sets your video player's `currentTime` to `seconds`.
+Both `m:ss` and `h:mm:ss` are supported, including `0:00`. Caption text is untrusted;
+use text nodes or your framework's escaped text rendering, not `innerHTML`.
+The pure helpers `appendVoiceCaption(turns, speaker, delta, now)` and
+`splitVoiceTimestamps(text)` are also exported. The SDK does not control your video
+player or inject an app-specific greeting.
+
+**React cleanup.** Keep the handle in a ref, create it in an effect, and start it from
+a click handler. Create a fresh handle for each mount/video (including Strict Mode's
+effect replay); do not start microphone capture in an effect.
+
+```tsx
+const voiceRef = useRef<VoiceSession | null>(null);
+
+useEffect(() => {
+  const session = bold.ai.voice.createSession({
+    videoId,
+    onStatus: setStatus,
+    onCaptions: setCaptions, // useState<readonly VoiceCaptionTurn[]>([])
+    onError: (error) => setError(error.message),
+  });
+  voiceRef.current = session;
+  return () => {
+    session.dispose();
+    voiceRef.current = null;
+  };
+}, [bold, videoId]); // Keep the bold client stable across renders.
+
+// In a button handler:
+const startVoice = () => { void voiceRef.current?.start().catch(() => {}); };
+```
+
+Import `VoiceSession` and `VoiceCaptionTurn` as types from `@boldvideo/bold-js`, and
+React hooks from `react`. Reset your displayed status/captions on video changes as needed.
 
 ### Chat
 

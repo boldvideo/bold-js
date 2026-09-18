@@ -1,5 +1,6 @@
 import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
+import { createVoice } from './voice';
 
 export interface AIConfig {
   baseURL: string;
@@ -326,6 +327,9 @@ function validateImage(
  * AI client interface for type-safe method overloading
  */
 export interface AIClient {
+  /** Browser voice sessions. The factory is synchronous; call session.start() from a user gesture. */
+  voice: ReturnType<typeof createVoice>;
+
   /**
    * Chat - Conversational AI for Q&A
    * 
@@ -540,6 +544,7 @@ export function createAI(config: AIConfig): AIClient {
   }
 
   return {
+    voice: createVoice(config),
     chat: chat as AIClient['chat'],
     ask: ask as AIClient['ask'],
     coach: coach as AIClient['coach'],

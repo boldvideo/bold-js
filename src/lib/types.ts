@@ -1064,3 +1064,56 @@ export type CreateCommentData = {
   /** Customer external IDs to mention */
   mentions?: string[];
 };
+
+export type VoiceStatus = 'idle' | 'connecting' | 'live' | 'ending' | 'ended';
+export type VoiceEndReason = 'user' | 'idle' | 'time' | 'server' | 'connection' | 'error';
+export type VoiceSpeaker = 'user' | 'assistant';
+
+export type VoiceCaptionSegment =
+  | { readonly type: 'text'; readonly text: string }
+  | { readonly type: 'timestamp'; readonly text: string; readonly seconds: number };
+
+export interface VoiceCaptionTurn {
+  readonly id: string;
+  readonly speaker: VoiceSpeaker;
+  readonly text: string;
+  /** Milliseconds since the Unix epoch. */
+  readonly startedAt: number;
+  readonly updatedAt: number;
+  readonly segments: readonly VoiceCaptionSegment[];
+}
+
+/** Normalized RMS amplitudes (0–1), not perceived loudness. */
+export interface VoiceAudioLevels {
+  input: number;
+  output: number;
+}
+
+export interface VoiceSessionOptions {
+  videoId: string;
+  /** Viewer UUID or customer external ID. */
+  viewer?: string;
+  viewerProfile?: string | Record<string, string | number | boolean>;
+  onStatus?: (status: VoiceStatus) => void;
+  /** Immutable snapshots; timestamps are included in each turn's segments. */
+  onCaptions?: (turns: readonly VoiceCaptionTurn[]) => void;
+  onEnded?: (reason: VoiceEndReason) => void;
+  /** Also receives non-fatal provider errors. Setup failures reject start(). */
+  onError?: (error: Error) => void;
+}
+
+/** Single-use browser session. Creating a session does not request microphone access. */
+export interface VoiceSession {
+  readonly status: VoiceStatus;
+  readonly sessionId: string | null;
+  readonly muted: boolean;
+  /** Call from a user gesture. Resolves when live OR explicitly cancelled; rejects on setup failure. */
+  start(): Promise<void>;
+  /** Can be set before start(); disables microphone tracks locally. */
+  setMuted(muted: boolean): void;
+  getAudioLevels(): VoiceAudioLevels;
+  /** Stops media immediately; waits up to 3s for a close acknowledgement. Idempotent. */
+  end(): Promise<void>;
+  /** Silent, immediate cleanup for unmount. Also called automatically on pagehide. */
+  dispose(): void;
+}

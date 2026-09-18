@@ -36,6 +36,14 @@ export type {
   AIUsage,
   AIEvent,
   AIResponse,
+  VoiceStatus,
+  VoiceEndReason,
+  VoiceSpeaker,
+  VoiceCaptionSegment,
+  VoiceCaptionTurn,
+  VoiceAudioLevels,
+  VoiceSessionOptions,
+  VoiceSession,
   ImageInput,
   ChatOptions,
   SearchOptions,
@@ -131,3 +139,5 @@ export { NotificationsAPIError } from "./lib/notifications";
 export { ConversationStartersAPIError } from "./lib/conversation-starters";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";
+export { VoiceAPIError } from "./lib/voice";
+export { appendVoiceCaption, splitVoiceTimestamps } from "./lib/voice-captions";
