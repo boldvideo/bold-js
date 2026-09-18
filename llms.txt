@@ -381,6 +381,9 @@ session.dispose();
 - Segments: `{ type: 'text', text } | { type: 'timestamp', text, seconds }`.
   Render timestamp buttons to seek the host video; do not render caption HTML unescaped.
   SDK never controls the host video or injects an app-specific greeting.
+- Provider delegations receive a fixed English transcript-only instruction: “Only this
+  video transcript is available. Answer from it, or say the video does not cover it.”
+  This also applies to non-English sessions; no language/instruction override is exposed.
 - Exported pure helpers: `appendVoiceCaption(turns, speaker, delta, now)` merges the
   latest same-speaker turn within 1,500ms, including overlap; `splitVoiceTimestamps(text)`
   splits valid m:ss/h:mm:ss (including zero) into text/timestamp segments. Timestamp

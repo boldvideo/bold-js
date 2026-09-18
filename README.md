@@ -525,6 +525,11 @@ The pure helpers `appendVoiceCaption(turns, speaker, delta, now)` and
 `splitVoiceTimestamps(text)` are also exported. The SDK does not control your video
 player or inject an app-specific greeting.
 
+If the provider requests a delegation, the SDK responds with a fixed English
+transcript-only instruction: “Only this video transcript is available. Answer from it,
+or say the video does not cover it.” This protocol response is also sent in non-English
+sessions; `VoiceSessionOptions` does not expose language or instruction overrides.
+
 **React cleanup.** Keep the handle in a ref, create it in an effect, and start it from
 a click handler. Create a fresh handle for each mount/video (including Strict Mode's
 effect replay); do not start microphone capture in an effect.
