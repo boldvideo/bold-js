@@ -210,6 +210,8 @@ export type Account = {
   ai: AccountAI;
   aiSearch: AccountAISearch;
   multimodal?: MultimodalCapability;
+  /** Voice availability from settings. Older API versions may omit this field. */
+  voice?: { enabled: boolean };
   name: string;
   persona: Persona;
   slug: string;

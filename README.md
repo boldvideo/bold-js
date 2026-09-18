@@ -458,6 +458,14 @@ with microphone permission in a secure context (HTTPS, or localhost for developm
 The factory is synchronous and safe to call during server rendering; only `start()`
 uses browser APIs. No framework or additional dependencies are required.
 
+Use the account settings to decide whether to show voice controls. Missing or false
+values keep voice hidden; the broker still enforces access when a session starts.
+
+```typescript
+const settings = await bold.settings();
+const voiceEnabled = settings.data.account.voice?.enabled === true;
+```
+
 ```typescript
 const session = bold.ai.voice.createSession({
   videoId: 'lesson-slug',

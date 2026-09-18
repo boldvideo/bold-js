@@ -328,6 +328,15 @@ and non-streaming responses. Voice uses a browser session handle instead of SSE.
 
 ## Voice Sessions
 
+`Settings.account.voice` is optional for compatibility with older API responses.
+Show voice controls only when the capability is explicitly true; the broker still
+enforces session access:
+
+```typescript
+const settings = await bold.settings();
+const voiceEnabled = settings.data.account.voice?.enabled === true;
+```
+
 ```typescript
 const session = bold.ai.voice.createSession({
   videoId: 'lesson-slug',
