@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 1.27.0
+
+### Minor Changes
+
+- 1b56411: Add framework-free `ai.voice.createSession()` browser sessions with microphone and WebRTC lifecycle management, overlapping captions, seekable timestamps, audio levels, mute, cancellation, and server-provided session limits. Export voice types, caption helpers, and structured broker errors; document plain-page and React integrations.
+
 ## 1.26.0
 
 ### Minor Changes
