@@ -667,6 +667,40 @@ for await (const event of stream) {
 }
 ```
 
+### AI interaction tracking
+
+`chat` (library-wide or video-scoped), `ask`, `coach`, and `search` accept an
+optional `requestId` UUID, sent as `request_id`. Generate it once per intentional
+user action and reuse it when retrying that action. A new question, follow-up, or
+intentional repeated search gets a new UUID. The SDK does not generate IDs or retry
+requests automatically.
+
+`search` also accepts `searchMode: 'preview' | 'settled'`, sent as `search_mode`.
+Omitting it preserves the server's `settled` default. Use `preview` for interim
+searches and `settled` for the final submitted search; treat that final submission
+as a new action with its own UUID.
+
+```typescript
+const action = {
+  prompt: 'pricing strategies',
+  requestId: crypto.randomUUID(),
+  searchMode: 'settled' as const,
+  stream: false as const,
+};
+const response = await bold.ai.search(action);
+// If retrying this action, pass the same action.requestId.
+console.log(response.interactionId);
+```
+
+JSON `AIResponse` and SSE `message_complete` events expose
+`interactionId?: string | null` (camelized from `interaction_id`). Search previews
+may return `null`; older servers may omit it. These IDs support **analytics
+deduplication only**, not response replay or model-call deduplication. Persistence
+is best-effort and asynchronous: receiving an ID is **not a durable acknowledgement**.
+
+This does not change `videos.search()`, which calls `/videos?query=…`; the SDK does
+not wrap the separate keyword `/search` endpoint.
+
 ### Video-Scoped Chat
 
 Chat about a specific video by passing `videoId`. Uses only that video's transcript as context.

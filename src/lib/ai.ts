@@ -468,6 +468,7 @@ export function createAI(config: AIConfig): AIClient {
       : basePath;
 
     const body: Record<string, unknown> = { prompt: options.prompt };
+    if (options.requestId !== undefined) body.request_id = options.requestId;
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.tags) body.tags = options.tags;
     if (isVideoScoped && options.currentTime !== undefined) {
@@ -497,6 +498,8 @@ export function createAI(config: AIConfig): AIClient {
     const path = 'ai/search';
 
     const body: Record<string, unknown> = { prompt: options.prompt };
+    if (options.requestId !== undefined) body.request_id = options.requestId;
+    if (options.searchMode !== undefined) body.search_mode = options.searchMode;
     if (options.limit) body.limit = options.limit;
     if (options.collectionId) body.collection_id = options.collectionId;
     if (options.videoId) body.video_id = options.videoId;
