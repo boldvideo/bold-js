@@ -701,6 +701,14 @@ is best-effort and asynchronous: receiving an ID is **not a durable acknowledgem
 This does not change `videos.search()`, which calls `/videos?query=…`; the SDK does
 not wrap the separate keyword `/search` endpoint.
 
+Chat, video chat, `ask`/`coach`, and AI search also accept optional attribution:
+`channel: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown'`, `clientName: string`, and
+`clientVersion: string`. These are sent as top-level `channel`, `client_name`, and
+`client_version`. Omitted fields stay omitted; the backend normalizes missing or
+malformed channel values to `unknown`. Attribution does not affect `requestId`
+deduplication. Set `channel: 'portal'` explicitly in portal server proxies; these
+labels are analytics metadata, not authorization signals.
+
 ### Video-Scoped Chat
 
 Chat about a specific video by passing `videoId`. Uses only that video's transcript as context.
@@ -777,6 +785,51 @@ starters.forEach((starter) => {
 ---
 
 ## Analytics
+
+### Explicit AI engagement (browser or server)
+
+`bold.trackEngagement(options: TrackEngagementOptions): Promise<void>` sends
+`POST /api/v1/event` independently of legacy `trackEvent` and its throttle.
+Import `TrackEngagementOptions` from `@boldvideo/bold-js`.
+
+| SDK field | Wire field | Meaning |
+|---|---|---|
+| `event` | `n` | `source_open` or `video_progress` |
+| `interactionId` | `interaction_id` | Required interaction UUID from an AI response |
+| `openId` | `playback_id` | Required new UUID per deliberate source open; **not a Mux playbackId** |
+| `videoId` | `vid` | Required source video ID |
+| `viewer?` | `viewer` | Existing viewer UUID or external ID |
+| `watchedSeconds?` | `watched_seconds` | Cumulative elapsed **playing wall-clock seconds for this open** |
+
+```typescript
+// On a deliberate source open, skip if the response has no interaction ID.
+if (response.interactionId) {
+  const open = {
+    interactionId: response.interactionId,
+    openId: crypto.randomUUID(),
+    videoId: source.videoId,
+  };
+  void bold.trackEngagement({ ...open, event: 'source_open' });
+
+  // Later, after the caller has measured 12.5 seconds spent playing:
+  void bold.trackEngagement({ ...open, event: 'video_progress', watchedSeconds: 12.5 });
+}
+```
+
+`source_open` only establishes the open; progress requires that open. Maintain the
+counter in the caller, excluding paused/buffering time. Do not send absolute
+playhead positions, seek deltas, or per-sample increments. Retries/reordered
+progress use the same `openId`; the backend keeps the cumulative maximum. Generate
+a fresh `openId` when the user deliberately opens a source again.
+
+Calls are best-effort and safe to fire and forget: transport errors are caught,
+and no automatic retry or shared throttle is applied. A resolved promise (including
+HTTP 202) is **not a durable acknowledgement**. The backend validates tenant, viewer,
+and source attribution; it retries capture/open races for at most 30 seconds and
+does not create placeholder interactions. Server proxies must derive API keys and
+viewer references from trusted tenant/session context, not browser claims.
+
+### Legacy playback and page views
 
 Track video events and page views for analytics.
 

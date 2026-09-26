@@ -36,6 +36,7 @@ export type {
   AIUsage,
   AIEvent,
   AIResponse,
+  TrackEngagementOptions,
   VoiceStatus,
   VoiceEndReason,
   VoiceSpeaker,
