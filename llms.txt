@@ -418,6 +418,7 @@ type AIEvent =
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete";
+      interactionId?: string | null;
       conversationId?: string;
       content: string;
       citations: Segment[];
@@ -436,6 +437,7 @@ type AIEvent =
 ```typescript
 {
   prompt: string;              // Required
+  requestId?: string;           // UUID per intentional action; reuse on retries
   stream?: boolean;            // Default: true
   videoId?: string;            // Scope to specific video
   currentTime?: number;        // Playback position (with videoId)
@@ -450,6 +452,8 @@ type AIEvent =
 ```typescript
 {
   prompt: string;              // Required
+  requestId?: string;           // UUID per intentional action; reuse on retries
+  searchMode?: 'preview' | 'settled'; // Omitted means settled
   stream?: boolean;            // Default: true
   limit?: number;              // Max results
   collectionId?: string;
@@ -458,6 +462,25 @@ type AIEvent =
   context?: AIContextMessage[];
 }
 ```
+
+### AI interaction IDs
+
+Chat (library and video), ask/coach aliases, and AI search send optional requestId
+as request_id. Search sends optional searchMode as search_mode; when omitted the
+server defaults to settled. Preview is for interim searches; final settled
+submission is a new action with a new UUID. Reuse an action's UUID on retries,
+but generate a new UUID for each intentional next action, even with identical text.
+The SDK does not generate IDs or automatically retry requests.
+
+JSON AIResponse and SSE message_complete events expose interactionId?: string | null,
+camelized from interaction_id. Search previews may return null; older servers may
+omit the field. This is analytics deduplication only, not response replay or
+model-call deduplication. Best-effort asynchronous persistence means a returned ID
+is not a durable acknowledgement. Example: generate requestId with
+crypto.randomUUID() once when the user submits, then keep it for retries.
+
+videos.search() uses /videos?query=…, not the separate keyword /search endpoint;
+the SDK does not wrap that endpoint and its video response types are unchanged.
 
 ### RecommendationsOptions
 

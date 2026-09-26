@@ -310,7 +310,7 @@ export type AIEvent =
   | { type: "sources"; sources: Segment[] }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "message_complete"; interactionId?: string | null; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "image_analysis"; status: "analyzing" }
   | { type: "image_analysis"; status: "complete"; description: string };
@@ -331,6 +331,8 @@ export type ImageInput =
  * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
  */
 export interface AIResponse {
+  /** Analytics correlation ID, not a durable persistence acknowledgement. May be null for search previews. */
+  interactionId?: string | null;
   conversationId?: string;       // Present for /chat endpoints (primary identifier)
   videoId?: string;              // Present for /videos/:id/chat
   /** @deprecated Use conversationId instead. Will be removed in v2. */
@@ -350,6 +352,8 @@ export interface AIResponse {
  */
 export interface ChatOptions {
   prompt: string;
+  /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
+  requestId?: string;
   stream?: boolean;          // Default: true
   conversationId?: string;   // Pass to continue existing conversation
   collectionId?: string;
@@ -393,6 +397,10 @@ export interface AIContextMessage {
  */
 export interface SearchOptions {
   prompt: string;
+  /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
+  requestId?: string;
+  /** Omitted means settled. Preview searches may return a null interactionId. */
+  searchMode?: 'preview' | 'settled';
   stream?: boolean;          // Default: true
   limit?: number;
   collectionId?: string;
