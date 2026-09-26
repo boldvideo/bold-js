@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { setTimeout as delay } from 'node:timers/promises';
 import test, { after, before, beforeEach } from 'node:test';
@@ -31,6 +32,13 @@ after(async () => {
 });
 
 beforeEach(() => { requests.length = 0; });
+
+test('public engagement declarations require a counter only for progress', () => {
+  const result = spawnSync(process.execPath, [
+    'node_modules/typescript/bin/tsc', '--project', 'tsconfig.json', '--noEmit',
+  ], { encoding: 'utf8' });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
 
 test('source_open uses explicit IDs and configured tenant/viewer headers, omitting optional fields', async () => {
   const bold = createClient('tenant-a', { baseURL, headers: { 'X-Viewer-ID': 'trusted-viewer' } });

@@ -512,8 +512,7 @@ export interface Conversation {
 }
 
 /** Explicit engagement attributed to an AI interaction. Independent of legacy trackEvent. */
-export interface TrackEngagementOptions {
-  event: 'source_open' | 'video_progress';
+export type TrackEngagementOptions = {
   /** Interaction UUID returned by AI. Skip tracking when it is missing or null. */
   interactionId: string;
   /** UUID per deliberate source open; serialized as playback_id. Not a Mux playbackId. */
@@ -521,9 +520,14 @@ export interface TrackEngagementOptions {
   videoId: string;
   /** Existing viewer UUID or external ID. */
   viewer?: string;
-  /** Cumulative elapsed playing wall-clock seconds for this open, never playhead/seek deltas. */
-  watchedSeconds?: number;
-}
+} & (
+  | { event: 'source_open'; watchedSeconds?: never }
+  | {
+      event: 'video_progress';
+      /** Cumulative elapsed playing wall-clock seconds for this open, never playhead/seek deltas. */
+      watchedSeconds: number;
+    }
+);
 
 // ============================================
 // Viewers API Types

@@ -799,7 +799,7 @@ Import `TrackEngagementOptions` from `@boldvideo/bold-js`.
 | `openId` | `playback_id` | Required new UUID per deliberate source open; **not a Mux playbackId** |
 | `videoId` | `vid` | Required source video ID |
 | `viewer?` | `viewer` | Existing viewer UUID or external ID |
-| `watchedSeconds?` | `watched_seconds` | Cumulative elapsed **playing wall-clock seconds for this open** |
+| `watchedSeconds` | `watched_seconds` | Required for `video_progress`, absent for `source_open`; cumulative elapsed **playing wall-clock seconds for this open** |
 
 ```typescript
 // On a deliberate source open, skip if the response has no interaction ID.

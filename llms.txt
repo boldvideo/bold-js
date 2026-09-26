@@ -733,14 +733,15 @@ for await (const event of stream) {
 `TrackEngagementOptions` is exported from the package:
 
 ```typescript
-{
-  event: 'source_open' | 'video_progress'; // Wire: n
+type TrackEngagementOptions = {
   interactionId: string;                 // UUID; wire: interaction_id
   openId: string;                        // UUID per deliberate open; wire: playback_id
   videoId: string;                       // Wire: vid
   viewer?: string;                       // Existing viewer UUID or external ID
-  watchedSeconds?: number;               // Wire: watched_seconds
-}
+} & (
+  | { event: 'source_open'; watchedSeconds?: never }
+  | { event: 'video_progress'; watchedSeconds: number }
+); // event → n, watchedSeconds → watched_seconds
 ```
 
 Skip the method when interactionId is absent/null. openId is NOT a Mux playbackId.
