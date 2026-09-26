@@ -438,6 +438,9 @@ type AIEvent =
 {
   prompt: string;              // Required
   requestId?: string;           // UUID per intentional action; reuse on retries
+  channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
+  clientName?: string;
+  clientVersion?: string;
   stream?: boolean;            // Default: true
   videoId?: string;            // Scope to specific video
   currentTime?: number;        // Playback position (with videoId)
@@ -453,6 +456,9 @@ type AIEvent =
 {
   prompt: string;              // Required
   requestId?: string;           // UUID per intentional action; reuse on retries
+  channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
+  clientName?: string;
+  clientVersion?: string;
   searchMode?: 'preview' | 'settled'; // Omitted means settled
   stream?: boolean;            // Default: true
   limit?: number;              // Max results
@@ -471,6 +477,12 @@ server defaults to settled. Preview is for interim searches; final settled
 submission is a new action with a new UUID. Reuse an action's UUID on retries,
 but generate a new UUID for each intentional next action, even with identical text.
 The SDK does not generate IDs or automatically retry requests.
+
+Chat (including video), ask/coach aliases, and search send optional channel,
+clientName, and clientVersion as top-level channel/client_name/client_version.
+Omitted fields remain omitted; the backend normalizes missing/malformed channel
+to unknown. Metadata never affects requestId deduplication and is not an
+authorization signal. Portal server proxies should explicitly set channel: 'portal'.
 
 JSON AIResponse and SSE message_complete events expose interactionId?: string | null,
 camelized from interaction_id. Search previews may return null; older servers may
@@ -714,7 +726,40 @@ for await (const event of stream) {
 }
 ```
 
-## Analytics (Browser Only)
+## Explicit AI Engagement (Browser or Server)
+
+`bold.trackEngagement(options: TrackEngagementOptions): Promise<void>` posts to
+`/api/v1/event`, using the configured baseURL and authorization/custom headers.
+`TrackEngagementOptions` is exported from the package:
+
+```typescript
+type TrackEngagementOptions = {
+  interactionId: string;                 // UUID; wire: interaction_id
+  openId: string;                        // UUID per deliberate open; wire: playback_id
+  videoId: string;                       // Wire: vid
+  viewer?: string;                       // Existing viewer UUID or external ID
+} & (
+  | { event: 'source_open'; watchedSeconds?: never }
+  | { event: 'video_progress'; watchedSeconds: number }
+); // event → n, watchedSeconds → watched_seconds
+```
+
+Skip the method when interactionId is absent/null. openId is NOT a Mux playbackId.
+Send source_open first: it only establishes an open and does not count watch time.
+Send progress with cumulative elapsed PLAYING WALL CLOCK seconds for that open,
+excluding paused/buffering time. Never use playhead positions, seek deltas, or
+per-sample increments. Caller supplies the counter; backend uses cumulative max to
+dedupe retries/reordered samples. Reuse openId for that open; each deliberate new
+open gets a new UUID.
+
+Safe to call with `void bold.trackEngagement(...)`: errors are caught, no automatic
+retries, no shared throttle, no browser globals. HTTP 202/resolved promise is not
+a durable acknowledgement. Backend validates tenant/viewer/source attribution,
+retries capture/open races for at most 30 seconds, and creates no placeholders.
+Server proxies must derive tenant keys and viewer refs from trusted session
+context, not browser claims. Legacy trackEvent behavior is unchanged.
+
+## Legacy Analytics (Browser Only)
 
 These methods require browser globals (`window`, `document`, `navigator`).
 Do not use in Node.js.

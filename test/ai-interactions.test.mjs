@@ -65,12 +65,14 @@ for (const stream of [false, true]) {
         const response = await complete(await ai[method]({
           prompt: 'question', requestId, stream, videoId,
           conversationId: 'conversation-12', currentTime: 0,
+          channel: 'portal', clientName: 'starter', clientVersion: '2.3.4',
         }), stream);
         assert.deepEqual(requests[0], {
           method: 'POST',
           url: `/api/v1/ai/${videoId ? 'videos/video-42/' : ''}chat/conversation-12`,
           body: {
             prompt: 'question', request_id: requestId,
+            channel: 'portal', client_name: 'starter', client_version: '2.3.4',
             ...(videoId ? { current_time: 0 } : {}),
             ...(!stream ? { stream: false } : {}),
           },
@@ -87,6 +89,7 @@ for (const stream of [false, true]) {
       const response = await complete(await ai.search({
         prompt: 'question', requestId, searchMode, stream,
         limit: 4, videoId: 'video-2', collectionId: 'collection-3',
+        channel: 'embed', clientName: 'embed-player', clientVersion: '4.5.6',
       }), stream);
       assert.deepEqual(requests[0], {
         method: 'POST', url: '/api/v1/ai/search',
@@ -95,6 +98,7 @@ for (const stream of [false, true]) {
           ...(searchMode ? { search_mode: searchMode } : {}),
           ...(!stream ? { stream: false } : {}),
           limit: 4, video_id: 'video-2', collection_id: 'collection-3',
+          channel: 'embed', client_name: 'embed-player', client_version: '4.5.6',
         },
       });
       assert.equal(response.interactionId, searchMode === 'preview' ? null : interactionId);
@@ -121,4 +125,15 @@ test('caller-controlled IDs survive retries and change for the next action witho
     assert.deepEqual(requests.slice(-3).map(req => req.body.request_id), [requestId, requestId, nextRequestId]);
   }
   assert.equal(requests.length, 12);
+});
+
+test('attribution metadata is forwarded without changing request identity', async () => {
+  for (const method of ['chat', 'ask', 'coach', 'search']) {
+    for (const channel of ['portal', 'embed', 'api', 'mcp', 'unknown']) {
+      await ai[method]({ prompt: 'same action', requestId, channel, stream: false });
+      assert.deepEqual(requests.at(-1).body, {
+        prompt: 'same action', request_id: requestId, channel, stream: false,
+      });
+    }
+  }
 });

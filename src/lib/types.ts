@@ -354,6 +354,10 @@ export interface ChatOptions {
   prompt: string;
   /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
   requestId?: string;
+  /** Analytics attribution only; does not affect requestId deduplication. Missing/malformed values become unknown on the server. */
+  channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
+  clientName?: string;
+  clientVersion?: string;
   stream?: boolean;          // Default: true
   conversationId?: string;   // Pass to continue existing conversation
   collectionId?: string;
@@ -399,6 +403,10 @@ export interface SearchOptions {
   prompt: string;
   /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
   requestId?: string;
+  /** Analytics attribution only; does not affect requestId deduplication. Missing/malformed values become unknown on the server. */
+  channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
+  clientName?: string;
+  clientVersion?: string;
   /** Omitted means settled. Preview searches may return a null interactionId. */
   searchMode?: 'preview' | 'settled';
   stream?: boolean;          // Default: true
@@ -502,6 +510,24 @@ export interface Conversation {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Explicit engagement attributed to an AI interaction. Independent of legacy trackEvent. */
+export type TrackEngagementOptions = {
+  /** Interaction UUID returned by AI. Skip tracking when it is missing or null. */
+  interactionId: string;
+  /** UUID per deliberate source open; serialized as playback_id. Not a Mux playbackId. */
+  openId: string;
+  videoId: string;
+  /** Existing viewer UUID or external ID. */
+  viewer?: string;
+} & (
+  | { event: 'source_open'; watchedSeconds?: never }
+  | {
+      event: 'video_progress';
+      /** Cumulative elapsed playing wall-clock seconds for this open, never playhead/seek deltas. */
+      watchedSeconds: number;
+    }
+);
 
 // ============================================
 // Viewers API Types

@@ -1,7 +1,31 @@
 import { AxiosInstance } from "axios";
 import { throttle } from "../util/throttle";
+import type { TrackEngagementOptions } from "./types";
 
 type ApiClient = AxiosInstance;
+
+/**
+ * Send explicit AI engagement without legacy throttling or browser globals.
+ * Safe to fire and forget: transport failures are swallowed. Acceptance is not
+ * a durable acknowledgement; the server validates attribution asynchronously.
+ */
+export function trackEngagement(client: ApiClient) {
+  return async (options: TrackEngagementOptions): Promise<void> => {
+    try {
+      await client.post("event", {
+        n: options.event,
+        interaction_id: options.interactionId,
+        playback_id: options.openId,
+        vid: options.videoId,
+        viewer: options.viewer,
+        watched_seconds: options.watchedSeconds,
+      });
+    } catch {
+      // Do not log Axios errors: they can contain authorization headers and viewer data.
+      console.error("Bold SDK - Failed to track engagement");
+    }
+  };
+}
 
 type Options = {
   debug: boolean;

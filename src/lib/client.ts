@@ -3,7 +3,7 @@ import axios, { AxiosInstance } from "axios";
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { fetchViewers, fetchViewer, lookupViewer, createViewer, updateViewer, fetchViewerProgress, fetchProgress, saveProgress } from './viewers'
 import { listPosts, getPost, createPost, updatePost, deletePost, reactToPost, createComment, deleteComment, reactToComment, listMentions, unreadMentionCount, markMentionsRead } from './community'
-import { trackEvent, trackPageView } from './tracking'
+import { trackEvent, trackPageView, trackEngagement } from './tracking'
 import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
 import { createNotifications } from './notifications'
@@ -93,6 +93,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
         react: reactToComment(apiClient),
       },
     },
+    trackEngagement: trackEngagement(apiClient),
     trackEvent: trackEvent(apiClient, userId, { debug }),
     trackPageView: trackPageView(apiClient, userId, { debug }),
   };
