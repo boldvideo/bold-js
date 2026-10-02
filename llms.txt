@@ -249,6 +249,7 @@ Build community features with posts, comments, and reactions. Write operations r
 ### Comments
 
 - `bold.community.comments.update(viewerId, commentId, { content, mentions? })` - Edit your comment or reply (PATCH); only content and mention external IDs can change.
+- Update responses contain `replies: []` even when the comment has existing replies. Preserve the cached subtree or refetch the post; do not replace the whole thread with the update response.
 - Post updates also accept `mentions`. Only newly recorded recipients notify; retries preserve read state and do not notify twice. Omitting mentions leaves existing records unchanged.
 - Posts, comment threads and replies expose optional nullable `editedAt`. Display an edited label only when this is set; `updatedAt` also changes for administrative actions.
 
@@ -652,7 +653,9 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
 {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
+  updatedAt: string;
   author: UserSummary | null;      // Null for deleted placeholders
   replies: Reply[];                // Nested replies
   editedAt?: string | null;
@@ -667,7 +670,10 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
 {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
+  updatedAt: string;
+  replies: Reply[];               // Recursive nested replies
   author: UserSummary | null;      // Null for deleted placeholders
   parentCommentId?: string;        // API may carry the parent through nesting
   editedAt?: string | null;

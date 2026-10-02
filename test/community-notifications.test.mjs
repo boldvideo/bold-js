@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import test, { after, before, beforeEach } from "node:test";
 
@@ -52,7 +53,10 @@ before(async () => {
               content: "",
               author: null,
               deleted_at: "2026-10-02T06:00:00Z",
-              replies: [{ ...communityComment(), id: "reply-1" }],
+              replies: [{
+                ...communityComment(), id: "reply-1", depth: 1,
+                replies: [{ ...communityComment(), id: "reply-2", depth: 2 }],
+              }],
             }],
           },
         },
@@ -293,6 +297,8 @@ test("preserves existing community create bodies when mentions are omitted", asy
   assert.equal(commentResponse.data.reactions.count, 0);
   assert.equal(commentResponse.data.reactions.viewerHasReacted, false);
   assert.equal(commentResponse.data.author.id, "viewer-1");
+  assert.equal(commentResponse.data.depth, 0);
+  assert.equal(commentResponse.data.updatedAt, "2026-07-27T09:00:00Z");
   assert.deepEqual(commentResponse.data.replies, []);
 });
 
@@ -403,6 +409,13 @@ function createNotificationsClient() {
   return createClient("tenant-key", { baseURL }).notifications;
 }
 
+test("public community types support recursive replies and nullable authors", () => {
+  const result = spawnSync(process.execPath, [
+    "node_modules/typescript/bin/tsc", "--project", "tsconfig.json", "--noEmit",
+  ], { encoding: "utf8" });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
 test("post edits forward mentions and expose editedAt", async () => {
   const response = await createCommunityClient().posts.update("viewer-1", "post-1", {
     content: "Edited @friend", mentions: ["member-2"],
@@ -424,6 +437,9 @@ test("comment edits send PATCH with viewer context and allow only content and me
   assert.equal(response.data.reactions.count, 0);
   assert.equal(response.data.reactions.viewerHasReacted, false);
   assert.equal(response.data.deletedAt, null);
+  assert.equal(response.data.depth, 0);
+  assert.equal(response.data.updatedAt, "2026-07-27T09:00:00Z");
+  assert.deepEqual(response.data.replies, []);
   assert.deepEqual(response.mentions, { skipped: [] });
 });
 
@@ -438,6 +454,12 @@ test("thread fetches keep deleted author null and surviving reply attribution", 
   assert.equal(placeholder.replies[0].author.id, communityComment().author.id);
   assert.equal(placeholder.replies[0].deletedAt, null);
   assert.equal(placeholder.replies[0].parentCommentId, undefined);
+  assert.equal(placeholder.replies[0].depth, 1);
+  const nestedReply = placeholder.replies[0].replies[0];
+  assert.equal(nestedReply.id, "reply-2");
+  assert.equal(nestedReply.depth, 2);
+  assert.equal(nestedReply.updatedAt, "2026-07-27T09:00:00Z");
+  assert.deepEqual(nestedReply.replies, []);
 });
 
 test("comment edit validation sends no requests", async () => {

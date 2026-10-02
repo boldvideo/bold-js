@@ -912,7 +912,10 @@ export type CommentSummary = {
 export type Reply = {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
+  updatedAt: string;
+  replies: Reply[];
   editedAt?: string | null;
   /** Deleted parents have empty content and keep their replies. */
   deletedAt?: string | null;
@@ -929,7 +932,9 @@ export type Reply = {
 export type CommentThread = {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
+  updatedAt: string;
   editedAt?: string | null;
   /** Render a placeholder when set; hide edit, react and reply actions. */
   deletedAt?: string | null;
