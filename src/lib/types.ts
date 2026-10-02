@@ -912,9 +912,17 @@ export type CommentSummary = {
 export type Reply = {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
-  author: UserSummary;
-  parentCommentId: string;
+  updatedAt: string;
+  replies: Reply[];
+  editedAt?: string | null;
+  /** Deleted parents have empty content and keep their replies. */
+  deletedAt?: string | null;
+  /** Null for deleted placeholders. */
+  author: UserSummary | null;
+  /** May be omitted when the API embeds this reply beneath its parent. */
+  parentCommentId?: string;
   reactions: CommentReactionSummary;
 };
 
@@ -924,8 +932,14 @@ export type Reply = {
 export type CommentThread = {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
-  author: UserSummary;
+  updatedAt: string;
+  editedAt?: string | null;
+  /** Render a placeholder when set; hide edit, react and reply actions. */
+  deletedAt?: string | null;
+  /** Null for deleted placeholders. */
+  author: UserSummary | null;
   replies: Reply[];
   reactions: CommentReactionSummary;
 };
@@ -944,11 +958,14 @@ export type Comment = {
   viewerReacted?: boolean;
   /** @deprecated Use author instead */
   viewer: PostAuthor;
-  author: PostAuthor;
+  /** Null for deleted placeholders. */
+  author: PostAuthor | null;
   /** Nested replies */
   replies: Comment[];
   createdAt: string;
   updatedAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
 };
 
 /**
@@ -962,6 +979,8 @@ export type Post = {
   pinnedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Last actual content edit; pin changes and import repairs do not set this. */
+  editedAt?: string | null;
   author: PostAuthor;
   reactions: ReactionSummary;
   comments: CommentSummary;
@@ -993,7 +1012,12 @@ export type CommunityPostCreateResponse = {
 };
 
 export type CommunityCommentCreateResponse = {
-  data: Comment;
+  data: CommentThread;
+  mentions?: MentionSkippedReport;
+};
+
+export type CommunityCommentUpdateResponse = {
+  data: CommentThread;
   mentions?: MentionSkippedReport;
 };
 
@@ -1087,6 +1111,19 @@ export type UpdatePostData = {
   content?: string;
   /** Category for the post */
   category?: string;
+  /** Customer external IDs; only newly recorded mentions notify. */
+  mentions?: string[];
+};
+
+export type UpdateCommentData = {
+  content: string;
+  /** Customer external IDs; repeated edits do not notify twice. */
+  mentions?: string[];
+};
+
+export type DeleteCommentOptions = {
+  /** Keep others' replies using an empty-content deleted parent. Defaults to false for compatibility. */
+  preserveReplies?: boolean;
 };
 
 /**

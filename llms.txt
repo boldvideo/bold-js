@@ -248,8 +248,14 @@ Build community features with posts, comments, and reactions. Write operations r
 
 ### Comments
 
-- `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs
-- `bold.community.comments.delete(viewerId, id)` - Delete comment (owner/admin)
+- `bold.community.comments.update(viewerId, commentId, { content, mentions? })` - Edit your comment or reply (PATCH); only content and mention external IDs can change.
+- Update responses contain `replies: []` even when the comment has existing replies. Preserve the cached subtree or refetch the post; do not replace the whole thread with the update response.
+- Post updates also accept `mentions`. Only newly recorded recipients notify; retries preserve read state and do not notify twice. Omitting mentions leaves existing records unchanged.
+- Posts, comment threads and replies expose optional nullable `editedAt`. Display an edited label only when this is set; `updatedAt` also changes for administrative actions.
+
+- `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs. Returns `CommunityCommentCreateResponse` with `data: CommentThread` (nested `reactions`, `author`, and `replies`), matching the API. Legacy `reactionsCount` and `viewer` fields are absent.
+- `bold.community.comments.delete(viewerId, id, { preserveReplies: true })` - Delete comment (owner/admin) while keeping replies. Deleted parents have empty content, a null `author`, and a `deletedAt` timestamp; render "Comment deleted" and hide edit/react/reply controls. Check for deletion before accessing author fields. Counts and commenter previews include live comments only. Refetch the thread after deletion because leaf removal may prune empty deleted ancestors.
+- Omitting `preserveReplies` preserves the existing cascading delete behavior. Retrying deletion of an existing placeholder does not remove its replies.
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
 
 ### Mentions
@@ -617,6 +623,7 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
   pinned?: boolean;
   pinnedAt?: string | null;
   updatedAt?: string;
+  editedAt?: string | null;    // Actual content edits only
 }
 ```
 
@@ -646,9 +653,13 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
 {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
-  author: UserSummary;
+  updatedAt: string;
+  author: UserSummary | null;      // Null for deleted placeholders
   replies: Reply[];                // Nested replies
+  editedAt?: string | null;
+  deletedAt?: string | null;       // Render a deleted-comment placeholder
   reactions: CommentReactionSummary;
 }
 ```
@@ -659,9 +670,14 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
 {
   id: string;
   content: string;
+  depth: number;
   createdAt: string;
-  author: UserSummary;
-  parentCommentId: string;
+  updatedAt: string;
+  replies: Reply[];               // Recursive nested replies
+  author: UserSummary | null;      // Null for deleted placeholders
+  parentCommentId?: string;        // API may carry the parent through nesting
+  editedAt?: string | null;
+  deletedAt?: string | null;
   reactions: CommentReactionSummary;
 }
 ```
@@ -691,7 +707,7 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
 
 ### Other types exported
 
-`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `NotificationChannels`, `NotificationPreferencesResponse`, `NotificationChannelUpdate`, `UpdateNotificationPreferencesData`, `NotificationProvider`, `RegisterDeviceData`, `RegisterDeviceResponse`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentReactionSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `Mention`, `MentionSkippedReport`, `CommunityPostCreateResponse`, `CommunityCommentCreateResponse`, `ListPostsOptions`, `ListMentionsOptions`, `MentionsUnreadCountResponse`, `MarkMentionsReadData`, `MarkMentionsReadResponse`, `CreatePostData`, `UpdatePostData`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `AuthAPIError`, `SessionManagementUnavailableError`, `NotificationsAPIError`, `CommunityAPIError`
+`Playlist`, `Settings`, `Portal`, `MenuItem`, `AIResponse`, `AIUsage`, `AIContextMessage`, `Conversation`, `ConversationMessage`, `RecommendationsResponse`, `Viewer`, `ViewerProgress`, `ViewerLookupParams`, `ListProgressOptions`, `ListVideosOptions`, `ListVideosLatestOptions`, `ListVideosIndexOptions`, `NotificationChannels`, `NotificationPreferencesResponse`, `NotificationChannelUpdate`, `UpdateNotificationPreferencesData`, `NotificationProvider`, `RegisterDeviceData`, `RegisterDeviceResponse`, `Post`, `PostAuthor`, `UserSummary`, `ReactionSummary`, `CommentSummary`, `CommentReactionSummary`, `CommentThread`, `Reply`, `Comment`, `ReactionResponse`, `Mention`, `MentionSkippedReport`, `CommunityPostCreateResponse`, `CommunityCommentCreateResponse`, `CommunityCommentUpdateResponse`, `ListPostsOptions`, `ListMentionsOptions`, `MentionsUnreadCountResponse`, `MarkMentionsReadData`, `MarkMentionsReadResponse`, `CreatePostData`, `UpdatePostData`, `UpdateCommentData`, `DeleteCommentOptions`, `CreateCommentData`, `PaginationMeta`, `PaginatedResponse`, `AuthAPIError`, `SessionManagementUnavailableError`, `NotificationsAPIError`, `CommunityAPIError`
 
 ## Error Handling
 

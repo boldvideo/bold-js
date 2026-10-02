@@ -7,6 +7,9 @@ import type {
   CreatePostData,
   UpdatePostData,
   CreateCommentData,
+  UpdateCommentData,
+  DeleteCommentOptions,
+  CommunityCommentUpdateResponse,
   PaginatedResponse,
   CommunityPostCreateResponse,
   CommunityCommentCreateResponse,
@@ -114,6 +117,15 @@ async function del<T>(
   }
 }
 
+async function patch<T>(client: ApiClient, url: string, data: Record<string, unknown>, viewerId: string): Promise<T> {
+  try {
+    const res = await client.patch(url, data, { headers: viewerHeaders(viewerId) });
+    return camelizeKeys(res.data) as T;
+  } catch (error) {
+    throw new CommunityAPIError("PATCH", url, error);
+  }
+}
+
 // --- Posts ---
 
 /**
@@ -174,7 +186,8 @@ export function updatePost(client: ApiClient) {
     const body: Record<string, unknown> = {};
     if (data.content !== undefined) body.content = data.content;
     if (data.category !== undefined) body.category = data.category;
-    return put<{ data: Post }>(
+    if (data.mentions !== undefined) body.mentions = data.mentions;
+    return put<CommunityPostCreateResponse>(
       client,
       `community/posts/${id}`,
       { post: body },
@@ -233,13 +246,26 @@ export function createComment(client: ApiClient) {
 }
 
 /**
- * Delete a comment (owner or admin only)
+ * Edit comment content and mentions (owner or admin only).
  */
-export function deleteComment(client: ApiClient) {
-  return async (viewerId: string, id: string) => {
+export function updateComment(client: ApiClient) {
+  return async (viewerId: string, id: string, data: UpdateCommentData): Promise<CommunityCommentUpdateResponse> => {
     requireViewerId(viewerId);
     if (!id) throw new Error("Comment ID is required");
-    return del<{ data?: unknown }>(client, `community/comments/${id}`, viewerId);
+    if (!data?.content) throw new Error("Comment content is required");
+    const body: Record<string, unknown> = { content: data.content };
+    if (data.mentions !== undefined) body.mentions = data.mentions;
+    return patch<CommunityCommentUpdateResponse>(client, `community/comments/${id}`, { comment: body }, viewerId);
+  };
+}
+
+/** Delete a comment (owner or admin only). */
+export function deleteComment(client: ApiClient) {
+  return async (viewerId: string, id: string, opts: DeleteCommentOptions = {}) => {
+    requireViewerId(viewerId);
+    if (!id) throw new Error("Comment ID is required");
+    const query = opts.preserveReplies ? "?preserve_replies=true" : "";
+    return del<{ data?: unknown }>(client, `community/comments/${id}${query}`, viewerId);
   };
 }
 

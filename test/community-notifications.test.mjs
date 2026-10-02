@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import test, { after, before, beforeEach } from "node:test";
 
 import {
   createClient,
+  CommunityAPIError,
   NotificationsAPIError,
 } from "../dist/index.js";
 
@@ -38,6 +40,39 @@ before(async () => {
     }
 
     res.writeHead(200, { "content-type": "application/json" });
+
+    if (req.method === "GET" && req.url === "/api/v1/community/posts/deleted-thread") {
+      res.end(JSON.stringify({
+        data: {
+          ...communityPost(),
+          comments: {
+            count: 1,
+            commented_by: [],
+            items: [{
+              ...communityComment(),
+              content: "",
+              author: null,
+              deleted_at: "2026-10-02T06:00:00Z",
+              replies: [{
+                ...communityComment(), id: "reply-1", depth: 1,
+                replies: [{ ...communityComment(), id: "reply-2", depth: 2 }],
+              }],
+            }],
+          },
+        },
+      }));
+      return;
+    }
+
+    if (req.method === "PUT" && req.url === "/api/v1/community/posts/post-1") {
+      res.end(JSON.stringify({ data: { ...communityPost(), edited_at: "2026-10-02T06:00:00Z" }, mentions: { skipped: [] } }));
+      return;
+    }
+
+    if (req.method === "PATCH" && req.url === "/api/v1/community/comments/comment-1") {
+      res.end(JSON.stringify({ data: { ...communityComment(), edited_at: "2026-10-02T06:00:00Z" }, mentions: { skipped: [] } }));
+      return;
+    }
 
     if (req.method === "POST" && req.url === "/api/v1/community/posts") {
       const response = {
@@ -259,6 +294,12 @@ test("preserves existing community create bodies when mentions are omitted", asy
   });
   assert.ok(!("mentions" in postResponse));
   assert.ok(!("mentions" in commentResponse));
+  assert.equal(commentResponse.data.reactions.count, 0);
+  assert.equal(commentResponse.data.reactions.viewerHasReacted, false);
+  assert.equal(commentResponse.data.author.id, "viewer-1");
+  assert.equal(commentResponse.data.depth, 0);
+  assert.equal(commentResponse.data.updatedAt, "2026-07-27T09:00:00Z");
+  assert.deepEqual(commentResponse.data.replies, []);
 });
 
 test("sends post mentions and returns skipped external IDs", async () => {
@@ -368,6 +409,89 @@ function createNotificationsClient() {
   return createClient("tenant-key", { baseURL }).notifications;
 }
 
+test("public community types support recursive replies and nullable authors", () => {
+  const result = spawnSync(process.execPath, [
+    "node_modules/typescript/bin/tsc", "--project", "tsconfig.json", "--noEmit",
+  ], { encoding: "utf8" });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
+});
+
+test("post edits forward mentions and expose editedAt", async () => {
+  const response = await createCommunityClient().posts.update("viewer-1", "post-1", {
+    content: "Edited @friend", mentions: ["member-2"],
+  });
+  assert.deepEqual(requests[0].body, { post: { content: "Edited @friend", mentions: ["member-2"] } });
+  assert.equal(response.data.editedAt, "2026-10-02T06:00:00Z");
+  assert.deepEqual(response.mentions, { skipped: [] });
+});
+
+test("comment edits send PATCH with viewer context and allow only content and mentions", async () => {
+  const response = await createCommunityClient().comments.update("viewer-1", "comment-1", {
+    content: "Edited @friend", mentions: ["member-2"], viewer_id: "forged", parentId: "forged",
+  });
+  assert.equal(requests[0].method, "PATCH");
+  assert.equal(requests[0].url, "/api/v1/community/comments/comment-1");
+  assert.equal(requests[0].viewerId, "viewer-1");
+  assert.deepEqual(requests[0].body, { comment: { content: "Edited @friend", mentions: ["member-2"] } });
+  assert.equal(response.data.editedAt, "2026-10-02T06:00:00Z");
+  assert.equal(response.data.reactions.count, 0);
+  assert.equal(response.data.reactions.viewerHasReacted, false);
+  assert.equal(response.data.deletedAt, null);
+  assert.equal(response.data.depth, 0);
+  assert.equal(response.data.updatedAt, "2026-07-27T09:00:00Z");
+  assert.deepEqual(response.data.replies, []);
+  assert.deepEqual(response.mentions, { skipped: [] });
+});
+
+test("thread fetches keep deleted author null and surviving reply attribution", async () => {
+  const community = createCommunityClient();
+  const response = await community.posts.get("deleted-thread", "viewer-1");
+  const placeholder = response.data.comments.items[0];
+  assert.equal(placeholder.content, "");
+  assert.equal(placeholder.author, null);
+  assert.equal(placeholder.deletedAt, "2026-10-02T06:00:00Z");
+  assert.equal(placeholder.replies[0].id, "reply-1");
+  assert.equal(placeholder.replies[0].author.id, communityComment().author.id);
+  assert.equal(placeholder.replies[0].deletedAt, null);
+  assert.equal(placeholder.replies[0].parentCommentId, undefined);
+  assert.equal(placeholder.replies[0].depth, 1);
+  const nestedReply = placeholder.replies[0].replies[0];
+  assert.equal(nestedReply.id, "reply-2");
+  assert.equal(nestedReply.depth, 2);
+  assert.equal(nestedReply.updatedAt, "2026-07-27T09:00:00Z");
+  assert.deepEqual(nestedReply.replies, []);
+});
+
+test("comment edit validation sends no requests", async () => {
+  const { update } = createCommunityClient().comments;
+  await assert.rejects(() => update("", "comment-1", { content: "Edit" }), /Viewer ID/);
+  await assert.rejects(() => update("viewer-1", "", { content: "Edit" }), /Comment ID/);
+  await assert.rejects(() => update("viewer-1", "comment-1", { content: "" }), /Comment content/);
+  assert.equal(requests.length, 0);
+});
+
+test("comment edits preserve HTTP failure status in CommunityAPIError", async () => {
+  await assert.rejects(
+    () => createCommunityClient().comments.update("viewer-1", "blocked/comment-1", { content: "Edit" }),
+    (error) => {
+      assert.ok(error instanceof CommunityAPIError);
+      assert.equal(error.status, 403);
+      assert.match(error.message, /PATCH community\/comments\/blocked\/comment-1/);
+      return true;
+    }
+  );
+});
+
+test("reply-preserving deletion is opt-in and existing delete requests stay unchanged", async () => {
+  const community = createCommunityClient();
+  await community.comments.delete("viewer-1", "comment-1");
+  await community.comments.delete("viewer-1", "comment-1", { preserveReplies: true });
+  assert.equal(requests[0].method, "DELETE");
+  assert.equal(requests[0].url, "/api/v1/community/comments/comment-1");
+  assert.equal(requests[1].url, "/api/v1/community/comments/comment-1?preserve_replies=true");
+  assert.equal(requests[1].viewerId, "viewer-1");
+});
+
 function createCommunityClient() {
   return createClient("tenant-key", { baseURL }).community;
 }
@@ -398,11 +522,10 @@ function communityComment() {
     id: "comment-1",
     content: "Nice post",
     depth: 0,
-    reactions_count: 0,
-    viewer: {
-      id: "viewer-1",
-      name: "Grace",
-      avatar_url: null,
+    deleted_at: null,
+    reactions: {
+      count: 0,
+      viewer_has_reacted: false,
     },
     author: {
       id: "viewer-1",

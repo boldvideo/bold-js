@@ -116,6 +116,7 @@ export type {
   MentionSkippedReport,
   CommunityPostCreateResponse,
   CommunityCommentCreateResponse,
+  CommunityCommentUpdateResponse,
   Mention,
   ListPostsOptions,
   ListMentionsOptions,
@@ -125,6 +126,8 @@ export type {
   CreatePostData,
   UpdatePostData,
   CreateCommentData,
+  UpdateCommentData,
+  DeleteCommentOptions,
   PaginationMeta,
   PaginatedResponse,
 } from "./lib/types";
