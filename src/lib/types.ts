@@ -916,7 +916,8 @@ export type Reply = {
   editedAt?: string | null;
   /** Deleted parents have empty content and keep their replies. */
   deletedAt?: string | null;
-  author: UserSummary;
+  /** Null for deleted placeholders. */
+  author: UserSummary | null;
   parentCommentId: string;
   reactions: CommentReactionSummary;
 };
@@ -931,7 +932,8 @@ export type CommentThread = {
   editedAt?: string | null;
   /** Render a placeholder when set; hide edit, react and reply actions. */
   deletedAt?: string | null;
-  author: UserSummary;
+  /** Null for deleted placeholders. */
+  author: UserSummary | null;
   replies: Reply[];
   reactions: CommentReactionSummary;
 };
@@ -950,7 +952,8 @@ export type Comment = {
   viewerReacted?: boolean;
   /** @deprecated Use author instead */
   viewer: PostAuthor;
-  author: PostAuthor;
+  /** Null for deleted placeholders. */
+  author: PostAuthor | null;
   /** Nested replies */
   replies: Comment[];
   createdAt: string;

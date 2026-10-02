@@ -253,7 +253,7 @@ Build community features with posts, comments, and reactions. Write operations r
 - Posts, comment threads and replies expose optional nullable `editedAt`. Display an edited label only when this is set; `updatedAt` also changes for administrative actions.
 
 - `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs
-- `bold.community.comments.delete(viewerId, id, { preserveReplies: true })` - Delete comment (owner/admin) while keeping replies. Deleted parents have empty content and a `deletedAt` timestamp; render "Comment deleted" and hide edit/react/reply controls. Counts and commenter previews include live comments only. Refetch the thread after deletion because leaf removal may prune empty deleted ancestors.
+- `bold.community.comments.delete(viewerId, id, { preserveReplies: true })` - Delete comment (owner/admin) while keeping replies. Deleted parents have empty content, a null `author`, and a `deletedAt` timestamp; render "Comment deleted" and hide edit/react/reply controls. Check for deletion before accessing author fields. Counts and commenter previews include live comments only. Refetch the thread after deletion because leaf removal may prune empty deleted ancestors.
 - Omitting `preserveReplies` preserves the existing cascading delete behavior. Retrying deletion of an existing placeholder does not remove its replies.
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
 
@@ -653,7 +653,7 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
   id: string;
   content: string;
   createdAt: string;
-  author: UserSummary;
+  author: UserSummary | null;      // Null for deleted placeholders
   replies: Reply[];                // Nested replies
   editedAt?: string | null;
   deletedAt?: string | null;       // Render a deleted-comment placeholder
@@ -668,7 +668,7 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
   id: string;
   content: string;
   createdAt: string;
-  author: UserSummary;
+  author: UserSummary | null;      // Null for deleted placeholders
   parentCommentId: string;
   editedAt?: string | null;
   deletedAt?: string | null;

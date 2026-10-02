@@ -40,6 +40,26 @@ before(async () => {
 
     res.writeHead(200, { "content-type": "application/json" });
 
+    if (req.method === "GET" && req.url === "/api/v1/community/posts/deleted-thread") {
+      res.end(JSON.stringify({
+        data: {
+          ...communityPost(),
+          comments: {
+            count: 1,
+            commented_by: [],
+            items: [{
+              ...communityComment(),
+              content: "",
+              author: null,
+              deleted_at: "2026-10-02T06:00:00Z",
+              replies: [{ ...communityComment(), id: "reply-1" }],
+            }],
+          },
+        },
+      }));
+      return;
+    }
+
     if (req.method === "PUT" && req.url === "/api/v1/community/posts/post-1") {
       res.end(JSON.stringify({ data: { ...communityPost(), edited_at: "2026-10-02T06:00:00Z" }, mentions: { skipped: [] } }));
       return;
@@ -401,6 +421,18 @@ test("comment edits send PATCH with viewer context and allow only content and me
   assert.equal(response.data.reactions.viewerHasReacted, false);
   assert.equal(response.data.deletedAt, null);
   assert.deepEqual(response.mentions, { skipped: [] });
+});
+
+test("thread fetches keep deleted author null and surviving reply attribution", async () => {
+  const community = createCommunityClient();
+  const response = await community.posts.get("deleted-thread", "viewer-1");
+  const placeholder = response.data.comments.items[0];
+  assert.equal(placeholder.content, "");
+  assert.equal(placeholder.author, null);
+  assert.equal(placeholder.deletedAt, "2026-10-02T06:00:00Z");
+  assert.equal(placeholder.replies[0].id, "reply-1");
+  assert.equal(placeholder.replies[0].author.id, communityComment().author.id);
+  assert.equal(placeholder.replies[0].deletedAt, null);
 });
 
 test("comment edit validation sends no requests", async () => {
