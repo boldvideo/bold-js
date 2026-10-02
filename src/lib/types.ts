@@ -914,6 +914,8 @@ export type Reply = {
   content: string;
   createdAt: string;
   editedAt?: string | null;
+  /** Deleted parents have empty content and keep their replies. */
+  deletedAt?: string | null;
   author: UserSummary;
   parentCommentId: string;
   reactions: CommentReactionSummary;
@@ -927,6 +929,8 @@ export type CommentThread = {
   content: string;
   createdAt: string;
   editedAt?: string | null;
+  /** Render a placeholder when set; hide edit, react and reply actions. */
+  deletedAt?: string | null;
   author: UserSummary;
   replies: Reply[];
   reactions: CommentReactionSummary;
@@ -952,6 +956,7 @@ export type Comment = {
   createdAt: string;
   updatedAt: string;
   editedAt?: string | null;
+  deletedAt?: string | null;
 };
 
 /**
@@ -1105,6 +1110,11 @@ export type UpdateCommentData = {
   content: string;
   /** Customer external IDs; repeated edits do not notify twice. */
   mentions?: string[];
+};
+
+export type DeleteCommentOptions = {
+  /** Keep others' replies using an empty-content deleted parent. Defaults to false for compatibility. */
+  preserveReplies?: boolean;
 };
 
 /**

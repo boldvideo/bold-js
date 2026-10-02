@@ -8,6 +8,7 @@ import type {
   UpdatePostData,
   CreateCommentData,
   UpdateCommentData,
+  DeleteCommentOptions,
   CommunityCommentUpdateResponse,
   PaginatedResponse,
   CommunityPostCreateResponse,
@@ -260,10 +261,11 @@ export function updateComment(client: ApiClient) {
 
 /** Delete a comment (owner or admin only). */
 export function deleteComment(client: ApiClient) {
-  return async (viewerId: string, id: string) => {
+  return async (viewerId: string, id: string, opts: DeleteCommentOptions = {}) => {
     requireViewerId(viewerId);
     if (!id) throw new Error("Comment ID is required");
-    return del<{ data?: unknown }>(client, `community/comments/${id}`, viewerId);
+    const query = opts.preserveReplies ? "?preserve_replies=true" : "";
+    return del<{ data?: unknown }>(client, `community/comments/${id}${query}`, viewerId);
   };
 }
 

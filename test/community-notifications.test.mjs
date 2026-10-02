@@ -4,6 +4,7 @@ import test, { after, before, beforeEach } from "node:test";
 
 import {
   createClient,
+  CommunityAPIError,
   NotificationsAPIError,
 } from "../dist/index.js";
 
@@ -405,6 +406,28 @@ test("comment edit validation sends no requests", async () => {
   await assert.rejects(() => update("viewer-1", "", { content: "Edit" }), /Comment ID/);
   await assert.rejects(() => update("viewer-1", "comment-1", { content: "" }), /Comment content/);
   assert.equal(requests.length, 0);
+});
+
+test("comment edits preserve HTTP failure status in CommunityAPIError", async () => {
+  await assert.rejects(
+    () => createCommunityClient().comments.update("viewer-1", "blocked/comment-1", { content: "Edit" }),
+    (error) => {
+      assert.ok(error instanceof CommunityAPIError);
+      assert.equal(error.status, 403);
+      assert.match(error.message, /PATCH community\/comments\/blocked\/comment-1/);
+      return true;
+    }
+  );
+});
+
+test("reply-preserving deletion is opt-in and existing delete requests stay unchanged", async () => {
+  const community = createCommunityClient();
+  await community.comments.delete("viewer-1", "comment-1");
+  await community.comments.delete("viewer-1", "comment-1", { preserveReplies: true });
+  assert.equal(requests[0].method, "DELETE");
+  assert.equal(requests[0].url, "/api/v1/community/comments/comment-1");
+  assert.equal(requests[1].url, "/api/v1/community/comments/comment-1?preserve_replies=true");
+  assert.equal(requests[1].viewerId, "viewer-1");
 });
 
 function createCommunityClient() {

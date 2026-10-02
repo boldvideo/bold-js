@@ -127,6 +127,7 @@ export type {
   UpdatePostData,
   CreateCommentData,
   UpdateCommentData,
+  DeleteCommentOptions,
   PaginationMeta,
   PaginatedResponse,
 } from "./lib/types";
