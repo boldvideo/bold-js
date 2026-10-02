@@ -397,6 +397,9 @@ test("comment edits send PATCH with viewer context and allow only content and me
   assert.equal(requests[0].viewerId, "viewer-1");
   assert.deepEqual(requests[0].body, { comment: { content: "Edited @friend", mentions: ["member-2"] } });
   assert.equal(response.data.editedAt, "2026-10-02T06:00:00Z");
+  assert.equal(response.data.reactions.count, 0);
+  assert.equal(response.data.reactions.viewerHasReacted, false);
+  assert.equal(response.data.deletedAt, null);
   assert.deepEqual(response.mentions, { skipped: [] });
 });
 
@@ -460,11 +463,10 @@ function communityComment() {
     id: "comment-1",
     content: "Nice post",
     depth: 0,
-    reactions_count: 0,
-    viewer: {
-      id: "viewer-1",
-      name: "Grace",
-      avatar_url: null,
+    deleted_at: null,
+    reactions: {
+      count: 0,
+      viewer_has_reacted: false,
     },
     author: {
       id: "viewer-1",
