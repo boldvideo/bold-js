@@ -913,6 +913,7 @@ export type Reply = {
   id: string;
   content: string;
   createdAt: string;
+  editedAt?: string | null;
   author: UserSummary;
   parentCommentId: string;
   reactions: CommentReactionSummary;
@@ -925,6 +926,7 @@ export type CommentThread = {
   id: string;
   content: string;
   createdAt: string;
+  editedAt?: string | null;
   author: UserSummary;
   replies: Reply[];
   reactions: CommentReactionSummary;
@@ -949,6 +951,7 @@ export type Comment = {
   replies: Comment[];
   createdAt: string;
   updatedAt: string;
+  editedAt?: string | null;
 };
 
 /**
@@ -962,6 +965,8 @@ export type Post = {
   pinnedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
+  /** Last actual content edit; pin changes and import repairs do not set this. */
+  editedAt?: string | null;
   author: PostAuthor;
   reactions: ReactionSummary;
   comments: CommentSummary;
@@ -994,6 +999,11 @@ export type CommunityPostCreateResponse = {
 
 export type CommunityCommentCreateResponse = {
   data: Comment;
+  mentions?: MentionSkippedReport;
+};
+
+export type CommunityCommentUpdateResponse = {
+  data: CommentThread;
   mentions?: MentionSkippedReport;
 };
 
@@ -1087,6 +1097,14 @@ export type UpdatePostData = {
   content?: string;
   /** Category for the post */
   category?: string;
+  /** Customer external IDs; only newly recorded mentions notify. */
+  mentions?: string[];
+};
+
+export type UpdateCommentData = {
+  content: string;
+  /** Customer external IDs; repeated edits do not notify twice. */
+  mentions?: string[];
 };
 
 /**

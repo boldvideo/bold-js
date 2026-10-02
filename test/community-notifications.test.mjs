@@ -39,6 +39,16 @@ before(async () => {
 
     res.writeHead(200, { "content-type": "application/json" });
 
+    if (req.method === "PUT" && req.url === "/api/v1/community/posts/post-1") {
+      res.end(JSON.stringify({ data: { ...communityPost(), edited_at: "2026-10-02T06:00:00Z" }, mentions: { skipped: [] } }));
+      return;
+    }
+
+    if (req.method === "PATCH" && req.url === "/api/v1/community/comments/comment-1") {
+      res.end(JSON.stringify({ data: { ...communityComment(), edited_at: "2026-10-02T06:00:00Z" }, mentions: { skipped: [] } }));
+      return;
+    }
+
     if (req.method === "POST" && req.url === "/api/v1/community/posts") {
       const response = {
         data: communityPost(),
@@ -367,6 +377,35 @@ test("rejects invalid mention inbox requests before sending", async () => {
 function createNotificationsClient() {
   return createClient("tenant-key", { baseURL }).notifications;
 }
+
+test("post edits forward mentions and expose editedAt", async () => {
+  const response = await createCommunityClient().posts.update("viewer-1", "post-1", {
+    content: "Edited @friend", mentions: ["member-2"],
+  });
+  assert.deepEqual(requests[0].body, { post: { content: "Edited @friend", mentions: ["member-2"] } });
+  assert.equal(response.data.editedAt, "2026-10-02T06:00:00Z");
+  assert.deepEqual(response.mentions, { skipped: [] });
+});
+
+test("comment edits send PATCH with viewer context and allow only content and mentions", async () => {
+  const response = await createCommunityClient().comments.update("viewer-1", "comment-1", {
+    content: "Edited @friend", mentions: ["member-2"], viewer_id: "forged", parentId: "forged",
+  });
+  assert.equal(requests[0].method, "PATCH");
+  assert.equal(requests[0].url, "/api/v1/community/comments/comment-1");
+  assert.equal(requests[0].viewerId, "viewer-1");
+  assert.deepEqual(requests[0].body, { comment: { content: "Edited @friend", mentions: ["member-2"] } });
+  assert.equal(response.data.editedAt, "2026-10-02T06:00:00Z");
+  assert.deepEqual(response.mentions, { skipped: [] });
+});
+
+test("comment edit validation sends no requests", async () => {
+  const { update } = createCommunityClient().comments;
+  await assert.rejects(() => update("", "comment-1", { content: "Edit" }), /Viewer ID/);
+  await assert.rejects(() => update("viewer-1", "", { content: "Edit" }), /Comment ID/);
+  await assert.rejects(() => update("viewer-1", "comment-1", { content: "" }), /Comment content/);
+  assert.equal(requests.length, 0);
+});
 
 function createCommunityClient() {
   return createClient("tenant-key", { baseURL }).community;

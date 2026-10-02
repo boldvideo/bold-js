@@ -248,6 +248,10 @@ Build community features with posts, comments, and reactions. Write operations r
 
 ### Comments
 
+- `bold.community.comments.update(viewerId, commentId, { content, mentions? })` - Edit your comment or reply (PATCH); only content and mention external IDs can change.
+- Post updates also accept `mentions`. Only newly recorded recipients notify; retries preserve read state and do not notify twice. Omitting mentions leaves existing records unchanged.
+- Posts, comment threads and replies expose optional nullable `editedAt`. Display an edited label only when this is set; `updatedAt` also changes for administrative actions.
+
 - `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs
 - `bold.community.comments.delete(viewerId, id)` - Delete comment (owner/admin)
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
