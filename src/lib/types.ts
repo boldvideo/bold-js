@@ -918,7 +918,8 @@ export type Reply = {
   deletedAt?: string | null;
   /** Null for deleted placeholders. */
   author: UserSummary | null;
-  parentCommentId: string;
+  /** May be omitted when the API embeds this reply beneath its parent. */
+  parentCommentId?: string;
   reactions: CommentReactionSummary;
 };
 
@@ -1006,7 +1007,7 @@ export type CommunityPostCreateResponse = {
 };
 
 export type CommunityCommentCreateResponse = {
-  data: Comment;
+  data: CommentThread;
   mentions?: MentionSkippedReport;
 };
 

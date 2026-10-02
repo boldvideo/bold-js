@@ -290,6 +290,10 @@ test("preserves existing community create bodies when mentions are omitted", asy
   });
   assert.ok(!("mentions" in postResponse));
   assert.ok(!("mentions" in commentResponse));
+  assert.equal(commentResponse.data.reactions.count, 0);
+  assert.equal(commentResponse.data.reactions.viewerHasReacted, false);
+  assert.equal(commentResponse.data.author.id, "viewer-1");
+  assert.deepEqual(commentResponse.data.replies, []);
 });
 
 test("sends post mentions and returns skipped external IDs", async () => {
@@ -433,6 +437,7 @@ test("thread fetches keep deleted author null and surviving reply attribution", 
   assert.equal(placeholder.replies[0].id, "reply-1");
   assert.equal(placeholder.replies[0].author.id, communityComment().author.id);
   assert.equal(placeholder.replies[0].deletedAt, null);
+  assert.equal(placeholder.replies[0].parentCommentId, undefined);
 });
 
 test("comment edit validation sends no requests", async () => {

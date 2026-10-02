@@ -252,7 +252,7 @@ Build community features with posts, comments, and reactions. Write operations r
 - Post updates also accept `mentions`. Only newly recorded recipients notify; retries preserve read state and do not notify twice. Omitting mentions leaves existing records unchanged.
 - Posts, comment threads and replies expose optional nullable `editedAt`. Display an edited label only when this is set; `updatedAt` also changes for administrative actions.
 
-- `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs
+- `bold.community.comments.create(viewerId, postId, data)` - Create comment; `data.mentions` accepts customer external IDs. Returns `CommunityCommentCreateResponse` with `data: CommentThread` (nested `reactions`, `author`, and `replies`), matching the API. Legacy `reactionsCount` and `viewer` fields are absent.
 - `bold.community.comments.delete(viewerId, id, { preserveReplies: true })` - Delete comment (owner/admin) while keeping replies. Deleted parents have empty content, a null `author`, and a `deletedAt` timestamp; render "Comment deleted" and hide edit/react/reply controls. Check for deletion before accessing author fields. Counts and commenter previews include live comments only. Refetch the thread after deletion because leaf removal may prune empty deleted ancestors.
 - Omitting `preserveReplies` preserves the existing cascading delete behavior. Retrying deletion of an existing placeholder does not remove its replies.
 - `bold.community.comments.react(viewerId, id)` - Toggle reaction
@@ -669,7 +669,7 @@ the SDK does not wrap that endpoint and its video response types are unchanged.
   content: string;
   createdAt: string;
   author: UserSummary | null;      // Null for deleted placeholders
-  parentCommentId: string;
+  parentCommentId?: string;        // API may carry the parent through nesting
   editedAt?: string | null;
   deletedAt?: string | null;
   reactions: CommentReactionSummary;
