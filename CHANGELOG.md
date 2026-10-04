@@ -1,5 +1,13 @@
 # @boldvideo/bold-js
 
+## 2.1.0
+
+### Minor Changes
+
+- d33f60a: Document repeatable verification of published voice sessions, including microphone cleanup, cancellation, viewer context, captions, and playback coordination. Link to a standalone browser harness and distinguish synthetic Chromium checks from live-provider and Safari/iPhone acceptance.
+
+  This release updates documentation without changing the SDK runtime or public API.
+
 ## 2.0.0
 
 ### Major Changes
