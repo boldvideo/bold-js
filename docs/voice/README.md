@@ -7,7 +7,9 @@ synthetic loopback uses a local peer and never contacts Bold or a provider.
 
 ## Prepare an exact release
 
-From the repository after `pnpm install --frozen-lockfile`:
+Run preparation only after the exact version is published to npm; merging a release
+PR alone does not confirm publication. From the repository after
+`pnpm install --frozen-lockfile`:
 
 ```sh
 node docs/voice/prepare.mjs 2.1.0
