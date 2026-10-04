@@ -334,6 +334,10 @@ and non-streaming responses. Voice uses a browser session handle instead of SSE.
 
 ## Voice Sessions
 
+Published-package browser harness and acceptance results:
+https://github.com/boldvideo/bold-js/tree/main/docs/voice
+Synthetic Chromium checks are not real-provider or Safari/iPhone acceptance.
+
 `Settings.account.voice` is optional for compatibility with older API responses.
 Show voice controls only when the capability is explicitly true; the broker still
 enforces session access:
