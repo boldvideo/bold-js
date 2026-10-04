@@ -10,7 +10,7 @@ synthetic loopback uses a local peer and never contacts Bold or a provider.
 From the repository after `pnpm install --frozen-lockfile`:
 
 ```sh
-node docs/voice/prepare.mjs 2.0.0
+node docs/voice/prepare.mjs 2.1.0
 ```
 
 The script installs that exact npm release with lifecycle scripts disabled into a
@@ -130,7 +130,9 @@ synthetic responses; they do not establish compatibility with a live service.
 | Real Safari/iPhone | **Not run**; Chromium is not Safari evidence |
 | Provider shutdown / usage reconciliation | **Not run**; synthetic session IDs cannot establish this |
 
-No SDK runtime defect was found in these checks; no new package was published.
-`2.0.0` is the exact artifact checked, **not a real-provider-accepted release**.
+These baseline results were recorded against `2.0.0`. Version `2.1.0` releases the
+documentation updates without changing the SDK runtime or public API. Rerun the
+checks above for the exact release being evaluated; a version bump does not establish
+real-provider or device acceptance.
 Complete real-provider and device verification before relying on these results
 for a production integration.

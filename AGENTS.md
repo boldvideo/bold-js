@@ -46,6 +46,10 @@ pnpm changeset        # Create a changeset for versioning
 
 This project uses [Changesets](https://github.com/changesets/changesets) with automated GitHub Actions for publishing.
 
+When a release is requested, include a changeset before merging, even for
+documentation-only work. Honor the requested version bump and follow the generated
+release PR through CI, merge, and npm publication. A merged PR alone is not a release.
+
 ### How to Release
 
 1. **Create a changeset** when making changes that should be released:
