@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Bold voice SDK verification</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 32px auto; padding: 0 20px; color: #18202a; }
+  label { display: block; margin: 12px 0; }
+  input:not([type=checkbox]), textarea { display: block; box-sizing: border-box; width: 100%; padding: 8px; font: inherit; }
+  button { padding: 8px 12px; margin: 4px 4px 4px 0; font: inherit; }
+  pre { background: #f2f4f6; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  video { width: 100%; max-height: 220px; }
+</style>
+<main>
+  <h1>Voice SDK verification</h1>
+  <p id="version">Loading published package…</p>
+  <p>Operator-only harness, not a customer integration. Use a disposable test account.
+    Credentials stay in page memory; never share a populated page or network capture.</p>
+  <form id="setup" autocomplete="off">
+    <label>API base URL <input id="base" type="url" value="https://app.boldvideo.io/api/v1/" required></label>
+    <label>Test tenant API key <input id="key" type="password" required autocomplete="off"></label>
+    <label>Video ID <input id="video" required></label>
+    <label>Viewer UUID or external ID (optional) <input id="viewer"></label>
+    <label>Viewer profile JSON string or object (optional) <textarea id="profile" rows="2"></textarea></label>
+    <button id="start" disabled>Start real session</button>
+  </form>
+  <div>
+    <button id="mute" disabled>Mute microphone</button>
+    <button id="end" disabled>End / cancel</button>
+    <button id="dispose" disabled>Dispose</button>
+    <button id="loopback" type="button" disabled>Run synthetic loopback</button>
+  </div>
+  <p role="status" id="status">idle</p>
+  <p id="levels">Input RMS: 0 · Output RMS: 0</p>
+  <details>
+    <summary>Optional local test video and private captions</summary>
+    <label>Local video file <input id="clip" type="file" accept="video/*"></label>
+    <video id="player" controls playsinline></video>
+    <p>Caption timestamp buttons seek this local clip. Captions are not included in the event log.</p>
+    <div id="captions"></div>
+  </details>
+  <h2>Metadata only</h2>
+  <pre id="events" aria-live="polite"></pre>
+</main>
+<script type="module" src="./harness.js"></script>
+</html>

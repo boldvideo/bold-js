@@ -538,3 +538,79 @@ test('idle timeout resumes when the video pauses', async t => {
   t.mock.timers.tick(1);
   assert.deepEqual(ended, ['idle']);
 });
+
+test('omitted viewer context stays absent; string profiles are forwarded unchanged', async t => {
+  const b = browser(t);
+  await b.create().start();
+  assert.deepEqual(Object.keys(JSON.parse(b.requests[0].body)).sort(), ['sdp', 'video_id']);
+  await b.create({ viewerProfile: 'Experience: beginner\nLanguage: Spanish' }).start();
+  assert.equal(JSON.parse(b.requests[1].body).viewer_profile, 'Experience: beginner\nLanguage: Spanish');
+});
+
+test('permission denial rejects once without contacting the broker', async t => {
+  const permission = deferred();
+  const b = browser(t, { permission });
+  const errors = [];
+  const session = b.create({ onError: e => errors.push(e) });
+  const denied = new DOMException('Permission denied', 'NotAllowedError');
+  const rejection = assert.rejects(session.start(), e => e === denied);
+  permission.reject(denied);
+  await rejection;
+  assert.deepEqual(errors, [denied]);
+  assert.equal(session.status, 'ended');
+  assert.equal(b.contexts[0].closed, true);
+  assert.equal(b.requests.length, 0);
+});
+
+for (const failure of ['peer', 'channel', 'audio']) {
+  test(`live ${failure} failure releases all media and settles once`, async t => {
+    const b = browser(t, { playError: new DOMException('Playback blocked', 'NotAllowedError') });
+    const ended = [], errors = [];
+    const session = b.create({ onEnded: r => ended.push(r), onError: e => errors.push(e) });
+    await session.start();
+    const peer = b.peers[0];
+    if (failure === 'peer') {
+      peer.connectionState = 'failed';
+      peer.onconnectionstatechange();
+    } else if (failure === 'channel') peer.channel.close();
+    else { peer.ontrack({ streams: [b.media] }); await flush(); }
+    assert.equal(session.status, 'ended');
+    assert.equal(b.track.stopped, true);
+    assert.equal(b.contexts[0].closed, true);
+    assert.equal(b.audios[0].srcObject, null);
+    assert.equal(peer.closed, true);
+    assert.deepEqual(ended, [failure === 'audio' ? 'error' : 'connection']);
+    assert.equal(errors.length, failure === 'audio' ? 1 : 0);
+    await session.end();
+    assert.equal(ended.length, 1);
+  });
+}
+
+test('missing transcript retains the broker code and releases the microphone without retry', async t => {
+  const b = browser(t, { fetch: () => Response.json({
+    code: 'transcript_not_found', message: 'No transcript', retryable: false,
+  }, { status: 404 }) });
+  const session = b.create();
+  await assert.rejects(session.start(), e => e instanceof VoiceAPIError
+    && e.status === 404 && e.code === 'transcript_not_found' && e.retryable === false);
+  assert.equal(b.track.stopped, true);
+  assert.equal(b.requests.length, 1);
+});
+
+test('pagehide during permission silently settles start and stops late tracks', async t => {
+  const permission = deferred();
+  const b = browser(t, { permission });
+  const statuses = [], ended = [];
+  const session = b.create({ onStatus: s => statuses.push(s), onEnded: r => ended.push(r) });
+  const start = session.start();
+  b.window.dispatchEvent(new Event('pagehide'));
+  await start;
+  permission.resolve(b.media);
+  await flush();
+  assert.equal(session.status, 'ended');
+  assert.equal(b.track.stopped, true);
+  assert.equal(b.contexts[0].closed, true);
+  assert.equal(b.requests.length, 0);
+  assert.deepEqual(statuses, ['connecting']);
+  assert.deepEqual(ended, []);
+});

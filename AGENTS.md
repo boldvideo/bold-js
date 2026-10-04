@@ -2,6 +2,23 @@
 
 This file provides guidance to AI coding agents working with this repository.
 
+## Public Repository Communication
+
+This SDK is open source. Treat all repository content and GitHub metadata as public.
+
+- Never include internal ticket IDs or links, private repository references, internal
+  discussions, customer information, or non-public operational details in PR titles,
+  descriptions, comments, branch names, commit messages, code, documentation,
+  changesets, or release notes.
+- Describe changes in self-contained, professional language for SDK users and
+  contributors. State observable behavior, compatibility, test evidence, and known
+  limitations without exposing internal planning or infrastructure.
+- Keep internal progress reports and cross-project dependencies in the private
+  tracker. Link from the private tracker to public GitHub work, not the reverse.
+- Before pushing or updating a PR, inspect the diff and public metadata for internal
+  references. If any were already published, clean up what can be edited and ask
+  before rewriting published Git history; do not claim that edits erase prior copies.
+
 ## Project Overview
 
 This is the Bold JavaScript SDK (`@boldvideo/bold-js`) - a TypeScript client library for interacting with the Bold Video API. The SDK provides methods for fetching videos, playlists, channel settings, and tracking analytics events.

@@ -458,6 +458,10 @@ with microphone permission in a secure context (HTTPS, or localhost for developm
 The factory is synchronous and safe to call during server rendering; only `start()`
 uses browser APIs. No framework or additional dependencies are required.
 
+For an operator-only page that tests an exact published npm release, see the
+[voice acceptance harness](https://github.com/boldvideo/bold-js/tree/main/docs/voice).
+Its documented synthetic checks do not establish real-provider or Safari/iPhone acceptance.
+
 Use the account settings to decide whether to show voice controls. Missing or false
 values keep voice hidden; the broker still enforces access when a session starts.
 
