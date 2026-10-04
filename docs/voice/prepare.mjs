@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
 
-const version = process.argv[2] ?? '2.0.0';
+const version = process.argv[2] ?? '2.1.0';
 if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error('Pass an exact stable npm version');
 const root = mkdtempSync(join(tmpdir(), 'bold-voice-'));
 const site = join(root, 'site');
