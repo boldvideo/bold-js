@@ -41,6 +41,13 @@ export type Video = {
   importedFrom: string | null;
   legacyVideoUrl: string | null;
   playbackId: string;
+  playbackPolicy?: 'public' | 'signed' | null;
+  /** Playback credential; do not log it or tokenized URLs. */
+  playbackToken?: string | null;
+  /** Storyboard credential; do not log it. */
+  storyboardToken?: string | null;
+  /** ISO8601 expiry; tokens last 12 hours. Re-fetch the video for fresh tokens. */
+  playbackTokenExpiresAt?: string | null;
   publishedAt: string;
   streamUrl: string;
   teaser: string | null;
@@ -67,6 +74,33 @@ export type Video = {
   tags?: string[];
 
   transcript?: VideoTranscript;
+};
+
+/**
+ * Playback fields accepted by the pure helpers, including sparse AI sources.
+ * @example
+ * const source: PlaybackSource = { playbackId: 'playback-id', playbackToken: 'PLAYBACK_TOKEN' };
+ */
+export type PlaybackSource = {
+  playbackId?: string | null;
+  playbackPolicy?: 'public' | 'signed' | null;
+  playbackToken?: string | null;
+  storyboardToken?: string | null;
+  streamUrl?: string | null;
+  thumbnail?: string | null;
+};
+
+/**
+ * Mux thumbnail options for public videos. Signed videos ignore these options.
+ * @example
+ * const options: ThumbnailOptions = { width: 640, time: 0, fitMode: 'crop' };
+ */
+export type ThumbnailOptions = {
+  width?: number;
+  height?: number;
+  /** Thumbnail position in seconds. */
+  time?: number;
+  fitMode?: 'preserve' | 'stretch' | 'crop' | 'smartcrop' | 'pad';
 };
 
 export type Playlist = {
@@ -279,6 +313,7 @@ export interface Segment {
   timestamp: number;       // Start time in seconds
   timestampEnd: number;    // End time in seconds
   playbackId: string;      // Mux playback ID for embedding
+  playbackToken?: string | null;
   speaker?: string;        // Speaker name if detected
   cited?: boolean;         // Whether this segment is cited in the answer text
 }
@@ -433,6 +468,7 @@ export interface RecommendationVideo {
   videoId: string;
   title: string;
   playbackId: string;
+  playbackToken?: string | null;
   relevance: number;
   reason: string;
 }

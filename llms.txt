@@ -84,6 +84,35 @@ All content methods return `Promise<{ data: T }>`.
 
 Note: If `page` is provided, SDK uses `/videos` (index); otherwise uses `/videos/latest`.
 
+## Secure Playback
+
+Root exports: `streamUrl(video)`, `muxPlayerProps(video)`, `thumbnailUrl(video, opts?)`.
+Pure synchronous helpers accepting `PlaybackSource` (optional nullable camelCase
+playbackId, playbackPolicy, playbackToken, storyboardToken, streamUrl, thumbnail).
+Full Video, Segment/Source/Citation, and RecommendationVideo objects are accepted.
+
+- `streamUrl`: preserves a nonempty API streamUrl, otherwise builds Mux HLS from
+  playbackId with an encoded playbackToken if supplied. Returns undefined without
+  a URL or ID. Formats data, does not validate credentials.
+- `muxPlayerProps`: public output is just `{ playbackId }`; signed output adds
+  available `tokens: { playback, storyboard? }` and `poster` from thumbnail. Missing
+  fields are omitted. Storyboard tokens are included only with a playback token.
+- `thumbnailUrl`: public Mux thumbnail.jpg with `ThumbnailOptions` width, height,
+  time (seconds), fitMode ('preserve' | 'stretch' | 'crop' | 'smartcrop' | 'pad').
+  Signed output is the stored public thumbnail, ignoring ALL options. Undefined
+  if the required ID or signed thumbnail is absent; no signed Mux image fallback.
+
+playbackPolicy 'signed' or a playbackToken without explicit 'public' policy marks
+signed input for player props/thumbnails. AI sources may carry a token without policy.
+Video adds optional nullable playbackPolicy ('public' | 'signed'), playbackToken,
+storyboardToken, playbackTokenExpiresAt (ISO8601). Segment (including Source/Citation)
+and RecommendationVideo add optional nullable playbackToken.
+
+Bare Mux stream/image URLs return 403 for signed videos. Migrate hand-built URLs
+to these helpers. Tokens last 12 hours: re-fetch bold.videos.get() for fresh tokens,
+or a full video's thumbnail/storyboard fields. No refresh endpoint/timer. Do not log
+tokens or tokenized URLs. Keep tenant API keys server-side.
+
 ## Viewers API
 
 Manage external users and track video progress. Returns `Promise<{ data: T }>` (consistent with other SDK methods).

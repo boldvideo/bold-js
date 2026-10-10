@@ -19,6 +19,10 @@ before(async () => {
     const response = {
       content: 'An answer', sources: [], citations: [],
       response_type: 'answer', usage: { input_tokens: 3, output_tokens: 7 },
+      ...(body.prompt === 'secure-playback' ? {
+        sources: [{ playback_id: 'source-id', playback_token: 'PLAYBACK_TOKEN' }],
+        citations: [{ playback_id: 'citation-id', playback_token: 'PLAYBACK_TOKEN' }],
+      } : {}),
       ...(body.prompt === 'legacy' ? {} : {
         interaction_id: body.search_mode === 'preview' ? null : interactionId,
       }),
@@ -26,7 +30,11 @@ before(async () => {
     if (req.headers.accept === 'text/event-stream') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       res.write('data: {"type":"text_delta","delta":"An answer"}\r\n\r\n');
-      const frame = `data: ${JSON.stringify({ type: 'message_complete', ...response })}\r\n\r\n`;
+      if (body.prompt === 'secure-playback') {
+        res.write(`data: ${JSON.stringify({ type: 'sources', sources: response.sources })}\r\n\r\n`);
+      }
+      const { sources, ...terminalResponse } = response;
+      const frame = `data: ${JSON.stringify({ type: 'message_complete', ...terminalResponse })}\r\n\r\n`;
       // Split a JSON key across writes to exercise the real SSE buffering path.
       const split = frame.indexOf('content') + 3;
       res.write(frame.slice(0, split));
@@ -114,6 +122,24 @@ for (const stream of [false, true]) {
         prompt: 'legacy', ...(!stream ? { stream: false } : {}),
       });
     }
+  });
+
+  test(`secure playback sources/citations are camelized (${stream ? 'SSE' : 'JSON'})`, async () => {
+    const result = await ai.search({ prompt: 'secure-playback', stream });
+    let sources;
+    let citations;
+    if (stream) {
+      const events = [];
+      for await (const event of result) events.push(event);
+      assert.deepEqual(events.map(event => event.type), ['text_delta', 'sources', 'message_complete']);
+      sources = events[1].sources;
+      citations = events[2].citations;
+    } else {
+      sources = result.sources;
+      citations = result.citations;
+    }
+    assert.deepEqual(sources, [{ playbackId: 'source-id', playbackToken: 'PLAYBACK_TOKEN' }]);
+    assert.deepEqual(citations, [{ playbackId: 'citation-id', playbackToken: 'PLAYBACK_TOKEN' }]);
   });
 }
 
