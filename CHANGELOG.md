@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 2.2.0
+
+### Minor Changes
+
+- 1675a31: Add secure playback fields and standalone streamUrl, muxPlayerProps, and thumbnailUrl helpers for public and signed videos, including token-bearing AI sources. Signed thumbnails use the stored public image and ignore sizing options. Re-fetch videos for fresh playback tokens after their 12-hour lifetime.
+
 ## 2.1.0
 
 ### Minor Changes
