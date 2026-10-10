@@ -3,8 +3,11 @@ export type { ClientOptions } from "./lib/client";
 export { createAuthClient } from "./lib/auth";
 export type { AuthClientOptions, AuthRequestOptions } from "./lib/auth";
 export { DEFAULT_API_BASE_URL, DEFAULT_INTERNAL_API_BASE_URL } from "./lib/constants";
+export { streamUrl, muxPlayerProps, thumbnailUrl } from "./lib/playback";
 export type {
   Video,
+  PlaybackSource,
+  ThumbnailOptions,
   VideoAttachment,
   VideoDownloadUrls,
   VideoSubtitles,

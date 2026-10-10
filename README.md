@@ -88,6 +88,43 @@ const videoBySlug = await bold.videos.get('my-video-slug');
 const results = await bold.videos.search('pricing strategies');
 ```
 
+### Secure playback
+
+Videos with `playbackPolicy: 'signed'` require a playback token. Bare Mux stream
+and image URLs return 403 for these videos. Use the standalone helpers instead
+of building Mux URLs by hand:
+
+```typescript
+import { createClient, streamUrl, muxPlayerProps, thumbnailUrl } from '@boldvideo/bold-js';
+
+const bold = createClient('YOUR_API_KEY'); // Keep your tenant API key server-side.
+const { data: video } = await bold.videos.get('video-id');
+const src = streamUrl(video); // For an HLS player.
+const playerProps = muxPlayerProps(video); // Spread into <MuxPlayer {...playerProps} />.
+const poster = thumbnailUrl(video, { width: 640, height: 360, time: 0, fitMode: 'crop' });
+```
+
+`streamUrl` preserves the API's URL, falling back to a Mux HLS URL with any supplied
+`playbackToken`. `muxPlayerProps` returns just `{ playbackId }` for public videos;
+signed videos also get available playback/storyboard tokens and an explicit poster
+from `thumbnail`. `thumbnailUrl` builds a Mux image URL for public videos. For signed
+videos it returns the stored public `thumbnail` unchanged and **ignores all options**:
+signed Mux images cannot be sized or seeked using query parameters.
+
+The helpers accept `Video`, citations, search sources, recommendations, or your own
+object with the needed camelCase fields (`PlaybackSource`). AI sources carrying a
+token are treated as signed even without a policy; an explicit public policy takes
+precedence for player props and thumbnails. URL helpers return `undefined` when the
+required URL, playback ID, or signed thumbnail is missing; player props omit missing
+fields. They format supplied data, not validate credentials: a signed video without
+a token cannot play via a constructed bare URL. For a source without a thumbnail or
+storyboard token, re-fetch the full video to obtain the available fields.
+
+Tokens last **12 hours**. `Video.playbackTokenExpiresAt` is an optional nullable
+ISO8601 timestamp. Re-fetch the video with `bold.videos.get()` for fresh tokens;
+there is no refresh endpoint or automatic refresh timer. Token fields are null for
+public videos. Do not log tokens or tokenized URLs.
+
 ### Playlists
 
 ```typescript
