@@ -2,7 +2,7 @@ import axios, { AxiosInstance } from "axios";
 
 import { fetchVideo, fetchVideos, searchVideos, fetchSettings, fetchPlaylist, fetchPlaylists } from './fetchers'
 import { fetchViewers, fetchViewer, lookupViewer, createViewer, updateViewer, fetchViewerProgress, fetchProgress, saveProgress } from './viewers'
-import { searchCommunity, listPosts, getPost, createPost, updatePost, deletePost, reactToPost, createComment, updateComment, deleteComment, reactToComment, listMentions, unreadMentionCount, markMentionsRead } from './community'
+import { searchCommunity, listPosts, getPost, createPost, updatePost, setPostPinned, deletePost, reactToPost, createComment, updateComment, deleteComment, reactToComment, listMentions, unreadMentionCount, markMentionsRead } from './community'
 import { trackEvent, trackPageView, trackEngagement } from './tracking'
 import { createAI } from './ai'
 import { DEFAULT_API_BASE_URL } from './constants'
@@ -14,6 +14,8 @@ export type ClientOptions = {
   baseURL?: string
   debug?: boolean
   headers?: Record<string, string>
+  /** Server-only admin API key, sent as `X-Bold-Admin-Api-Key` by admin operations such as `community.posts.setPinned`. Never expose it to a browser. */
+  adminApiKey?: string
 }
 
 function createClient(apiKey: string, options: ClientOptions = {}) {
@@ -85,6 +87,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
         get: getPost(apiClient),
         create: createPost(apiClient),
         update: updatePost(apiClient),
+        setPinned: setPostPinned(apiClient, options.adminApiKey),
         delete: deletePost(apiClient),
         react: reactToPost(apiClient),
       },

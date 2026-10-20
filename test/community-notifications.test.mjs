@@ -30,8 +30,19 @@ before(async () => {
       url: req.url,
       authorization: req.headers.authorization,
       viewerId: req.headers["x-viewer-id"],
+      adminKey: req.headers["x-bold-admin-api-key"],
       body,
     });
+
+    const pin = req.url.match(/^\/api\/v1\/admin\/community\/posts\/([^/]+)\/pinned$/);
+    if (req.method === "PUT" && pin) {
+      const status = req.headers["x-bold-admin-api-key"] === "admin-key" ? 200 : 401;
+      res.writeHead(status, { "content-type": "application/json" });
+      res.end(JSON.stringify(status === 401 ? { error: "Unauthorized" } : {
+        data: { ...communityPost(), id: decodeURIComponent(pin[1]), pinned: body.pinned, pinned_at: body.pinned ? "2026-10-20T09:00:00Z" : null },
+      }));
+      return;
+    }
 
     if (req.url.includes("/blocked/")) {
       res.writeHead(403, { "content-type": "application/json" });
@@ -563,8 +574,8 @@ test("reply-preserving deletion is opt-in and existing delete requests stay unch
   assert.equal(requests[1].viewerId, "viewer-1");
 });
 
-function createCommunityClient() {
-  return createClient("tenant-key", { baseURL }).community;
+function createCommunityClient(options = {}) {
+  return createClient("tenant-key", { baseURL, ...options }).community;
 }
 
 function communityPost() {
@@ -608,3 +619,40 @@ function communityComment() {
     updated_at: "2026-07-27T09:00:00Z",
   };
 }
+
+test("setPinned sends the pin state with the admin key only on that request", async () => {
+  const community = createCommunityClient({ adminApiKey: "admin-key" });
+  const pinned = await community.posts.setPinned("post/1", true);
+  assert.deepEqual(
+    { method: requests[0].method, url: requests[0].url, adminKey: requests[0].adminKey, viewerId: requests[0].viewerId, body: requests[0].body },
+    { method: "PUT", url: "/api/v1/admin/community/posts/post%2F1/pinned", adminKey: "admin-key", viewerId: undefined, body: { pinned: true } }
+  );
+  assert.equal(pinned.data.id, "post/1");
+  assert.equal(pinned.data.pinned, true);
+  assert.equal(pinned.data.pinnedAt, "2026-10-20T09:00:00Z");
+
+  const unpinned = await community.posts.setPinned("post-1", false);
+  assert.deepEqual(requests[1].body, { pinned: false });
+  assert.equal(unpinned.data.pinnedAt, null);
+
+  await community.posts.list();
+  assert.equal(requests[2].adminKey, undefined);
+});
+
+test("setPinned validates locally and surfaces auth failures as CommunityAPIError", async () => {
+  await assert.rejects(() => createCommunityClient().posts.setPinned("post-1", true), /adminApiKey/);
+  const pin = createCommunityClient({ adminApiKey: "admin-key" }).posts.setPinned;
+  await assert.rejects(() => pin("", true), /Post ID/);
+  await assert.rejects(() => pin("post-1", "true"), /boolean/);
+  assert.equal(requests.length, 0);
+
+  await assert.rejects(
+    () => createCommunityClient({ adminApiKey: "wrong" }).posts.setPinned("post-1", true),
+    (error) => {
+      assert.ok(error instanceof CommunityAPIError);
+      assert.equal(error.status, 401);
+      assert.match(error.message, /PUT admin\/community\/posts\/post-1\/pinned failed \(401\): Unauthorized/);
+      return true;
+    }
+  );
+});

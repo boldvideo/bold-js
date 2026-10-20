@@ -218,6 +218,28 @@ export function updatePost(client: ApiClient) {
 }
 
 /**
+ * Pin or unpin a post. Idempotent: re-pinning keeps the original `pinnedAt`.
+ *
+ * A moderation action that requires the `adminApiKey` client option. Call it
+ * from your server after checking the acting member may moderate; post
+ * authorship is not permission to pin.
+ */
+export function setPostPinned(client: ApiClient, adminApiKey?: string) {
+  return async (id: string, pinned: boolean): Promise<{ data: Post }> => {
+    if (!adminApiKey) throw new Error("adminApiKey client option is required to pin posts");
+    if (!id) throw new Error("Post ID is required");
+    if (typeof pinned !== "boolean") throw new Error("pinned must be a boolean");
+    const url = `admin/community/posts/${encodeURIComponent(id)}/pinned`;
+    try {
+      const res = await client.put(url, { pinned }, { headers: { "X-Bold-Admin-Api-Key": adminApiKey } });
+      return camelizeKeys(res.data) as { data: Post };
+    } catch (error) {
+      throw new CommunityAPIError("PUT", url, error);
+    }
+  };
+}
+
+/**
  * Delete a post (owner or admin only)
  */
 export function deletePost(client: ApiClient) {

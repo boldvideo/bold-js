@@ -34,6 +34,11 @@ async function checkResponses(): Promise<void> {
   bold.community.search({});
   // @ts-expect-error Unsupported sort order.
   bold.community.search({ query: 'hello', sort: 'oldest' });
+  const admin = createClient('tenant-key', { adminApiKey: 'admin-key' });
+  const pinned = await admin.community.posts.setPinned('post', true);
+  const pinnedAt: string | null | undefined = pinned.data.pinnedAt;
+  // @ts-expect-error Pin state is a boolean.
+  admin.community.posts.setPinned('post', 'true');
   const created = await bold.community.comments.create('viewer', 'post', { content: 'Hello' });
   const updated = await bold.community.comments.update('viewer', 'comment', { content: 'Edited' });
   checkComment(created.data);
