@@ -418,6 +418,13 @@ await bold.community.posts.update('viewer-uuid', 'post-id', {
 // Delete a post (owner or admin only)
 await bold.community.posts.delete('viewer-uuid', 'post-id');
 
+// Pin or unpin a post (server only: requires an admin API key).
+// Check that the acting member may moderate first; authorship is not enough.
+const admin = createClient(process.env.BOLD_API_KEY, { adminApiKey: process.env.BOLD_ADMIN_API_KEY });
+const { data: pinned } = await admin.community.posts.setPinned('post-id', true);
+console.log(pinned.pinned, pinned.pinnedAt); // re-pinning keeps the original pinnedAt
+await admin.community.posts.setPinned('post-id', false);
+
 // React to a post (toggle like/unlike)
 const reaction = await bold.community.posts.react('viewer-uuid', 'post-id');
 console.log(reaction.reacted, reaction.reactionsCount);
