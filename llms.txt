@@ -275,10 +275,13 @@ page_size, sort, author_id, from, and to. Optional viewerId is sent as X-Viewer-
 Omitted options use server defaults. API validation limits query to 200 characters
 and 12 words, page to integers 1..10000, pageSize to integers 1..100; sort is
 `relevance` or `newest`. Dates are inclusive UTC YYYY-MM-DD.
-Each result has postId, postAuthorId (parent thread author identity for blocking),
+Each result has postId, postAuthorId (parent thread author identity for blocking), ancestorAuthorIds
+(live parent/grandparent comment identities nearest first, empty for post/top-level hits),
 commentId (null for post hits), contentPreview, snippet, highlights, author
-({ id, name, avatarUrl }), and createdAt. author.id and postAuthorId are opaque
-public identities: native viewer UUID or archive:<hash>, not necessarily UUIDs.
+({ id, name, avatarUrl, archived }), and createdAt. Author identities are opaque:
+native viewer UUID or kajabi-archive:<original-profile-id-or-decoded-name>, not necessarily UUIDs.
+The archived boolean identifies imported attribution. Blocking must check the matched author,
+parent thread and ancestor comment identities; archive identities never use the importer UUID.
 Meta contains page, pageSize, totalEntries, totalPages. Highlight ranges are
 half-open Unicode codepoints: use `Array.from(hit.snippet).slice(start, end).join('')`,
 not `hit.snippet.slice(start, end)`. Render snippets as text, not HTML.

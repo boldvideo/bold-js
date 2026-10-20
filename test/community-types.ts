@@ -19,11 +19,13 @@ function checkComment(comment: CommentThread | Reply): void {
 }
 
 async function checkResponses(): Promise<void> {
-  const options: CommunitySearchOptions = { query: 'hello', sort: 'newest', authorId: 'archive:hash' };
+  const options: CommunitySearchOptions = { query: 'hello', sort: 'newest', authorId: 'kajabi-archive:profile' };
   const search: PaginatedResponse<CommunitySearchResult> = await bold.community.search(options);
   search.data.forEach(hit => {
     const commentId: string | null = hit.commentId;
     const parentAuthor: string = hit.postAuthorId;
+    const ancestors: string[] = hit.ancestorAuthorIds;
+    const archived: boolean = hit.author.archived;
     const avatar: string | null = hit.author.avatarUrl;
     // @ts-expect-error A post hit has no comment ID.
     const requiredCommentId: string = hit.commentId;

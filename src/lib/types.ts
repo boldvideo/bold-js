@@ -1100,7 +1100,7 @@ export type CommunitySearchOptions = {
   /** Integer from 1 to 100. Omit to use the API default. */
   pageSize?: number;
   sort?: 'relevance' | 'newest';
-  /** Opaque public author identity: native viewer UUID or archive:<hash>. */
+  /** Opaque public author identity: native viewer UUID or kajabi-archive:<profile-id-or-name>. */
   authorId?: string;
   /** Inclusive UTC start date, YYYY-MM-DD. */
   from?: string;
@@ -1114,13 +1114,15 @@ export type CommunitySearchResult = {
   postId: string;
   /** Parent thread's public author identity, for blocking even on comment hits. */
   postAuthorId: string;
+  /** Live parent/grandparent comment identities, nearest first; empty for post/top-level hits. */
+  ancestorAuthorIds: string[];
   commentId: string | null;
   contentPreview: string;
   snippet: string;
   /** Half-open Unicode codepoint ranges. Slice Array.from(snippet), not UTF-16 strings. */
   highlights: { start: number; end: number }[];
   author: {
-    /** Opaque public identity: native viewer UUID or archive:<hash>; not always a UUID. */
+    /** Opaque public identity: native viewer UUID or kajabi-archive:<profile-id-or-name>. */
     id: string;
     name: string;
     avatarUrl: string | null;

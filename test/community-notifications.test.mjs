@@ -46,12 +46,13 @@ before(async () => {
       res.end(JSON.stringify({
         data: query === "empty" ? [] : [null, "comment-1"].map(commentId => ({
           post_id: "post-1",
-          post_author_id: "archive:parent_hash",
+          post_author_id: "kajabi-archive:parent-profile",
+          ancestor_author_ids: commentId ? ["kajabi-archive:parent-comment", "native-grandparent"] : [],
           comment_id: commentId,
           content_preview: "Preview 😀 café",
           snippet: "😀 café & tea",
           highlights: [{ start: 2, end: 6 }],
-          author: { id: commentId ? "archive:comment_hash" : "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatar_url: null, archived: Boolean(commentId) },
+          author: { id: commentId ? "kajabi-archive:comment-profile" : "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatar_url: null, archived: Boolean(commentId) },
           created_at: "2026-10-01T00:00:00Z",
         })),
         meta: { page: 1, page_size: 20, total_entries: query === "empty" ? 0 : 2, total_pages: query === "empty" ? 0 : 1 },
@@ -289,7 +290,7 @@ test("wraps notification API failures with status and server code", async () => 
 test("community search maps filters, viewer header, identities, nullable IDs and codepoint highlights", async () => {
   const result = await createCommunityClient().search({
     query: "😀 café & tea", page: 10000, pageSize: 100, sort: "newest",
-    authorId: "archive:parent_hash", from: "2026-10-01", to: "2026-10-20", viewerId: "viewer-1",
+    authorId: "kajabi-archive:parent-profile", from: "2026-10-01", to: "2026-10-20", viewerId: "viewer-1",
   });
   const request = requests[0];
   assert.equal(request.method, "GET");
@@ -300,19 +301,20 @@ test("community search maps filters, viewer header, identities, nullable IDs and
   assert.equal(url.pathname, "/api/v1/community/search");
   assert.deepEqual(Object.fromEntries(url.searchParams), {
     q: "😀 café & tea", page: "10000", page_size: "100", sort: "newest",
-    author_id: "archive:parent_hash", from: "2026-10-01", to: "2026-10-20",
+    author_id: "kajabi-archive:parent-profile", from: "2026-10-01", to: "2026-10-20",
   });
   assert.deepEqual(result.meta, { page: 1, pageSize: 20, totalEntries: 2, totalPages: 1 });
   assert.deepEqual(result.data[0], {
-    postId: "post-1", postAuthorId: "archive:parent_hash", commentId: null,
+    postId: "post-1", postAuthorId: "kajabi-archive:parent-profile", ancestorAuthorIds: [], commentId: null,
     contentPreview: "Preview 😀 café", snippet: "😀 café & tea", highlights: [{ start: 2, end: 6 }],
     author: { id: "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatarUrl: null, archived: false },
     createdAt: "2026-10-01T00:00:00Z",
   });
   assert.equal(result.data[1].commentId, "comment-1");
-  assert.equal(result.data[1].author.id, "archive:comment_hash");
+  assert.equal(result.data[1].author.id, "kajabi-archive:comment-profile");
   assert.equal(result.data[1].author.archived, true);
-  assert.equal(result.data[1].postAuthorId, "archive:parent_hash");
+  assert.equal(result.data[1].postAuthorId, "kajabi-archive:parent-profile");
+  assert.deepEqual(result.data[1].ancestorAuthorIds, ["kajabi-archive:parent-comment", "native-grandparent"]);
   const { start, end } = result.data[0].highlights[0];
   assert.equal(Array.from(result.data[0].snippet).slice(start, end).join(""), "café");
 });
