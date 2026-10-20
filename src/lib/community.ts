@@ -18,6 +18,8 @@ import type {
   MentionsUnreadCountResponse,
   MarkMentionsReadData,
   MarkMentionsReadResponse,
+  CommunitySearchOptions,
+  CommunitySearchResult,
 } from "./types";
 
 type ApiClient = AxiosInstance;
@@ -127,6 +129,25 @@ async function patch<T>(client: ApiClient, url: string, data: Record<string, unk
 }
 
 // --- Posts ---
+
+/** Search posts and comments; query and filter validation is performed by the API. */
+export function searchCommunity(client: ApiClient) {
+  return async (opts: CommunitySearchOptions): Promise<PaginatedResponse<CommunitySearchResult>> => {
+    return get<PaginatedResponse<CommunitySearchResult>>(
+      client,
+      `community/search${toQuery({
+        q: opts.query,
+        page: opts.page,
+        page_size: opts.pageSize,
+        sort: opts.sort,
+        author_id: opts.authorId,
+        from: opts.from,
+        to: opts.to,
+      })}`,
+      opts.viewerId
+    );
+  };
+}
 
 /**
  * List community posts with optional filters and pagination

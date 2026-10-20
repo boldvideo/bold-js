@@ -41,6 +41,24 @@ before(async () => {
 
     res.writeHead(200, { "content-type": "application/json" });
 
+    if (req.method === "GET" && req.url.startsWith("/api/v1/community/search?")) {
+      const query = new URL(req.url, "http://localhost").searchParams.get("q");
+      res.end(JSON.stringify({
+        data: query === "empty" ? [] : [null, "comment-1"].map(commentId => ({
+          post_id: "post-1",
+          post_author_id: "archive:parent_hash",
+          comment_id: commentId,
+          content_preview: "Preview 😀 café",
+          snippet: "😀 café & tea",
+          highlights: [{ start: 2, end: 6 }],
+          author: { id: commentId ? "archive:comment_hash" : "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatar_url: null },
+          created_at: "2026-10-01T00:00:00Z",
+        })),
+        meta: { page: 1, page_size: 20, total_entries: query === "empty" ? 0 : 2, total_pages: query === "empty" ? 0 : 1 },
+      }));
+      return;
+    }
+
     if (req.method === "GET" && req.url === "/api/v1/community/posts/deleted-thread") {
       res.end(JSON.stringify({
         data: {
@@ -266,6 +284,56 @@ test("wraps notification API failures with status and server code", async () => 
       return true;
     }
   );
+});
+
+test("community search maps filters, viewer header, identities, nullable IDs and codepoint highlights", async () => {
+  const result = await createCommunityClient().search({
+    query: "😀 café & tea", page: 10000, pageSize: 100, sort: "newest",
+    authorId: "archive:parent_hash", from: "2026-10-01", to: "2026-10-20", viewerId: "viewer-1",
+  });
+  const request = requests[0];
+  assert.equal(request.method, "GET");
+  assert.equal(request.viewerId, "viewer-1");
+  assert.ok(request.authorization);
+  assert.equal(request.body, null);
+  const url = new URL(request.url, "http://localhost");
+  assert.equal(url.pathname, "/api/v1/community/search");
+  assert.deepEqual(Object.fromEntries(url.searchParams), {
+    q: "😀 café & tea", page: "10000", page_size: "100", sort: "newest",
+    author_id: "archive:parent_hash", from: "2026-10-01", to: "2026-10-20",
+  });
+  assert.deepEqual(result.meta, { page: 1, pageSize: 20, totalEntries: 2, totalPages: 1 });
+  assert.deepEqual(result.data[0], {
+    postId: "post-1", postAuthorId: "archive:parent_hash", commentId: null,
+    contentPreview: "Preview 😀 café", snippet: "😀 café & tea", highlights: [{ start: 2, end: 6 }],
+    author: { id: "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatarUrl: null },
+    createdAt: "2026-10-01T00:00:00Z",
+  });
+  assert.equal(result.data[1].commentId, "comment-1");
+  assert.equal(result.data[1].author.id, "archive:comment_hash");
+  assert.equal(result.data[1].postAuthorId, "archive:parent_hash");
+  const { start, end } = result.data[0].highlights[0];
+  assert.equal(Array.from(result.data[0].snippet).slice(start, end).join(""), "café");
+});
+
+test("community search omits optional filters and viewer header, preserves empty results and accepts relevance", async () => {
+  const community = createCommunityClient();
+  assert.deepEqual(await community.search({ query: "empty" }), {
+    data: [], meta: { page: 1, pageSize: 20, totalEntries: 0, totalPages: 0 },
+  });
+  assert.equal(requests[0].url, "/api/v1/community/search?q=empty");
+  assert.equal(requests[0].viewerId, undefined);
+  await community.search({ query: "test", sort: "relevance", page: 1, pageSize: 1 });
+  assert.equal(requests[1].url, "/api/v1/community/search?q=test&page=1&page_size=1&sort=relevance");
+});
+
+test("community search uses the existing CommunityAPIError boundary", async () => {
+  const bold = createClient("key", { baseURL: `${baseURL}blocked/` });
+  await assert.rejects(bold.community.search({ query: "test" }), error => {
+    assert.ok(error instanceof CommunityAPIError);
+    assert.equal(error.status, 403);
+    return true;
+  });
 });
 
 test("preserves existing community create bodies when mentions are omitted", async () => {
