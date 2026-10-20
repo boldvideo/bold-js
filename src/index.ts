@@ -106,6 +106,8 @@ export type {
   NotificationChannelUpdate,
   UpdateNotificationPreferencesData,
   // Community API
+  CommunitySearchOptions,
+  CommunitySearchResult,
   Post,
   PostAuthor,
   UserSummary,

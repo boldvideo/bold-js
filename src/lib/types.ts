@@ -1090,8 +1090,49 @@ export type PaginatedResponse<T> = {
 };
 
 /**
- * Options for listing community posts
+ * Options for searching community posts and comments
  */
+export type CommunitySearchOptions = {
+  /** Search query: at most 200 characters and 12 words. Validated by the API. */
+  query: string;
+  /** Integer from 1 to 10000. Omit to use the API default. */
+  page?: number;
+  /** Integer from 1 to 100. Omit to use the API default. */
+  pageSize?: number;
+  sort?: 'relevance' | 'newest';
+  /** Opaque public author identity: native viewer UUID or kajabi-archive:<profile-id-or-name>. */
+  authorId?: string;
+  /** Inclusive UTC start date, YYYY-MM-DD. */
+  from?: string;
+  /** Inclusive UTC end date, YYYY-MM-DD. */
+  to?: string;
+  /** Optional viewer context, sent as X-Viewer-ID rather than a query parameter. */
+  viewerId?: string;
+};
+
+export type CommunitySearchResult = {
+  postId: string;
+  /** Parent thread's public author identity, for blocking even on comment hits. */
+  postAuthorId: string;
+  /** Live parent/grandparent comment identities, nearest first; empty for post/top-level hits. */
+  ancestorAuthorIds: string[];
+  commentId: string | null;
+  contentPreview: string;
+  snippet: string;
+  /** Half-open Unicode codepoint ranges. Slice Array.from(snippet), not UTF-16 strings. */
+  highlights: { start: number; end: number }[];
+  author: {
+    /** Opaque public identity: native viewer UUID or kajabi-archive:<profile-id-or-name>. */
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+    /** True when the displayed author comes from imported archive attribution. */
+    archived: boolean;
+  };
+  createdAt: string;
+};
+
+/** Options for listing community posts. */
 export type ListPostsOptions = {
   /** Filter by category (e.g., "announcements", "general") */
   category?: string;
