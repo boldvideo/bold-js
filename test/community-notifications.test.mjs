@@ -51,7 +51,7 @@ before(async () => {
           content_preview: "Preview 😀 café",
           snippet: "😀 café & tea",
           highlights: [{ start: 2, end: 6 }],
-          author: { id: commentId ? "archive:comment_hash" : "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatar_url: null },
+          author: { id: commentId ? "archive:comment_hash" : "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatar_url: null, archived: Boolean(commentId) },
           created_at: "2026-10-01T00:00:00Z",
         })),
         meta: { page: 1, page_size: 20, total_entries: query === "empty" ? 0 : 2, total_pages: query === "empty" ? 0 : 1 },
@@ -306,11 +306,12 @@ test("community search maps filters, viewer header, identities, nullable IDs and
   assert.deepEqual(result.data[0], {
     postId: "post-1", postAuthorId: "archive:parent_hash", commentId: null,
     contentPreview: "Preview 😀 café", snippet: "😀 café & tea", highlights: [{ start: 2, end: 6 }],
-    author: { id: "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatarUrl: null },
+    author: { id: "4d954bce-1a5f-45b2-a046-bc348248ae17", name: "Ada", avatarUrl: null, archived: false },
     createdAt: "2026-10-01T00:00:00Z",
   });
   assert.equal(result.data[1].commentId, "comment-1");
   assert.equal(result.data[1].author.id, "archive:comment_hash");
+  assert.equal(result.data[1].author.archived, true);
   assert.equal(result.data[1].postAuthorId, "archive:parent_hash");
   const { start, end } = result.data[0].highlights[0];
   assert.equal(Array.from(result.data[0].snippet).slice(start, end).join(""), "café");

@@ -1124,6 +1124,8 @@ export type CommunitySearchResult = {
     id: string;
     name: string;
     avatarUrl: string | null;
+    /** True when the displayed author comes from imported archive attribution. */
+    archived: boolean;
   };
   createdAt: string;
 };
