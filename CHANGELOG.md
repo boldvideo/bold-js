@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 2.3.0
+
+### Minor Changes
+
+- b3168c3: Add community.search for paginated post and comment search with sorting, author and inclusive UTC date filters, optional viewer context, and camelCase results including Unicode codepoint highlights and parent-thread author identities.
+
 ## 2.2.0
 
 ### Minor Changes
