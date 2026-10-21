@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 2.4.1
+
+### Patch Changes
+
+- a3c7b2e: Document that `community.posts.setPinned` should be given a community moderation key through the `adminApiKey` option. That key can only pin and unpin posts, so it can stay in your server's environment. No API changes.
+
 ## 2.4.0
 
 ### Minor Changes
