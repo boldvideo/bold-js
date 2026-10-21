@@ -14,7 +14,11 @@ export type ClientOptions = {
   baseURL?: string
   debug?: boolean
   headers?: Record<string, string>
-  /** Server-only admin API key, sent as `X-Bold-Admin-Api-Key` by admin operations such as `community.posts.setPinned`. Never expose it to a browser. */
+  /**
+   * Server-only key sent as `X-Bold-Admin-Api-Key` by admin operations. For
+   * `community.posts.setPinned`, pass a community moderation key, which can only
+   * pin and unpin posts. Never expose it to a browser.
+   */
   adminApiKey?: string
 }
 

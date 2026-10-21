@@ -47,7 +47,7 @@ interface ClientOptions {
   baseURL?: string;                  // Default: 'https://app.boldvideo.io/api/v1/'
   debug?: boolean;                   // Log requests (default: false)
   headers?: Record<string, string>;  // Additional headers
-  adminApiKey?: string;              // Server-only admin key for admin operations (e.g. posts.setPinned)
+  adminApiKey?: string;              // Server-only key for admin operations; for posts.setPinned use a community moderation key
 }
 ```
 
@@ -294,7 +294,7 @@ not `hit.snippet.slice(start, end)`. Render snippets as text, not HTML.
 - `bold.community.posts.create(viewerId, data)` - Create a post; `data.mentions` accepts customer external IDs
 - `bold.community.posts.update(viewerId, id, data)` - Update post (owner/admin)
 - `bold.community.posts.delete(viewerId, id)` - Delete post (owner/admin)
-- `bold.community.posts.setPinned(id, pinned)` - Pin or unpin a post; returns `{ data: Post }`. Requires the server-only `adminApiKey` client option (sent as `X-Bold-Admin-Api-Key`). Idempotent: re-pinning keeps the original `pinnedAt`. Check moderation rights on your server first; authorship is not permission to pin.
+- `bold.community.posts.setPinned(id, pinned)` - Pin or unpin a post; returns `{ data: Post }`. Requires the server-only `adminApiKey` client option (sent as `X-Bold-Admin-Api-Key`); pass a community moderation key, which can only pin and unpin posts. Idempotent: re-pinning keeps the original `pinnedAt`. Check moderation rights on your server first; authorship is not permission to pin.
 - `bold.community.posts.react(viewerId, id)` - Toggle reaction
 
 ### Comments

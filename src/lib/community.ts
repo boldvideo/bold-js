@@ -220,7 +220,8 @@ export function updatePost(client: ApiClient) {
 /**
  * Pin or unpin a post. Idempotent: re-pinning keeps the original `pinnedAt`.
  *
- * A moderation action that requires the `adminApiKey` client option. Call it
+ * A moderation action that requires the `adminApiKey` client option; pass a
+ * community moderation key, which can only pin and unpin posts. Call it
  * from your server after checking the acting member may moderate; post
  * authorship is not permission to pin.
  */
