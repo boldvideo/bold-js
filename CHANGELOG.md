@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 2.5.0
+
+### Minor Changes
+
+- 50c200f: Add `ai.rateMessage` and `ai.clearRating` for assistant answer feedback, with exported `FeedbackReason` and `MessageFeedback` types. Expose optional `messageId` on JSON AI responses and streaming completion events.
+
 ## 2.4.1
 
 ### Patch Changes
