@@ -376,12 +376,35 @@ and non-streaming responses. Voice uses a browser session handle instead of SSE.
 - `bold.ai.search(options: SearchOptions)` - Semantic search with AI summary
 - `bold.ai.recommendations(options: RecommendationsOptions)` - Topic-based video recommendations
 - `bold.ai.getConversation(id: string)` - Retrieve conversation history by ID
+- `bold.ai.rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>` - Rate an assistant message
+- `bold.ai.clearRating(messageId: string): Promise<void>` - Remove an assistant message's rating
 - `bold.ai.voice.createSession(options: VoiceSessionOptions): VoiceSession` - Synchronous, single-use browser voice handle
 
 **Deprecated aliases** (still work):
 - `bold.ai.ask()` -> use `chat()`
 - `bold.ai.coach()` -> use `chat()`
 - `bold.ai.recommend()` -> use `recommendations()`
+
+### Message feedback
+
+JSON `AIResponse` and SSE `message_complete` expose optional `messageId?: string`
+for rating an assistant answer. Older responses may omit it. Both feedback methods
+use the client's authentication headers and throw `AIAPIError` with status 404
+when the message is not on the caller's account. `clearRating` accepts an empty 204.
+
+```typescript
+// Exported types
+type FeedbackReason = 'wrong' | 'not_in_video' | 'too_short' | 'off_topic' | 'other';
+interface MessageFeedback {
+  messageId: string;
+  rating: 'up' | 'down';
+  reasons: FeedbackReason[];
+  note: string | null;
+}
+
+const feedback = await bold.ai.rateMessage(messageId, { rating: 'up' });
+await bold.ai.clearRating(feedback.messageId);
+```
 
 ## Voice Sessions
 
@@ -479,6 +502,7 @@ type AIEvent =
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete";
+      messageId?: string;
       interactionId?: string | null;
       conversationId?: string;
       content: string;

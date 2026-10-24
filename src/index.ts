@@ -64,6 +64,8 @@ export type {
   Conversation,
   ConversationMessage,
   ConversationMetadata,
+  FeedbackReason,
+  MessageFeedback,
   // Viewers API
   Viewer,
   ViewerProgress,
