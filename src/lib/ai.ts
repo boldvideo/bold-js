@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, ImageInput, MultimodalCapability } from './types';
+import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 import { createVoice } from './voice';
 
@@ -141,13 +141,14 @@ async function streamRequest(
  */
 async function jsonRequest<T = AIResponse>(
   path: string,
-  body: Record<string, unknown>,
-  config: AIConfig
+  body: Record<string, unknown> | undefined,
+  config: AIConfig,
+  method: 'POST' | 'DELETE' = 'POST'
 ): Promise<T> {
   const url = buildURL(config.baseURL, path);
 
   const response = await fetch(url, {
-    method: 'POST',
+    method,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -157,8 +158,10 @@ async function jsonRequest<T = AIResponse>(
   });
 
   if (!response.ok) {
-    throw new AIAPIError('POST', url.toString(), response);
+    throw new AIAPIError(method, url.toString(), response);
   }
+
+  if (response.status === 204) return undefined as T;
 
   const raw = await response.json();
   return camelizeKeys(raw) as T;
@@ -420,6 +423,12 @@ export interface AIClient {
    */
   getConversation(conversationId: string): Promise<Conversation>;
 
+  /** Rate an assistant message. */
+  rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>;
+
+  /** Remove an assistant message's rating. */
+  clearRating(messageId: string): Promise<void>;
+
   /**
    * Convert a File or Blob into a base64 ImageInput payload for use with
    * `images: [...]` on chat / ask / coach / search.
@@ -552,6 +561,17 @@ export function createAI(config: AIConfig): AIClient {
     return getRequest<Conversation>(`ai/chat/${conversationId}`, config);
   }
 
+  async function rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback> {
+    const response = await jsonRequest<{ data: MessageFeedback }>(
+      `ai/messages/${encodeURIComponent(messageId)}/feedback`, feedback, config,
+    );
+    return response.data;
+  }
+
+  async function clearRating(messageId: string): Promise<void> {
+    await jsonRequest<void>(`ai/messages/${encodeURIComponent(messageId)}/feedback`, undefined, config, 'DELETE');
+  }
+
   return {
     voice: createVoice(config),
     chat: chat as AIClient['chat'],
@@ -561,6 +581,8 @@ export function createAI(config: AIConfig): AIClient {
     recommendations: recommendations as AIClient['recommendations'],
     recommend: recommend as AIClient['recommend'],
     getConversation,
+    rateMessage,
+    clearRating,
     imageFromFile,
     imageFromCanvas,
     validateImage,

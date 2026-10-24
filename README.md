@@ -796,6 +796,29 @@ for (const msg of conversation.messages) {
 }
 ```
 
+### Rate an AI Answer
+
+Use the optional `messageId` from a non-streaming `AIResponse` or a streaming
+`message_complete` event to rate an assistant answer:
+
+```typescript
+const answer = await bold.ai.chat({ prompt: 'How do I get started?', stream: false });
+if (answer.messageId) {
+  const feedback = await bold.ai.rateMessage(answer.messageId, {
+    rating: 'down',
+    reasons: ['too_short'],
+    note: 'Please include an example.',
+  });
+  await bold.ai.clearRating(feedback.messageId);
+}
+```
+
+`rating` is `'up'` or `'down'`. Optional `reasons` accepts `'wrong'`,
+`'not_in_video'`, `'too_short'`, `'off_topic'`, and `'other'`; `note` is optional.
+`rateMessage` returns `MessageFeedback` with `messageId`, `rating`, `reasons`,
+and a nullable `note`. `clearRating` resolves without a value. Both throw
+`AIAPIError` with status 404 when the message is not on the caller's account.
+
 ### Multi-turn Conversations
 
 Use the `context` parameter for follow-up questions:

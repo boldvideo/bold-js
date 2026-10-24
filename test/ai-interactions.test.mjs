@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import test, { after, before, beforeEach } from 'node:test';
-import { createClient } from '../dist/index.js';
+import { AIAPIError, createClient } from '../dist/index.js';
 
 const requestId = '550e8400-e29b-41d4-a716-446655440000';
 const nextRequestId = '550e8400-e29b-41d4-a716-446655440001';
 const interactionId = '880e8400-e29b-41d4-a716-446655440099';
+const messageId = 'message-42';
 const requests = [];
 let server;
 let ai;
@@ -25,6 +26,7 @@ before(async () => {
       } : {}),
       ...(body.prompt === 'legacy' ? {} : {
         interaction_id: body.search_mode === 'preview' ? null : interactionId,
+        message_id: messageId,
       }),
     };
     if (req.headers.accept === 'text/event-stream') {
@@ -87,6 +89,8 @@ for (const stream of [false, true]) {
         });
         assert.equal(response.interactionId, interactionId);
         assert.equal(Object.hasOwn(response, 'interaction_id'), false);
+        assert.equal(response.messageId, messageId);
+        assert.equal(Object.hasOwn(response, 'message_id'), false);
         assert.deepEqual(response.usage, { inputTokens: 3, outputTokens: 7 });
       });
     }
@@ -111,6 +115,8 @@ for (const stream of [false, true]) {
       });
       assert.equal(response.interactionId, searchMode === 'preview' ? null : interactionId);
       assert.equal(Object.hasOwn(response, 'interaction_id'), false);
+      assert.equal(response.messageId, messageId);
+      assert.equal(Object.hasOwn(response, 'message_id'), false);
     });
   }
 
@@ -118,6 +124,7 @@ for (const stream of [false, true]) {
     for (const method of ['chat', 'ask', 'coach', 'search']) {
       const response = await complete(await ai[method]({ prompt: 'legacy', stream }), stream);
       assert.equal(Object.hasOwn(response, 'interactionId'), false);
+      assert.equal(Object.hasOwn(response, 'messageId'), false);
       assert.deepEqual(requests.at(-1).body, {
         prompt: 'legacy', ...(!stream ? { stream: false } : {}),
       });
@@ -163,3 +170,62 @@ test('attribution metadata is forwarded without changing request identity', asyn
     }
   }
 });
+
+test('rateMessage sends feedback and unwraps the camelized response', async (t) => {
+  const client = createClient('test-key', {
+    baseURL: 'https://example.com/api/v1/',
+    headers: { 'X-Test-Header': 'custom' },
+  });
+  for (const feedback of [
+    { rating: 'up' },
+    { rating: 'down', reasons: ['wrong', 'not_in_video'], note: 'This detail is not in the video.' },
+  ]) {
+    t.mock.method(globalThis, 'fetch', async (url, options) => {
+      assert.equal(url.toString(), 'https://example.com/api/v1/ai/messages/message%2F42%3F/feedback');
+      assert.equal(options.method, 'POST');
+      assert.deepEqual(options.headers, {
+        'Content-Type': 'application/json', Accept: 'application/json',
+        Authorization: 'test-key', 'X-Test-Header': 'custom',
+      });
+      assert.deepEqual(JSON.parse(options.body), feedback);
+      return Response.json({ data: {
+        message_id: 'message/42?', rating: feedback.rating,
+        reasons: feedback.reasons ?? [], note: feedback.note ?? null,
+      } });
+    });
+    assert.deepEqual(await client.ai.rateMessage('message/42?', feedback), {
+      messageId: 'message/42?', rating: feedback.rating,
+      reasons: feedback.reasons ?? [], note: feedback.note ?? null,
+    });
+  }
+});
+
+test('clearRating sends an authenticated DELETE without a body and accepts 204', async (t) => {
+  const client = createClient('test-key', {
+    baseURL: 'https://example.com/api/v1/',
+    headers: { 'X-Test-Header': 'custom' },
+  });
+  t.mock.method(globalThis, 'fetch', async (url, options) => {
+    assert.equal(url.toString(), 'https://example.com/api/v1/ai/messages/message%2F42%3F/feedback');
+    assert.equal(options.method, 'DELETE');
+    assert.equal(options.body, undefined);
+    assert.deepEqual(options.headers, {
+      'Content-Type': 'application/json', Accept: 'application/json',
+      Authorization: 'test-key', 'X-Test-Header': 'custom',
+    });
+    return new Response(null, { status: 204 });
+  });
+  assert.equal(await client.ai.clearRating('message/42?'), undefined);
+});
+
+for (const [method, httpMethod] of [['rateMessage', 'POST'], ['clearRating', 'DELETE']]) {
+  test(`${method} throws AIAPIError on 404`, async (t) => {
+    t.mock.method(globalThis, 'fetch', async () => new Response(null, { status: 404 }));
+    await assert.rejects(ai[method]('missing-message', { rating: 'up' }), error => {
+      assert.ok(error instanceof AIAPIError);
+      assert.equal(error.status, 404);
+      assert.match(error.message, new RegExp(`^${httpMethod} .*ai/messages/missing-message/feedback failed \\(404\\)`));
+      return true;
+    });
+  });
+}

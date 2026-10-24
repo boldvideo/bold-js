@@ -345,7 +345,7 @@ export type AIEvent =
   | { type: "sources"; sources: Segment[] }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; interactionId?: string | null; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "image_analysis"; status: "analyzing" }
   | { type: "image_analysis"; status: "complete"; description: string };
@@ -366,6 +366,8 @@ export type ImageInput =
  * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
  */
 export interface AIResponse {
+  /** Assistant message ID for rating feedback, when supplied by the server. */
+  messageId?: string;
   /** Analytics correlation ID, not a durable persistence acknowledgement. May be null for search previews. */
   interactionId?: string | null;
   conversationId?: string;       // Present for /chat endpoints (primary identifier)
@@ -514,6 +516,15 @@ export interface RecommendationsResponse {
  * @deprecated Use RecommendationsResponse instead
  */
 export type RecommendResponse = RecommendationsResponse;
+
+export type FeedbackReason = 'wrong' | 'not_in_video' | 'too_short' | 'off_topic' | 'other';
+
+export interface MessageFeedback {
+  messageId: string;
+  rating: 'up' | 'down';
+  reasons: FeedbackReason[];
+  note: string | null;
+}
 
 /**
  * A message in a conversation
