@@ -1,31 +1,43 @@
 {
   "citations": [
     {
+      "canonical_url": "http://test.bold.video/v/wd6v3",
+      "playback_id": null,
+      "playback_token": null,
+      "slug": null,
       "timestamp": 12,
-      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+      "timestamp_url": "http://test.bold.video/v/wd6v3?t=12",
+      "title": "Synthetic garden lesson",
+      "video_id": "ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366"
     }
   ],
   "content": "Space seeds [00:12].",
-  "conversation_id": "7305083a-a91f-4439-9caa-bca092922b92",
-  "id": "7305083a-a91f-4439-9caa-bca092922b92",
-  "interaction_id": "49421775-fa7c-400c-b01e-39e93f3bb324",
+  "conversation_id": "9188e52e-bfc3-466b-b9ef-a55942f2c0a2",
+  "id": "9188e52e-bfc3-466b-b9ef-a55942f2c0a2",
+  "interaction_id": "37759340-5e42-40b1-86a3-39612de32328",
   "locked_matches": [],
-  "message_id": "0b2324d3-47a4-4efa-99fa-a6b7fca163b6",
+  "message_id": "2959a33e-db09-4da4-baeb-338e543fe564",
   "pointers": [],
   "response_type": "answer",
   "scope": {
     "answered_from": "focus",
     "focus": {
       "title": "Synthetic garden lesson",
-      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+      "video_id": "ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366"
     },
     "reason": null,
     "widened_from": null
   },
   "sources": [
     {
+      "canonical_url": "http://test.bold.video/v/wd6v3",
+      "playback_id": null,
+      "playback_token": null,
+      "slug": null,
       "timestamp": 12,
-      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+      "timestamp_url": "http://test.bold.video/v/wd6v3?t=12",
+      "title": "Synthetic garden lesson",
+      "video_id": "ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366"
     }
   ],
   "usage": {

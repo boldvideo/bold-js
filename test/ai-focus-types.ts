@@ -10,6 +10,15 @@ function useError(error: unknown): void {
 void useError;
 
 function useSource(source: AISource): void {
+  const sourceTitle: string | undefined = source.title?.trim();
+  const playbackId: string | undefined = source.playbackId?.trim();
+  const playbackToken: string | null | undefined = source.playbackToken;
+  const slug: string | null | undefined = source.slug;
+  const canonicalUrl: string | undefined = source.canonicalUrl?.trim();
+  const timestampUrl: string | undefined = source.timestampUrl?.trim();
+  // @ts-expect-error Citation URLs may be absent or null.
+  source.canonicalUrl.trim();
+  void [sourceTitle, playbackId, playbackToken, slug, canonicalUrl, timestampUrl];
   // @ts-expect-error Focus sources can omit title; library titles can be null.
   source.title.trim();
   // @ts-expect-error Minimal or nullable sources are not legacy Segments.

@@ -150,7 +150,11 @@ for (const scenario of Object.keys(captures)) {
     assert.deepEqual(terminal.usage, usage);
     assert.deepEqual(terminal.citations, terminal.sources);
     assert.equal(Object.hasOwn(terminal, 'citationMap'), false);
-    if (scenario === 'covered') assert.deepEqual(terminal.sources, [{ videoId: raw.scope.focus.video_id, timestamp: 12 }]);
+    if (scenario === 'covered') assert.deepEqual(terminal.sources, [{
+      videoId: raw.scope.focus.video_id, timestamp: 12, title: 'Synthetic garden lesson',
+      playbackId: null, playbackToken: null, slug: null,
+      canonicalUrl: 'http://test.bold.video/v/wd6v3', timestampUrl: 'http://test.bold.video/v/wd6v3?t=12',
+    }]);
     if (scenario === 'widened') {
       const early = events.find(event => event.type === 'sources').sources[0];
       assert.equal(early.id, null);
@@ -200,7 +204,7 @@ for (const scenario of Object.keys(captures)) {
     assert.equal(Object.hasOwn(assistant, 'usage'), false);
     assert.equal(Object.hasOwn(assistant, 'citationMap'), false);
     if (scenario === 'covered') {
-      assert.deepEqual(assistant.sources.map(source => ({ videoId: source.videoId, timestamp: source.timestamp })), terminal.sources);
+      assert.deepEqual(assistant.sources, terminal.sources);
       assert.equal(assistant.sources[0].canonicalUrl, rawHistory.messages[1].sources[0].canonical_url);
       assert.equal(assistant.sources[0].timestampUrl, rawHistory.messages[1].sources[0].timestamp_url);
     } else assert.deepEqual(assistant.sources, terminal.sources);

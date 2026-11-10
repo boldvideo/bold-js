@@ -362,8 +362,15 @@ export interface AICitationSource extends Omit<Segment, 'id' | 'videoId' | 'titl
   attachmentFilename?: string | null;
 }
 
-/** A focus answer can cite a timestamp without library source metadata. */
-export type AISource = AICitationSource | Pick<Segment, 'videoId' | 'timestamp'>;
+/** Focus citations can lack transcript details; playback and link metadata may be absent or null. */
+export type AISource = (AICitationSource | Pick<Segment, 'videoId' | 'timestamp'>) & {
+  title?: string | null;
+  playbackId?: string | null;
+  playbackToken?: string | null;
+  slug?: string | null;
+  canonicalUrl?: string | null;
+  timestampUrl?: string | null;
+};
 
 export interface ChatFocus {
   videoId: string;

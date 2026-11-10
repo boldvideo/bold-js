@@ -4,7 +4,9 @@ These files contain actual controller output from deterministic integration test
 
 - `.sse` files preserve the captured wire bytes unchanged.
 - `.json` files come from separate non-streaming requests, so their conversation/message/interaction IDs differ from SSE.
-- History files belong to the SSE conversations. `history.json` is the covered scenario. History can enrich focused sources with current portal URLs without changing citation identity or timestamp.
+- History files belong to the SSE conversations. `history.json` is the covered scenario. History can refresh focused playback metadata and portal URLs without changing citation identity or timestamp.
+
+The covered trio (`covered.sse`, `covered.json`, `history.json`) was refreshed with enriched source/citation metadata: title, playback ID/token, slug and portal URLs. Its video has no playback ID, so playback ID/token are null. This is not a signed-playback recording, proof of token rotation or real-provider evidence. The widened, pointers and locked-match recordings are unchanged.
 
 The generating integration tests exercise controller routing, persistence, URL enrichment and history serialization with deterministic model responses, stubbed search and a local transcript server. These are not real-model evaluations, search-relevance measurements, deployed HTTP captures or production checks.
 

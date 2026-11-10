@@ -646,6 +646,9 @@ type AIEvent =
 ```
 
 `AISource` is `AICitationSource` metadata or a focus timestamp `{ videoId: string; timestamp: number }`.
+It also exposes optional nullable title, playbackId, playbackToken, slug, canonicalUrl
+and timestampUrl. Focus metadata does not guarantee a playable ID/token or URL;
+guard absent/null values. Minimal older focus responses remain accepted.
 `AICitationSource` keeps the canonical Segment fields but permits null id, videoId,
 title, timestamps, playbackId, sourceType, documentType and speaker (resources/attachments have no playback).
 It also exposes sourceType and optional resource/attachment metadata.

@@ -834,7 +834,10 @@ to an open endpoint. Non-JSON failures retain the HTTP status/message fallback.
   neither is included in `message_complete` or the JSON answer response.
   Opt-in JSON answers, SSE events and conversation history use `AISource[]`, not
   `Segment[]`: focus sources may contain only `videoId` and `timestamp`, and library
-  metadata such as `title` and `playbackId` may be null. Check property presence
+  metadata such as `title` and `playbackId` may be null. Enriched focus citations
+  expose optional `title`, `playbackId`, `playbackToken`, `slug`, `canonicalUrl` and
+  `timestampUrl`; these fields may be absent or null, not guaranteed playback credentials.
+  Check property presence
   (for example, `'text' in source`) and nullable fields before using them. Existing
   SSE/history consumers that assume every source is a `Segment` must add narrowing;
   the legacy source guarantee above applies only to non-opt-in JSON answers.
