@@ -450,7 +450,7 @@ export interface AIResponse {
   responseType?: "answer" | "clarification";
   content: string;
   usage: AIUsage;
-  sources: AISource[];
+  sources: Segment[];
   scope?: AIScope;
   pointers?: AIPointer[];
   lockedMatches?: AILockedMatch[];
@@ -459,8 +459,9 @@ export interface AIResponse {
 }
 
 /** Opt-in focus/access answer; routing-only responses have null usage. */
-export interface AIChatResponse extends Omit<AIResponse, 'usage'> {
+export interface AIChatResponse extends Omit<AIResponse, 'usage' | 'sources'> {
   usage: AIChatUsage | null;
+  sources: AISource[];
   citations?: AISource[];
   metadata?: Record<string, unknown>;
 }

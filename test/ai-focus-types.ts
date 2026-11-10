@@ -1,4 +1,18 @@
-import { createClient, type AIEvent, type AIResponse, type AIChatResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource } from '../src/index';
+import { createClient, type AIEvent, type AIResponse, type AIChatResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource, type AISource, type Segment } from '../src/index';
+
+function useSource(source: AISource): void {
+  // @ts-expect-error Focus sources can omit title; library titles can be null.
+  source.title.trim();
+  // @ts-expect-error Minimal or nullable sources are not legacy Segments.
+  const segment: Segment = source;
+  if ('text' in source) {
+    const text: string = source.text;
+    const title: string | undefined = source.title?.trim();
+    const playbackId: string | undefined = source.playbackId?.trim();
+    void [text, title, playbackId];
+  }
+  void segment;
+}
 
 // SYNTHETIC camelized contracts, not recorded server output.
 const focus = { videoId: 'lesson-1', title: 'Lesson' };
@@ -42,6 +56,7 @@ for (const event of turns) {
   if (event.type === 'message_complete') {
     const id: string | null | undefined = event.sources?.[0]?.videoId;
     const scope: AIScope | undefined = event.scope;
+    event.sources?.forEach(useSource);
     void [id, scope, event.pointers, event.lockedMatches];
     if (event.responseType === 'retrieval') {
       const content: undefined = event.content;
@@ -57,6 +72,7 @@ for (const event of turns) {
 const retrieval: AIRetrievalResponse = { responseType: 'retrieval', sources: [resource], confidence: 'high', metadata: {} };
 const focusedRetrieval: AIRetrievalResponse = { ...retrieval, scope: widened };
 function useResponse(response: AIChatResponse | AIRetrievalResponse): void {
+  response.sources.forEach(useSource);
   if (response.responseType === 'retrieval') {
     const confidence: string = response.confidence;
     const metadata: Record<string, unknown> = response.metadata;
@@ -135,6 +151,7 @@ void useSynthesisOptions;
 async function useHistory(): Promise<void> {
   const history = await ai.getConversation('thread-1');
   const assistant = history.messages.find(message => message.role === 'assistant');
+  assistant?.sources.forEach(useSource);
   const scope: AIScope | undefined = assistant?.scope;
   const pointers: AIPointer[] | undefined = assistant?.pointers;
   const lockedMatches: AILockedMatch[] | undefined = assistant?.lockedMatches;

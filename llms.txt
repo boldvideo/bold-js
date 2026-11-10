@@ -549,7 +549,7 @@ zero-based sources indices. Neither map is sent in message_complete or JSON answ
 With synthesize:false, JSON AIRetrievalResponse and SSE message_complete have
 responseType:'retrieval', sources, optional scope, confidence and metadata, but no content or
 synthesis usage. AIResponse remains an answer interface with required content
-and AIUsage. With stream:false and omitted/true synthesize, calls without focus/access
+and AIUsage, and sources: Segment[]. With stream:false and omitted/true synthesize, calls without focus/access
 retain AIResponse; opt-in focus/access calls return AIChatResponse with required
 content and usage: AIChatUsage | null. AIChatUsage is AIUsage (inputTokens/outputTokens)
 or { promptTokens: number; completionTokens: number; totalCost?: number }.
@@ -559,6 +559,11 @@ False synthesize returns AIRetrievalResponse; dynamic flags require responseType
 narrowing. Streaming still returns AIEvent, whose answer/message_complete usage
 can also be null or either token shape. ConversationMessage exposes optional
 interactionId, focus, scope, pointers and lockedMatches; sources use AISource[].
+Opt-in JSON answers, SSE events and history use AISource[], not Segment[]. Focus
+sources may only have videoId/timestamp; library title/playbackId can be null.
+Check property presence (such as 'text' in source) and nullable fields before use.
+Existing SSE/history consumers assuming Segment must narrow; their legacy source
+compile contract is not preserved. The Segment[] guarantee is for non-opt-in JSON answers.
 Render unknown progress stages as a generic working state (`reading` and
 `widening` are supported). Unknown event types pass through at runtime; the typed
 union lists known events only. Parsing stops at `message_complete` or `error`.

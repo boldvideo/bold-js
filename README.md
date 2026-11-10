@@ -710,7 +710,7 @@ for await (const event of stream) {
   `responseType: 'retrieval'`, sources, confidence and metadata, without answer
   content or synthesis usage. Without `focus`/`access`, JSON calls with omitted or
   `true` synthesis retain `AIResponse`, an interface with required `content` and
-  `usage`. Opt-in `focus`/`access` answers use `AIChatResponse`: content remains a
+  `usage` and `sources: Segment[]`. Opt-in `focus`/`access` answers use `AIChatResponse`: content remains a
   string, but `usage` can be null for pointers/locked matches. `AIChatUsage` is
   either `{ inputTokens, outputTokens }` or `{ promptTokens, completionTokens,
   totalCost? }`, matching the server fields without inventing totals. Check null
@@ -729,7 +729,12 @@ for await (const event of stream) {
   The `citation_map` event maps IDs to source metadata; the final `answer` event
   maps IDs to zero-based indices into its sources array. These are different maps;
   neither is included in `message_complete` or the JSON answer response.
-  Focus sources may contain only `videoId` and `timestamp`; library sources carry segment details.
+  Opt-in JSON answers, SSE events and conversation history use `AISource[]`, not
+  `Segment[]`: focus sources may contain only `videoId` and `timestamp`, and library
+  metadata such as `title` and `playbackId` may be null. Check property presence
+  (for example, `'text' in source`) and nullable fields before using them. Existing
+  SSE/history consumers that assume every source is a `Segment` must add narrowing;
+  the legacy source guarantee above applies only to non-opt-in JSON answers.
 - Unknown event types still pass through at runtime. The parser stops at
   `message_complete` or `error`; ignore events your application does not recognize.
 
