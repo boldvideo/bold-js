@@ -457,6 +457,7 @@ export interface AIRetrievalResponse {
   interactionId?: string | null;
   responseType: "retrieval";
   sources: AICitationSource[];
+  scope?: AIScope;
   confidence: string;
   metadata: Record<string, unknown>;
 }

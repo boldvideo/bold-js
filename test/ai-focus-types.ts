@@ -55,6 +55,7 @@ for (const event of turns) {
 }
 
 const retrieval: AIRetrievalResponse = { responseType: 'retrieval', sources: [resource], confidence: 'high', metadata: {} };
+const focusedRetrieval: AIRetrievalResponse = { ...retrieval, scope: widened };
 function useResponse(response: AIResponse | AIRetrievalResponse): void {
   if (response.responseType === 'retrieval') {
     const confidence: string = response.confidence;
@@ -71,6 +72,7 @@ function useResponse(response: AIResponse | AIRetrievalResponse): void {
   }
 }
 useResponse(retrieval);
+useResponse(focusedRetrieval);
 // @ts-expect-error Terminal answer maps contain indices, not source metadata.
 const badAnswerMap: Extract<AIEvent, { type: 'answer' }> = { type: 'answer', content: 'Answer', citationMap: { c_resource: resource } };
 // @ts-expect-error The citation_map event contains metadata, not indices.
@@ -92,8 +94,13 @@ void [stream, json];
 
 async function useSynthesisOptions(synthesize: boolean, stream: boolean): Promise<void> {
   for (const method of [ai.chat, ai.ask, ai.coach]) {
-    const retrieval: AIRetrievalResponse = await method({ prompt: 'Question', stream: false, synthesize: false });
+    const retrieval: AIRetrievalResponse = await method({ prompt: 'Question', focus: { videoId: 'lesson-1' }, stream: false, synthesize: false });
     const confidence: string = retrieval.confidence;
+    const scope: AIScope | undefined = retrieval.scope;
+    if (scope) {
+      const answeredFrom: 'focus' | 'library' | 'none' = scope.answeredFrom;
+      void answeredFrom;
+    }
     const answer: AIResponse = await method({ prompt: 'Question', stream: false, synthesize: true });
     const content: string = answer.content.trim();
     const tokens: number = answer.usage.inputTokens;

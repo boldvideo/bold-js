@@ -547,7 +547,7 @@ keys are opaque identifiers and stay unchanged, while their values camelize.
 The citation_map event maps IDs to source metadata; answer.citationMap maps IDs to
 zero-based sources indices. Neither map is sent in message_complete or JSON answers.
 With synthesize:false, JSON AIRetrievalResponse and SSE message_complete have
-responseType:'retrieval', sources, confidence and metadata, but no content or
+responseType:'retrieval', sources, optional scope, confidence and metadata, but no content or
 synthesis usage. AIResponse remains an answer interface with required content
 and usage. With stream:false, omitted/true synthesize returns AIResponse, false
 returns AIRetrievalResponse, and a dynamic boolean returns their union (narrow
