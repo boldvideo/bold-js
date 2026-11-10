@@ -336,8 +336,26 @@ export interface AIUsage {
   outputTokens: number;
 }
 
-/** A focus answer can cite a timestamp without a library transcript segment. */
-export type AISource = Segment | Pick<Segment, 'videoId' | 'timestamp'>;
+/** Library citation metadata; resources and attachments have no playback timestamps. */
+export interface AICitationSource extends Omit<Segment, 'videoId' | 'title' | 'timestamp' | 'timestampEnd' | 'playbackId' | 'speaker'> {
+  videoId: string | null;
+  title: string | null;
+  timestamp: number | null;
+  timestampEnd: number | null;
+  playbackId: string | null;
+  speaker?: string | null;
+  sourceType?: 'transcript' | 'moment' | 'resource' | 'attachment';
+  documentType?: string;
+  resourceId?: string | null;
+  url?: string | null;
+  thumbnailUrl?: string | null;
+  collectionId?: string | null;
+  attachmentId?: string | number | null;
+  attachmentFilename?: string | null;
+}
+
+/** A focus answer can cite a timestamp without library source metadata. */
+export type AISource = AICitationSource | Pick<Segment, 'videoId' | 'timestamp'>;
 
 export interface ChatFocus {
   videoId: string;
@@ -384,11 +402,14 @@ export type AIEvent =
   | { type: "pointers"; pointers: AIPointer[] }
   | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
   | { type: "sources"; sources: AISource[] }
-  | { type: "citation_map"; citationMap: Record<string, Segment> }
-  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, Segment> }
+  | { type: "citation_map"; citationMap: Record<string, AICitationSource> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number> }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; content: string; sources?: AISource[]; citations?: Segment[]; citationMap?: Record<string, Segment>; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; responseType?: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | ({ type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; citations?: Segment[]; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string } & (
+    | { responseType?: "answer" | "clarification"; content: string; sources?: AISource[]; usage?: AIUsage }
+    | { responseType: "retrieval"; content?: never; sources: AICitationSource[]; usage?: never; confidence: string; metadata: Record<string, unknown> }
+  ))
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "image_analysis"; status: "analyzing" }
   | { type: "image_analysis"; status: "complete"; description: string };
@@ -408,7 +429,7 @@ export type ImageInput =
 /**
  * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
  */
-export interface AIResponse {
+export type AIResponse = {
   /** Assistant message ID for rating feedback, when supplied by the server. */
   messageId?: string;
   /** Analytics correlation ID, not a durable persistence acknowledgement. May be null for search previews. */
@@ -417,16 +438,16 @@ export interface AIResponse {
   videoId?: string;              // Present for /videos/:id/chat
   /** @deprecated Use conversationId instead. Will be removed in v2. */
   id?: string;                   // Deprecated alias for conversationId
-  content: string;
   sources: AISource[];
-  citationMap?: Record<string, Segment>;
   scope?: AIScope;
   pointers?: AIPointer[];
   lockedMatches?: AILockedMatch[];
-  usage: AIUsage;
   model?: string;
   context?: AIContextMessage[];  // Present for /search, absent for /chat
-}
+} & (
+  | { responseType?: "answer" | "clarification"; content: string; usage: AIUsage }
+  | { responseType: "retrieval"; content?: never; usage?: never; confidence: string; metadata: Record<string, unknown> }
+);
 
 /**
  * Options for bold.ai.chat()

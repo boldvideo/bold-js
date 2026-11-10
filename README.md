@@ -705,7 +705,10 @@ for await (const event of stream) {
   Overlapping permissions resolve as `answer` > `point` > `mention`.
 - `viewer` is a viewer UUID or external ID. `viewerProfile` accepts a string or
   an object of string, number and boolean values. `synthesize` optionally controls
-  library synthesis; the SDK preserves `false` as well as `true`.
+  library synthesis; the SDK preserves `false` as well as `true`. With `false`,
+  JSON and SSE `message_complete` return `responseType: 'retrieval'`, sources,
+  confidence and metadata, without answer content or synthesis usage. Check
+  `responseType` before reading content or usage.
 - `progress` includes `reading` and `widening` and an optional `scope` of `focus`
   or `library`. Render **unknown stages as a generic working state**.
 - `scope.answeredFrom` is `focus`, `library` or `none`. Render a library scope line
@@ -714,6 +717,9 @@ for await (const event of stream) {
 - Event type strings remain snake_case (`citation_map`, `locked_matches`), while
   payload properties are camelCase (`citationMap`, `lockedMatches`). Citation-map
   entry keys are opaque: look up `[c_a1b2]` using `citationMap['c_a1b2']` unchanged.
+  The `citation_map` event maps IDs to source metadata; the final `answer` event
+  maps IDs to zero-based indices into its sources array. These are different maps;
+  neither is included in `message_complete` or the JSON answer response.
   Focus sources may contain only `videoId` and `timestamp`; library sources carry segment details.
 - Unknown event types still pass through at runtime. The parser stops at
   `message_complete` or `error`; ignore events your application does not recognize.

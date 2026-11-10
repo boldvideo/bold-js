@@ -2,11 +2,22 @@
 // Replace/verify against backend recordings before claiming server replay coverage.
 export const focus = { video_id: 'lesson-1', title: 'First lesson' };
 export const source = {
-  id: 'segment-1', video_id: 'lesson-2', title: 'Second lesson', text: 'Library excerpt',
+  id: 'c_a1b2', video_id: 'lesson-2', title: 'Second lesson', text: 'Library excerpt',
   timestamp: 94, timestamp_end: 131, playback_id: 'playback-2',
 };
 // These two IDs collide under naive snake_case camelization.
-export const citationMap = { c_a1b2: source, cA1b2: { ...source, timestamp: 132 } };
+export const citationMap = { c_a1b2: source, cA1b2: { ...source, id: 'cA1b2', timestamp: 132 } };
+export const citationIndices = { c_a1b2: 0, cA1b2: 1 };
+export const resource = {
+  id: 'resource-citation', source_type: 'resource', document_type: 'resource',
+  resource_id: 'resource-1', title: 'Reference guide', text: 'Resource excerpt',
+  video_id: null, timestamp: null, timestamp_end: null, playback_id: null,
+  url: 'https://example.com/guide', speaker: null,
+};
+export const retrievalResponse = {
+  conversation_id: 'thread-1', response_type: 'retrieval', sources: [source, resource],
+  confidence: 'high', metadata: { sources_truncated: false, temporal_fallback_triggered: false },
+};
 export const pointer = {
   video_id: 'lesson-2', title: 'Second lesson', collection_id: 'owned-course',
   canonical_url: 'https://example.com/lessons/second',
@@ -50,8 +61,8 @@ function turn(answeredFrom, content, extraEvents, result) {
 export const turns = {
   covered: turn('focus', 'See [01:34].', [], { sources: [{ video_id: 'lesson-1', timestamp: 94 }] }),
   widened: turn('library', 'See [c_a1b2].', [
-    { type: 'answer', content: 'See [c_a1b2].', sources: [source], citation_map: citationMap },
-  ], { sources: [source], citation_map: citationMap }),
+    { type: 'answer', content: 'See [c_a1b2].', sources: Object.values(citationMap), citation_map: citationIndices },
+  ], { sources: Object.values(citationMap) }),
   pointers: turn('none', 'This lesson does not cover it.', [
     { type: 'pointers', pointers: [pointer] },
   ], { sources: [], pointers: [pointer] }),

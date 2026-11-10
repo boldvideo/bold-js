@@ -503,8 +503,8 @@ type AIEvent =
   | { type: "pointers"; pointers: AIPointer[] }
   | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
   | { type: "sources"; sources: AISource[] }
-  | { type: "citation_map"; citationMap: Record<string, Segment> }
-  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, Segment> }
+  | { type: "citation_map"; citationMap: Record<string, AICitationSource> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number> }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete";
@@ -514,7 +514,6 @@ type AIEvent =
       content: string;
       sources?: AISource[];
       citations?: Segment[]; // Legacy video/search payloads
-      citationMap?: Record<string, Segment>;
       scope?: AIScope;
       pointers?: AIPointer[];
       lockedMatches?: AILockedMatch[];
@@ -523,10 +522,17 @@ type AIEvent =
       context?: AIContextMessage[];
       recommendations?: Recommendation[];
       guidance?: string }
+  | { type: "message_complete"; responseType: "retrieval";
+      conversationId?: string; interactionId?: string | null;
+      sources: AICitationSource[]; confidence: string; metadata: Record<string, unknown>;
+      content?: never; usage?: never }
   | { type: "error"; code: string; message: string; retryable: boolean }
 ```
 
-`AISource` is a `Segment` or a focus timestamp `{ videoId: string; timestamp: number }`.
+`AISource` is `AICitationSource` metadata or a focus timestamp `{ videoId: string; timestamp: number }`.
+`AICitationSource` keeps the canonical Segment fields but permits null videoId,
+title, timestamps, playbackId and speaker (resources/attachments have no playback).
+It also exposes sourceType and optional resource/attachment metadata.
 `AIScope` has `answeredFrom: 'focus' | 'library' | 'none'`,
 `widenedFrom: 'focus' | null`, `reason: 'not_covered' | 'requested' | null`, and
 `focus: { videoId: string; title: string } | null`.
@@ -534,10 +540,15 @@ type AIEvent =
 `moments: { timestamp: number; timestampEnd: number; timestampUrl: string }[]`.
 `AILockedMatch` has `offer: string`, `collectionIds: string[]`, `videoCount: number`,
 and `titles: string[]`. JSON `AIResponse` also has optional `scope`, `pointers`,
-`lockedMatches`, and `citationMap`.
+and `lockedMatches`.
 
 Event type strings stay snake_case; payload keys are camelCase. Citation-map entry
 keys are opaque identifiers and stay unchanged, while their values camelize.
+The citation_map event maps IDs to source metadata; answer.citationMap maps IDs to
+zero-based sources indices. Neither map is sent in message_complete or JSON answers.
+With synthesize:false, JSON AIResponse and SSE message_complete have
+responseType:'retrieval', sources, confidence and metadata, but no content or
+synthesis usage. Narrow by responseType before accessing answer content or usage.
 Render unknown progress stages as a generic working state (`reading` and
 `widening` are supported). Unknown event types pass through at runtime; the typed
 union lists known events only. Parsing stops at `message_complete` or `error`.

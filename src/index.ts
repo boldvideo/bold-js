@@ -37,6 +37,7 @@ export type {
   Source,
   Citation,
   AIUsage,
+  AICitationSource,
   AISource,
   ChatFocus,
   ChatAccess,

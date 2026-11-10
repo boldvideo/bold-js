@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import test, { after, before, beforeEach } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { AIAPIError, createClient } from '../dist/index.js';
-import { turns } from './fixtures/ai-focus.mjs';
+import { retrievalResponse, turns } from './fixtures/ai-focus.mjs';
 
 const requests = [];
 let server;
@@ -19,11 +19,10 @@ before(async () => {
     for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : {};
     requests.push({ method: req.method, url: req.url, headers: req.headers, body });
-    const events = turns[body.prompt] ?? turns.covered;
-    if (req.method === 'GET') {
-      res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ conversation_id: 'thread-1', messages: [turns.widened.at(-1)] }));
-    } else if (req.headers.accept === 'text/event-stream') {
+    const events = body.prompt === 'retrieval'
+      ? [{ type: 'message_complete', ...retrievalResponse }]
+      : turns[body.prompt] ?? turns.covered;
+    if (req.headers.accept === 'text/event-stream') {
       res.writeHead(200, { 'content-type': 'text/event-stream' });
       // Fragment JSON, CRLF delimiters and multibyte characters across real HTTP writes.
       const wire = Buffer.from(events.map(event => `data: ${JSON.stringify(event)}\r\n\r\n`).join(''));
@@ -121,6 +120,28 @@ for (const stream of [false, true]) {
     }
   });
 
+  test(`synthetic retrieval-only response omits content and usage (${stream ? 'SSE' : 'JSON'})`, async () => {
+    const response = await ai.chat({ prompt: 'retrieval', synthesize: false, stream });
+    let result = response;
+    if (stream) {
+      const events = [];
+      for await (const event of response) events.push(event);
+      assert.deepEqual(events.map(event => event.type), ['message_complete']);
+      result = events[0];
+    }
+    assert.deepEqual(requests.at(-1).body, { prompt: 'retrieval', synthesize: false, ...(!stream ? { stream: false } : {}) });
+    assert.equal(result.responseType, 'retrieval');
+    assert.equal(result.confidence, 'high');
+    assert.deepEqual(result.metadata, { sourcesTruncated: false, temporalFallbackTriggered: false });
+    assert.deepEqual(result.sources[1], {
+      id: 'resource-citation', sourceType: 'resource', documentType: 'resource',
+      resourceId: 'resource-1', title: 'Reference guide', text: 'Resource excerpt',
+      videoId: null, timestamp: null, timestampEnd: null, playbackId: null,
+      url: 'https://example.com/guide', speaker: null,
+    });
+    for (const key of ['content', 'usage', 'citations', 'citationMap']) assert.equal(Object.hasOwn(result, key), false);
+  });
+
   for (const scenario of Object.keys(turns)) {
     test(`synthetic ${scenario} contract is camelized (${stream ? 'SSE' : 'JSON'})`, async () => {
       const response = await ai.chat({ prompt: scenario, stream, focus: { videoId: 'lesson-1' } });
@@ -142,7 +163,11 @@ for (const stream of [false, true]) {
           assert.deepEqual(Object.keys(map), ['c_a1b2', 'cA1b2']);
           assert.equal(map.c_a1b2.videoId, 'lesson-2');
           assert.equal(map.cA1b2.timestamp, 132);
-          assert.equal(events.find(event => event.type === 'answer').content, 'See [c_a1b2].');
+          const answer = events.find(event => event.type === 'answer');
+          assert.equal(answer.content, 'See [c_a1b2].');
+          assert.deepEqual(answer.citationMap, { c_a1b2: 0, cA1b2: 1 });
+          assert.equal(answer.sources[answer.citationMap.c_a1b2].timestamp, 94);
+          assert.equal(answer.sources[answer.citationMap.cA1b2].timestamp, 132);
         }
         terminal = events.at(-1);
       } else {
@@ -155,9 +180,7 @@ for (const stream of [false, true]) {
       if (scenario === 'widened') {
         assert.equal(terminal.scope.widenedFrom, 'focus');
         assert.equal(terminal.scope.reason, 'not_covered');
-        assert.deepEqual(Object.keys(terminal.citationMap), ['c_a1b2', 'cA1b2']);
-        assert.equal(terminal.citationMap.c_a1b2.timestampEnd, 131);
-        assert.equal(terminal.citationMap.cA1b2.timestamp, 132);
+        assert.equal(Object.hasOwn(terminal, 'citationMap'), false);
       }
       if (scenario === 'pointers') assert.deepEqual(terminal.pointers, [{
         videoId: 'lesson-2', title: 'Second lesson', collectionId: 'owned-course',
@@ -171,14 +194,6 @@ for (const stream of [false, true]) {
     });
   }
 }
-
-test('conversation GET preserves opaque citation keys while camelizing segment values', async () => {
-  const history = await ai.getConversation('thread-1');
-  const map = history.messages[0].citationMap;
-  assert.deepEqual(Object.keys(map), ['c_a1b2', 'cA1b2']);
-  assert.equal(map.c_a1b2.videoId, 'lesson-2');
-  assert.equal(map.cA1b2.timestamp, 132);
-});
 
 test('focus and access can change or disappear between turns without retained permissions', async () => {
   for (const options of [
