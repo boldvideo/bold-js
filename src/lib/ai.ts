@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
+import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, GetConversationOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 import { createVoice } from './voice';
 
@@ -13,15 +13,17 @@ export interface AIConfig {
  */
 export class AIAPIError extends Error {
   readonly status?: number;
+  readonly code?: string;
+  readonly retryable?: boolean;
   readonly originalError?: Error;
 
-  constructor(method: string, url: string, response?: Response, error?: unknown) {
+  constructor(method: string, url: string, response?: Response, error?: unknown, body?: Record<string, unknown>) {
     let status: number | undefined;
     let message: string;
 
     if (response) {
       status = response.status;
-      message = response.statusText || `HTTP ${response.status}`;
+      message = typeof body?.message === 'string' ? body.message : response.statusText || `HTTP ${response.status}`;
     } else if (error instanceof Error) {
       message = error.message;
     } else if (error !== undefined) {
@@ -37,8 +39,15 @@ export class AIAPIError extends Error {
     );
     this.name = 'AIAPIError';
     this.status = status;
+    this.code = typeof body?.code === 'string' ? body.code : undefined;
+    this.retryable = typeof body?.retryable === 'boolean' ? body.retryable : undefined;
     if (error instanceof Error) this.originalError = error;
   }
+}
+
+async function httpError(method: string, url: URL, response: Response): Promise<AIAPIError> {
+  const body = await response.json().catch(() => undefined);
+  return new AIAPIError(method, url.toString(), response, undefined, body);
 }
 
 /**
@@ -82,7 +91,7 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
 
         try {
           const raw = JSON.parse(json);
-          const event = camelizeKeys(raw) as AIEvent;
+          const event = camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as AIEvent;
           yield event;
           // Terminate on message_complete or error
           if (event.type === 'message_complete' || event.type === 'error') {
@@ -109,6 +118,30 @@ function buildURL(baseURL: string, path: string): URL {
   return new URL(path, base);
 }
 
+/** Encode the same per-turn scope in chat bodies and history query values. */
+function chatScopeParams(options: Pick<ChatOptions, 'focus' | 'access'>): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  if (options.focus) {
+    params.focus = {
+      video_id: options.focus.videoId,
+      ...(options.focus.currentTime !== undefined ? { current_time: options.focus.currentTime } : {}),
+    };
+  }
+  if (options.access !== undefined) {
+    params.access = {
+      ...(options.access.answer !== undefined ? { answer: options.access.answer } : {}),
+      ...(options.access.point !== undefined ? { point: options.access.point } : {}),
+      ...(options.access.mention !== undefined ? {
+        mention: options.access.mention.map(entry => ({
+          collection_id: entry.collectionId,
+          ...(entry.offer !== undefined ? { offer: entry.offer } : {}),
+        })),
+      } : {}),
+    };
+  }
+  return params;
+}
+
 /**
  * Make streaming request to AI endpoint
  */
@@ -130,7 +163,7 @@ async function streamRequest(
   });
 
   if (!response.ok) {
-    throw new AIAPIError('POST', url.toString(), response);
+    throw await httpError('POST', url, response);
   }
 
   return parseSSE(response);
@@ -158,13 +191,13 @@ async function jsonRequest<T = AIResponse>(
   });
 
   if (!response.ok) {
-    throw new AIAPIError(method, url.toString(), response);
+    throw await httpError(method, url, response);
   }
 
   if (response.status === 204) return undefined as T;
 
   const raw = await response.json();
-  return camelizeKeys(raw) as T;
+  return camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as T;
 }
 
 /**
@@ -172,9 +205,14 @@ async function jsonRequest<T = AIResponse>(
  */
 async function getRequest<T>(
   path: string,
-  config: AIConfig
+  config: AIConfig,
+  options?: GetConversationOptions
 ): Promise<T> {
   const url = buildURL(config.baseURL, path);
+  if (options?.viewer !== undefined) url.searchParams.set('viewer', options.viewer);
+  for (const [key, value] of Object.entries(chatScopeParams(options ?? {}))) {
+    url.searchParams.set(key, JSON.stringify(value));
+  }
 
   const response = await fetch(url, {
     method: 'GET',
@@ -185,11 +223,11 @@ async function getRequest<T>(
   });
 
   if (!response.ok) {
-    throw new AIAPIError('GET', url.toString(), response);
+    throw await httpError('GET', url, response);
   }
 
   const raw = await response.json();
-  return camelizeKeys(raw) as T;
+  return camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as T;
 }
 
 /**
@@ -336,7 +374,8 @@ export interface AIClient {
   /**
    * Chat - Conversational AI for Q&A
    * 
-   * If `videoId` is provided, scopes to that video. Otherwise searches your entire library.
+   * `focus` uses library chat with a video-first answer. Without focus, `videoId`
+   * keeps the legacy video-only route. Otherwise searches your entire library.
    *
    * @example
    * // Library-wide Q&A
@@ -354,23 +393,38 @@ export interface AIClient {
    * const response = await bold.ai.chat({ prompt: "How do I price my SaaS?", stream: false });
    * console.log(response.content);
    */
-  chat(options: ChatOptions & { stream: false }): Promise<AIResponse>;
+  chat(options: ChatOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
+  chat(options: ChatOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  chat(options: ChatOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  chat(options: ChatOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   chat(options: ChatOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  chat(options: ChatOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  chat(options: ChatOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * @deprecated Use chat() instead. Will be removed in a future version.
    */
-  ask(options: AskOptions & { stream: false }): Promise<AIResponse>;
+  ask(options: AskOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
+  ask(options: AskOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  ask(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  ask(options: AskOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   ask(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  ask(options: AskOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  ask(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * @deprecated Use chat() instead. Will be removed in a future version.
    */
-  coach(options: AskOptions & { stream: false }): Promise<AIResponse>;
+  coach(options: AskOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
+  coach(options: AskOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  coach(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  coach(options: AskOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   coach(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  coach(options: AskOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  coach(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * Search - Semantic search with light synthesis
@@ -421,7 +475,7 @@ export interface AIClient {
    *   console.log(`${msg.role}: ${msg.content}`);
    * }
    */
-  getConversation(conversationId: string): Promise<Conversation>;
+  getConversation(conversationId: string, options?: GetConversationOptions): Promise<Conversation>;
 
   /** Rate an assistant message. */
   rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>;
@@ -465,8 +519,8 @@ export interface AIClient {
  * Create AI methods bound to client config
  */
 export function createAI(config: AIConfig): AIClient {
-  async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
-    const isVideoScoped = !!options.videoId;
+  async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
+    const isVideoScoped = !options.focus && !!options.videoId;
     
     const basePath = isVideoScoped
       ? `ai/videos/${options.videoId}/chat`
@@ -482,6 +536,11 @@ export function createAI(config: AIConfig): AIClient {
     if (options.clientName !== undefined) body.client_name = options.clientName;
     if (options.clientVersion !== undefined) body.client_version = options.clientVersion;
     if (options.collectionId) body.collection_id = options.collectionId;
+    if (options.collectionIds !== undefined) body.collection_ids = options.collectionIds;
+    if (options.viewer !== undefined) body.viewer = options.viewer;
+    if (options.viewerProfile !== undefined) body.viewer_profile = options.viewerProfile;
+    if (options.synthesize !== undefined) body.synthesize = options.synthesize;
+    Object.assign(body, chatScopeParams(options));
     if (options.tags) body.tags = options.tags;
     if (isVideoScoped && options.currentTime !== undefined) {
       body.current_time = options.currentTime;
@@ -492,17 +551,17 @@ export function createAI(config: AIConfig): AIClient {
 
     if (options.stream === false) {
       body.stream = false;
-      return jsonRequest(path, body, config);
+      return jsonRequest<AIChatResponse | AIRetrievalResponse>(path, body, config);
     }
 
     return streamRequest(path, body, config);
   }
 
-  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
+  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
     return chat(options);
   }
 
-  async function coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
+  async function coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
     return chat(options);
   }
 
@@ -554,11 +613,11 @@ export function createAI(config: AIConfig): AIClient {
     return recommendations(options);
   }
 
-  async function getConversation(conversationId: string): Promise<Conversation> {
+  async function getConversation(conversationId: string, options?: GetConversationOptions): Promise<Conversation> {
     if (!conversationId) {
       throw new Error('conversationId is required');
     }
-    return getRequest<Conversation>(`ai/chat/${conversationId}`, config);
+    return getRequest<Conversation>(`ai/chat/${conversationId}`, config, options);
   }
 
   async function rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback> {

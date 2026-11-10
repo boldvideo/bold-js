@@ -1,0 +1,83 @@
+{
+  "citations": [
+    {
+      "canonical_url": "http://test.bold.video/v/wyzb8",
+      "cited": true,
+      "document_type": "transcript",
+      "id": "c_d78787",
+      "kind": "chunk",
+      "mux_playback_id": null,
+      "playback_id": null,
+      "playback_token": null,
+      "published_at": null,
+      "slug": null,
+      "source_type": "transcript",
+      "speaker": null,
+      "speaker_label": null,
+      "speaker_name": null,
+      "text": "Water seeds carefully.",
+      "timestamp": 12,
+      "timestamp_end": 17,
+      "timestamp_end_seconds": 17,
+      "timestamp_seconds": 12,
+      "timestamp_url": "http://test.bold.video/v/wyzb8?t=12",
+      "title": "Synthetic garden lesson",
+      "video_id": "2b450a58-7dab-473e-9b9e-1497dabafa49",
+      "video_title": "Synthetic garden lesson"
+    }
+  ],
+  "content": "Water seeds carefully. [c_d78787]",
+  "conversation_id": "ddeb44e3-2005-4a32-8b73-29c91cab4e03",
+  "id": "ddeb44e3-2005-4a32-8b73-29c91cab4e03",
+  "interaction_id": "cb2a9e28-1fd0-4949-bf94-c9acbf87026d",
+  "locked_matches": [],
+  "message_id": "4045e6e8-833c-4508-8902-f40f529ac8ec",
+  "metadata": {
+    "degraded": false,
+    "degraded_reason": null,
+    "retrieval_mode": "normal"
+  },
+  "pointers": [],
+  "response_type": "answer",
+  "scope": {
+    "answered_from": "library",
+    "focus": {
+      "title": "Synthetic garden lesson",
+      "video_id": "2b450a58-7dab-473e-9b9e-1497dabafa49"
+    },
+    "reason": "not_covered",
+    "widened_from": "focus"
+  },
+  "sources": [
+    {
+      "canonical_url": "http://test.bold.video/v/wyzb8",
+      "cited": true,
+      "document_type": "transcript",
+      "id": "c_d78787",
+      "kind": "chunk",
+      "mux_playback_id": null,
+      "playback_id": null,
+      "playback_token": null,
+      "published_at": null,
+      "slug": null,
+      "source_type": "transcript",
+      "speaker": null,
+      "speaker_label": null,
+      "speaker_name": null,
+      "text": "Water seeds carefully.",
+      "timestamp": 12,
+      "timestamp_end": 17,
+      "timestamp_end_seconds": 17,
+      "timestamp_seconds": 12,
+      "timestamp_url": "http://test.bold.video/v/wyzb8?t=12",
+      "title": "Synthetic garden lesson",
+      "video_id": "2b450a58-7dab-473e-9b9e-1497dabafa49",
+      "video_title": "Synthetic garden lesson"
+    }
+  ],
+  "usage": {
+    "completion_tokens": 5,
+    "prompt_tokens": 10,
+    "total_cost": 8.0e-5
+  }
+}

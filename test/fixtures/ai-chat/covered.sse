@@ -1,0 +1,12 @@
+data: {"status":"processing","type":"message_start","conversation_id":"50e7e9d0-e2fd-4e7e-b87a-6aa3584496af"}
+
+data: {"status":"processing","type":"conversation_created","conversation_id":"50e7e9d0-e2fd-4e7e-b87a-6aa3584496af"}
+
+data: {"message":"Reading «Synthetic garden lesson»…","scope":"focus","type":"progress","stage":"reading"}
+
+data: {"reason":null,"type":"scope","focus":{"title":"Synthetic garden lesson","video_id":"ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366"},"answered_from":"focus","widened_from":null}
+
+data: {"type":"text_delta","delta":"Space seeds [00:12]."}
+
+data: {"scope":{"reason":null,"focus":{"title":"Synthetic garden lesson","video_id":"ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366"},"answered_from":"focus","widened_from":null},"type":"message_complete","sources":[{"timestamp":12,"title":"Synthetic garden lesson","slug":null,"playback_token":null,"playback_id":null,"video_id":"ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366","canonical_url":"http://test.bold.video/v/wd6v3","timestamp_url":"http://test.bold.video/v/wd6v3?t=12"}],"usage":{"output_tokens":5,"input_tokens":10},"content":"Space seeds [00:12].","citations":[{"timestamp":12,"title":"Synthetic garden lesson","slug":null,"playback_token":null,"playback_id":null,"video_id":"ad437fd0-eaf9-4c4d-80e7-eac5b1d2d366","canonical_url":"http://test.bold.video/v/wd6v3","timestamp_url":"http://test.bold.video/v/wd6v3?t=12"}],"conversation_id":"50e7e9d0-e2fd-4e7e-b87a-6aa3584496af","response_type":"answer","interaction_id":"1675f6e4-54ac-4058-ad07-cbaa940d7a82","locked_matches":[],"pointers":[],"message_id":"1077cfdd-6f05-48ac-981f-5e5875b4de41"}
+

@@ -652,12 +652,207 @@ console.log(response.content);
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `prompt` | `string` | The user's question (required) |
+| `focus` | `{ videoId: string; currentTime?: number }` | Answer from this video first, then widen to the library on a miss |
 | `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
-| `videoId` | `string` | If provided, scope to this video instead of whole library |
-| `currentTime` | `number` | Current playback position (only with `videoId`) |
+| `synthesize` | `boolean` | `true` (default); `false` returns library retrieval results without synthesis |
 | `conversationId` | `string` | Pass to continue existing conversation |
 | `collectionId` | `string` | Filter to a specific collection |
+| `collectionIds` | `string[]` | Legacy library answer allow-list when `access` is omitted |
+| `access` | `ChatAccess` | Advanced: explicit collection grants from a trusted server (see below) |
+| `viewer` | `string` | Optional in open mode; gated chat/history require a resolved viewer. Identity/context, not authentication or proof of purchases |
+| `viewerProfile` | `string \| Record<string, string \| number \| boolean>` | Optional viewer context |
 | `tags` | `string[]` | Filter by tags |
+| `videoId` | `string` | Deprecated: legacy video-only route; use `focus` for video-first library chat |
+| `currentTime` | `number` | Legacy playback position in seconds (top-level `videoId` without `focus`); ignored when `focus` is present—use `focus.currentTime` |
+
+### Video focus and collection access
+
+Start with just the question and the current video's `videoId`:
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'What is the main idea here?',
+  focus: { videoId },
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+}
+```
+
+Streaming and synthesis are on by default (`stream: true`, `synthesize: true`).
+With `focus`, chat answers from that video first. If the video does not cover the
+question, it widens directly to the library without asking a clarification question.
+`focus.currentTime` is optional; add it in seconds when playback position matters.
+Top-level `currentTime` is ignored whenever `focus` is present, even if top-level
+`videoId` is also supplied. Focused requests must use `focus.currentTime`.
+The focus video must still pass its own video authorization gate.
+
+In open mode (the default), without `focus` or legacy `videoId`, chat uses normal library Q&A. Omitting `access`
+uses the whole public, published, ready library, subject to legacy collection filters
+(`collectionId`/`collectionIds`). This default is not a gated-product entitlement policy.
+Focus always selects `/ai/chat`, even when top-level `videoId` is also set;
+`videoId` alone keeps its legacy video-only route.
+
+To continue, keep the returned `conversationId` and send the **current** `focus` and,
+if used, `access` on every turn. They are per-turn inputs, not sticky conversation
+settings. In open mode, a later turn can change or omit them. Gated conversations
+instead require the same bound grants and focus video, as described below.
+
+#### Advanced: collection access (trusted server)
+
+For gated products, send explicit collection grants derived by a trusted server
+from your entitlement checks. Access is a caller assertion: Bold does not validate
+it against `viewer`. Do not accept grant lists directly from untrusted viewer input.
+Use real collection IDs from that trusted integration:
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'Where else can I learn about this?',
+  focus: { videoId, currentTime: 312 },
+  access: {
+    answer: [answerCollectionId],
+    point: [pointCollectionId],
+    mention: [{ collectionId: lockedCollectionId, offer: 'membership' }],
+  },
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+  if (event.type === 'scope' && event.widenedFrom === 'focus') {
+    console.log('Looked beyond this lesson:', event.answeredFrom);
+  }
+  if (event.type === 'pointers') {
+    for (const pointer of event.pointers) console.log(pointer.title, pointer.canonicalUrl, pointer.moments);
+  }
+  if (event.type === 'locked_matches') {
+    // Resolve the opaque offer key in your own UI; Bold supplies no price or checkout URL.
+    for (const match of event.lockedMatches) console.log(match.offer, match.videoCount, match.titles);
+  }
+}
+```
+
+- `access.answer` permits answers from those collections. `point` permits links
+  and moments, not answers. `mention` permits locked-match titles/counts, not transcript text.
+- With `access` present, omitted or empty lists mean **none**, and `collectionIds`
+  is ignored by the server. For example, `access: {}` grants no collection access.
+  With `access` absent, absent or empty `collectionIds` means the whole public,
+  published, ready library, subject to other legacy filters. Collection grants do
+  not bypass the focus video's authorization gate.
+- The server accepts at most 200 entries per list; optional offer keys are 1–64 characters.
+  Overlapping permissions resolve as `answer` > `point` > `mention`.
+- Answers and pointers end resolution; locked-match offers are not appended after
+  an answer or pointers. Resolve an opaque offer key in your own UI, not as a price
+  or checkout URL supplied by Bold.
+
+#### Gated tenants: Require verified AI access
+
+The tenant-level **Require verified AI access** setting in Mission Control is off
+by default and takes effect only when deliberately enabled. For gated chat, create
+a **fresh server-only key** with the `verified_ai_access` capability. Existing,
+browser and private keys do not automatically qualify. Never expose this key to a browser.
+
+Your trusted server must check the viewer's purchases and permission to access the
+focus video before supplying grants. Neither `viewer` nor an API credential proves
+purchases. Gated creation, continuation and history require a resolved viewer and
+explicit `access` on every request, including `access: {}` for focus-only access:
+
+```typescript
+// Server only: these values come from your verified identity/entitlement checks.
+const serverBold = createClient(verifiedAiAccessKey);
+const focus = { videoId };
+const access = {}; // No library grants; the focus video still needs authorization.
+const answer = await serverBold.ai.chat({
+  prompt: 'What is the main idea here?',
+  viewer, focus, access, stream: false,
+});
+
+if (answer.conversationId) {
+  const history = await serverBold.ai.getConversation(answer.conversationId, {
+    viewer, access, focus,
+  });
+  console.log(history.messages);
+}
+```
+
+The server binds a conversation to its tenant/viewer and a digest of normalized
+collection grants plus the focus video ID, not `focus.currentTime`. Continue with
+the same `conversationId`, viewer and scope; playback time may change. Changed
+grants or a changed/dropped focus video require a **new conversation**: omit
+`conversationId` on the next chat request after rechecking entitlements. Do not
+retry the old conversation or silently broaden access to work around rejection.
+
+Unbound older conversations are unavailable while gated. Bound conversations
+remain protected even after the setting is disabled. While gated, legacy
+video-only chat, search, recommendations, voice and conversation listing are
+unavailable; use unified `chat` with `focus`. Cross-conversation memory is not used.
+
+**Handling gate failures.** Rejections arrive as JSON before an SSE stream starts,
+so catch the awaited `chat`/`getConversation` call. `AIAPIError` exposes optional
+`status`, `code` and `retryable`; its message includes the server's explanation.
+Gate errors have `retryable: false`. The SDK does not automatically retry or switch
+to an open endpoint. Non-JSON failures retain the HTTP status/message fallback.
+
+| HTTP | Code | Action |
+|------|------|--------|
+| 403 | `verified_ai_access_required` | Use a fresh server-only verified-access key; do not move the call to a browser |
+| 400 | `ai_access_required` | Send explicit grants, including `{}` for no library grants |
+| 409 | `ai_access_scope_changed` | Recheck entitlements and start a new conversation with the current viewer/access/focus |
+| 400 | `viewer_required` | Supply a viewer that the server can resolve |
+| 404 | `viewer_not_found`, `conversation_not_found`, `video_not_found` | Check the identity, tenant and requested resource; do not broaden access on failure |
+| 400 | `invalid_access`, `invalid_focus` | Correct the request shape |
+| 403 | `verified_ai_route_unsupported` | Use unified chat with focus instead of an unsupported gated route |
+| 503 | `ai_access_unavailable` | Access policy could not be verified; fail closed, without an open-mode fallback |
+
+#### Response contracts and rendering
+
+- `viewer` is a viewer UUID or external ID. `viewerProfile` accepts a string or
+  an object of string, number and boolean values. `synthesize` optionally controls
+  library synthesis; the SDK preserves `false` as well as `true`. With `false`,
+  JSON (`AIRetrievalResponse`) and SSE `message_complete` return
+  `responseType: 'retrieval'`, sources, confidence and metadata, without answer
+  content or synthesis usage. Without `focus`/`access`, JSON calls with omitted or
+  `true` synthesis retain `AIResponse`, an interface with required `content` and
+  `usage` and `sources: Segment[]`. Opt-in `focus`/`access` answers use `AIChatResponse`: content remains a
+  string, but `usage` can be null for pointers/locked matches. `AIChatUsage` is
+  either `{ inputTokens, outputTokens }` or `{ promptTokens, completionTokens,
+  totalCost? }`, matching the server fields without inventing totals. Check null
+  and the field names before displaying usage, including on SSE terminal events.
+  With a dynamic synthesis boolean, also narrow by `responseType` before reading content.
+- `progress` includes `reading` and `widening` and an optional `scope` of `focus`
+  or `library`. Render **unknown stages as a generic working state**.
+- `scope.answeredFrom` is `focus`, `library` or `none`. Render a library scope line
+  when widened; pointers link to owned content, while locked matches use your offer UI.
+  JSON responses and `message_complete` also expose `scope`, `pointers`, and `lockedMatches`.
+  Conversation messages retain these fields and user-message `focus` when present.
+  Pointer `canonicalUrl` and moment `timestampUrl` may be null without a portal URL.
+- Event type strings remain snake_case (`citation_map`, `locked_matches`), while
+  payload properties are camelCase (`citationMap`, `lockedMatches`). Citation-map
+  entry keys are opaque: look up `[c_a1b2]` using `citationMap['c_a1b2']` unchanged.
+  The `citation_map` event maps IDs to source metadata; the final `answer` event
+  maps IDs to zero-based indices into its sources array. These are different maps;
+  neither is included in `message_complete` or the JSON answer response.
+  Opt-in JSON answers, SSE events and conversation history use `AISource[]`, not
+  `Segment[]`: focus sources may contain only `videoId` and `timestamp`, and library
+  metadata such as `title` and `playbackId` may be null. Enriched focus citations
+  expose optional `title`, `playbackId`, `playbackToken`, `slug`, `canonicalUrl` and
+  `timestampUrl`; these fields may be absent or null, not guaranteed playback credentials.
+  Check property presence
+  (for example, `'text' in source`) and nullable fields before using them. Existing
+  SSE/history consumers that assume every source is a `Segment` must add narrowing;
+  the legacy source guarantee above applies only to non-opt-in JSON answers.
+- Unknown event types still pass through at runtime. The parser stops at
+  `message_complete` or `error`; ignore events your application does not recognize.
+
+#### Migrating from 2.x
+
+This is a **major TypeScript compatibility change**: existing SSE and conversation-history
+sources are now `AISource[]`, even when you do not opt into focus/access. Replace
+unconditional `Segment` field access with property-presence checks (such as
+`'text' in source`) and null checks; render minimal focus citations from `videoId`
+and `timestamp`. Before passing a source to a `Segment`-only component, validate all
+its required fields rather than casting. Legacy non-opt-in JSON `AIResponse` still
+has required `content`, `usage` and `sources: Segment[]`.
 
 ### Recommendations
 
@@ -785,7 +980,7 @@ const stream = await bold.ai.chat({
 
 ### Get Conversation History
 
-Retrieve a conversation by ID to display message history:
+In open mode, the existing one-argument call is unchanged:
 
 ```typescript
 const conversation = await bold.ai.getConversation('550e8400-e29b-41d4-a716-446655440000');
@@ -795,6 +990,13 @@ for (const msg of conversation.messages) {
   console.log(`${msg.role}: ${msg.content}`);
 }
 ```
+
+For bound/gated history, use `getConversation(id, { viewer, access, focus })` with
+the conversation's authorized scope and a server-only verified-access key, as in
+the gated example above. The optional `GetConversationOptions` fields use the same
+SDK shapes as chat. The SDK sends `viewer` as a query value and `access`/`focus` as
+URL-encoded JSON in the GET query, preserving explicit `access: {}`; credentials
+stay in the client's authentication headers, not the query.
 
 ### Rate an AI Answer
 
@@ -939,12 +1141,16 @@ import type {
   MenuItem,
   AIEvent,
   AIResponse,
+  AIChatResponse,
+  AIChatUsage,
+  AIRetrievalResponse,
   ChatOptions,
   SearchOptions,
   RecommendationsOptions,
   RecommendationsResponse,
   Recommendation,
   Conversation,
+  GetConversationOptions,
   ConversationMessage,
   Source,
   Viewer,

@@ -1,0 +1,16 @@
+data: {"status":"processing","type":"message_start","conversation_id":"cd72ddd6-5279-4e02-ade2-59c3704ad2d6"}
+
+data: {"status":"processing","type":"conversation_created","conversation_id":"cd72ddd6-5279-4e02-ade2-59c3704ad2d6"}
+
+data: {"message":"Reading «Synthetic garden lesson»…","scope":"focus","type":"progress","stage":"reading"}
+
+data: {"message":"Searching your library…","scope":"library","type":"progress","stage":"searching"}
+
+data: {"reason":"not_covered","type":"scope","focus":{"title":"Synthetic garden lesson","video_id":"a2c5ec4d-3209-4235-9d4d-0693d097e937"},"answered_from":"none","widened_from":"focus"}
+
+data: {"type":"text_delta","delta":"This lesson does not cover watering."}
+
+data: {"type":"pointers","pointers":[{"title":"Synthetic watering lesson","video_id":"36f44dac-6553-4a8a-804a-336086664734","collection_id":"9df87b5c-5631-4e53-8b60-7346a1f5e340","moments":[{"timestamp":94,"timestamp_end":111,"timestamp_url":"http://test.bold.video/v/wzx8z?t=94"},{"timestamp":110,"timestamp_end":127,"timestamp_url":"http://test.bold.video/v/wzx8z?t=110"}],"canonical_url":"http://test.bold.video/v/wzx8z"},{"title":"Synthetic soil lesson","video_id":"0ebdfa41-4be2-4b03-9262-c7855008181f","collection_id":"9df87b5c-5631-4e53-8b60-7346a1f5e340","moments":[{"timestamp":12,"timestamp_end":29,"timestamp_url":"http://test.bold.video/v/exbqm?t=12"}],"canonical_url":"http://test.bold.video/v/exbqm"}]}
+
+data: {"id":"cd72ddd6-5279-4e02-ade2-59c3704ad2d6","scope":{"reason":"not_covered","focus":{"title":"Synthetic garden lesson","video_id":"a2c5ec4d-3209-4235-9d4d-0693d097e937"},"answered_from":"none","widened_from":"focus"},"type":"message_complete","sources":[],"usage":null,"content":"This lesson does not cover watering.","citations":[],"conversation_id":"cd72ddd6-5279-4e02-ade2-59c3704ad2d6","response_type":"answer","interaction_id":"17a6f7f0-22fa-480f-8bd9-4173a9e3196a","locked_matches":[],"pointers":[{"title":"Synthetic watering lesson","video_id":"36f44dac-6553-4a8a-804a-336086664734","collection_id":"9df87b5c-5631-4e53-8b60-7346a1f5e340","moments":[{"timestamp":94,"timestamp_end":111,"timestamp_url":"http://test.bold.video/v/wzx8z?t=94"},{"timestamp":110,"timestamp_end":127,"timestamp_url":"http://test.bold.video/v/wzx8z?t=110"}],"canonical_url":"http://test.bold.video/v/wzx8z"},{"title":"Synthetic soil lesson","video_id":"0ebdfa41-4be2-4b03-9262-c7855008181f","collection_id":"9df87b5c-5631-4e53-8b60-7346a1f5e340","moments":[{"timestamp":12,"timestamp_end":29,"timestamp_url":"http://test.bold.video/v/exbqm?t=12"}],"canonical_url":"http://test.bold.video/v/exbqm"}],"message_id":"32b459ab-2807-45de-a8c5-1e01e3ee284d"}
+

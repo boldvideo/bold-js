@@ -336,16 +336,95 @@ export interface AIUsage {
   outputTokens: number;
 }
 
+/** Actual token field names vary between focused and library answers; no totals are inferred. */
+export type AIChatUsage = AIUsage | {
+  promptTokens: number;
+  completionTokens: number;
+  totalCost?: number;
+};
+
+/** Library citation metadata; resources and attachments have no playback timestamps. */
+export interface AICitationSource extends Omit<Segment, 'id' | 'videoId' | 'title' | 'timestamp' | 'timestampEnd' | 'playbackId' | 'speaker'> {
+  id: string | null;
+  videoId: string | null;
+  title: string | null;
+  timestamp: number | null;
+  timestampEnd: number | null;
+  playbackId: string | null;
+  speaker?: string | null;
+  sourceType?: 'transcript' | 'moment' | 'resource' | 'attachment' | null;
+  documentType?: string | null;
+  resourceId?: string | null;
+  url?: string | null;
+  thumbnailUrl?: string | null;
+  collectionId?: string | null;
+  attachmentId?: string | number | null;
+  attachmentFilename?: string | null;
+}
+
+/** Focus citations can lack transcript details; playback and link metadata may be absent or null. */
+export type AISource = (AICitationSource | Pick<Segment, 'videoId' | 'timestamp'>) & {
+  title?: string | null;
+  playbackId?: string | null;
+  playbackToken?: string | null;
+  slug?: string | null;
+  canonicalUrl?: string | null;
+  timestampUrl?: string | null;
+};
+
+export interface ChatFocus {
+  videoId: string;
+  currentTime?: number;
+}
+
+/** Caller-asserted collection permissions. Omitted lists mean none. */
+export interface ChatAccess {
+  answer?: string[];
+  point?: string[];
+  mention?: { collectionId: string; offer?: string }[];
+}
+
+export interface AIScope {
+  answeredFrom: 'focus' | 'library' | 'none';
+  widenedFrom: 'focus' | null;
+  reason: 'not_covered' | 'requested' | null;
+  focus: { videoId: string; title: string } | null;
+}
+
+export interface AIPointer {
+  videoId: string;
+  title: string;
+  collectionId: string;
+  canonicalUrl: string | null;
+  moments: { timestamp: number; timestampEnd: number; timestampUrl: string | null }[];
+}
+
+export interface AILockedMatch {
+  offer: string;
+  collectionIds: string[];
+  videoCount: number;
+  titles: string[];
+}
+
 /**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
-  | { type: "progress"; stage: string; message: string }
-  | { type: "sources"; sources: Segment[] }
+  | { type: "conversation_created"; conversationId: string }
+  | { type: "progress"; stage: string; message: string; scope?: 'focus' | 'library' }
+  | ({ type: "scope" } & AIScope)
+  | { type: "pointers"; pointers: AIPointer[] }
+  | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
+  | { type: "sources"; sources: AISource[] }
+  | { type: "citation_map"; citationMap: Record<string, AICitationSource> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number>; usage?: AIChatUsage | null }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | ({ type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; citations?: AISource[]; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string } & (
+    | { responseType?: "answer" | "clarification"; content: string; sources?: AISource[]; usage?: AIChatUsage | null }
+    | { responseType: "retrieval"; content?: never; sources: AICitationSource[]; usage?: never; confidence: string; metadata: Record<string, unknown> }
+  ))
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "image_analysis"; status: "analyzing" }
   | { type: "image_analysis"; status: "complete"; description: string };
@@ -363,7 +442,8 @@ export type ImageInput =
   | { type: 'base64'; mediaType: string; data: string };
 
 /**
- * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
+ * Non-streaming answer response for /ai/chat, /ai/videos/:id/chat, and /ai/search.
+ * Chat requests with synthesize: false return AIRetrievalResponse instead.
  */
 export interface AIResponse {
   /** Assistant message ID for rating feedback, when supplied by the server. */
@@ -374,18 +454,42 @@ export interface AIResponse {
   videoId?: string;              // Present for /videos/:id/chat
   /** @deprecated Use conversationId instead. Will be removed in v2. */
   id?: string;                   // Deprecated alias for conversationId
+  responseType?: "answer" | "clarification";
   content: string;
-  sources: Source[];
   usage: AIUsage;
+  sources: Segment[];
+  scope?: AIScope;
+  pointers?: AIPointer[];
+  lockedMatches?: AILockedMatch[];
   model?: string;
   context?: AIContextMessage[];  // Present for /search, absent for /chat
+}
+
+/** Opt-in focus/access answer; routing-only responses have null usage. */
+export interface AIChatResponse extends Omit<AIResponse, 'usage' | 'sources'> {
+  usage: AIChatUsage | null;
+  sources: AISource[];
+  citations?: AISource[];
+  metadata?: Record<string, unknown>;
+}
+
+/** Non-streaming chat response when synthesize: false; no answer content or synthesis usage. */
+export interface AIRetrievalResponse {
+  conversationId?: string;
+  id?: string;
+  interactionId?: string | null;
+  responseType: "retrieval";
+  sources: AICitationSource[];
+  scope?: AIScope;
+  confidence: string;
+  metadata: Record<string, unknown>;
 }
 
 /**
  * Options for bold.ai.chat()
  * 
- * If `videoId` is provided, scopes chat to that video (hits /ai/videos/:id/chat).
- * Otherwise, searches your entire library (hits /ai/chat).
+ * `focus` uses /ai/chat, even when videoId is also provided.
+ * Without focus, videoId keeps using /ai/videos/:id/chat.
  */
 export interface ChatOptions {
   prompt: string;
@@ -398,10 +502,19 @@ export interface ChatOptions {
   stream?: boolean;          // Default: true
   conversationId?: string;   // Pass to continue existing conversation
   collectionId?: string;
+  collectionIds?: string[];
+  viewer?: string;
+  viewerProfile?: string | Record<string, string | number | boolean>;
+  synthesize?: boolean;
+  /** Per-turn video focus on the library chat route. */
+  focus?: ChatFocus;
+  /** Resend on every turn. When present, overrides collectionIds; empty means none. */
+  access?: ChatAccess;
   tags?: string[];           // Filter by tags
   
   /**
-   * If provided, scope chat to a specific video instead of the whole library.
+   * @deprecated Use focus for video-first answers with library fallback.
+   * Without focus, keeps the legacy video-only route.
    */
   videoId?: string;
   
@@ -533,8 +646,13 @@ export interface ConversationMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  sources: Segment[];
+  sources: AISource[];
   insertedAt: string;
+  interactionId?: string | null;
+  focus?: ChatFocus;
+  scope?: AIScope;
+  pointers?: AIPointer[];
+  lockedMatches?: AILockedMatch[];
 }
 
 /**
@@ -556,6 +674,13 @@ export interface Conversation {
   metadata: ConversationMetadata;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Per-request identity and grants for history. Gated conversations require their bound viewer/access/focus. */
+export interface GetConversationOptions {
+  viewer?: string;
+  access?: ChatAccess;
+  focus?: ChatFocus;
 }
 
 /** Explicit engagement attributed to an AI interaction. Independent of legacy trackEvent. */

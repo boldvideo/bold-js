@@ -1,0 +1,32 @@
+{
+  "citations": [],
+  "content": "I couldn't find an answer in the available lessons.",
+  "conversation_id": "12ba502b-c5b2-4920-8dd9-da73d616776f",
+  "id": "12ba502b-c5b2-4920-8dd9-da73d616776f",
+  "interaction_id": "df7bb1f5-3203-4cab-8072-09ebf38e6d22",
+  "locked_matches": [
+    {
+      "collection_ids": [
+        "f1aae319-d3f9-496d-9d1f-d3163c369889",
+        "188d71ea-6530-4abb-9b56-7cca6fe806e5"
+      ],
+      "offer": "membership",
+      "titles": [
+        "Synthetic advanced seeds",
+        "Synthetic advanced water"
+      ],
+      "video_count": 2
+    }
+  ],
+  "message_id": "5116eab2-daa7-4617-a8de-3e410a565f18",
+  "pointers": [],
+  "response_type": "answer",
+  "scope": {
+    "answered_from": "none",
+    "focus": null,
+    "reason": null,
+    "widened_from": null
+  },
+  "sources": [],
+  "usage": null
+}
