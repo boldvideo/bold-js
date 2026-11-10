@@ -844,6 +844,16 @@ to an open endpoint. Non-JSON failures retain the HTTP status/message fallback.
 - Unknown event types still pass through at runtime. The parser stops at
   `message_complete` or `error`; ignore events your application does not recognize.
 
+#### Migrating from 2.x
+
+This is a **major TypeScript compatibility change**: existing SSE and conversation-history
+sources are now `AISource[]`, even when you do not opt into focus/access. Replace
+unconditional `Segment` field access with property-presence checks (such as
+`'text' in source`) and null checks; render minimal focus citations from `videoId`
+and `timestamp`. Before passing a source to a `Segment`-only component, validate all
+its required fields rather than casting. Legacy non-opt-in JSON `AIResponse` still
+has required `content`, `usage` and `sources: Segment[]`.
+
 ### Recommendations
 
 Get AI-powered video recommendations based on topics — ideal for personalized learning paths, exam prep, and content discovery.
