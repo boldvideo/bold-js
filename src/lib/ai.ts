@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, AIRetrievalResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
+import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 import { createVoice } from './voice';
 
@@ -356,31 +356,37 @@ export interface AIClient {
    * console.log(response.content);
    */
   chat(options: ChatOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
-  chat(options: ChatOptions & { stream: false; synthesize?: true }): Promise<AIResponse>;
-  chat(options: ChatOptions & { stream: false }): Promise<AIResponse | AIRetrievalResponse>;
+  chat(options: ChatOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  chat(options: ChatOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  chat(options: ChatOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   chat(options: ChatOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  chat(options: ChatOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIResponse>;
-  chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse>;
+  chat(options: ChatOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  chat(options: ChatOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * @deprecated Use chat() instead. Will be removed in a future version.
    */
   ask(options: AskOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
-  ask(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIResponse>;
-  ask(options: AskOptions & { stream: false }): Promise<AIResponse | AIRetrievalResponse>;
+  ask(options: AskOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  ask(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  ask(options: AskOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   ask(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  ask(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIResponse>;
-  ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse>;
+  ask(options: AskOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  ask(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * @deprecated Use chat() instead. Will be removed in a future version.
    */
   coach(options: AskOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
-  coach(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIResponse>;
-  coach(options: AskOptions & { stream: false }): Promise<AIResponse | AIRetrievalResponse>;
+  coach(options: AskOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
+  coach(options: AskOptions & { stream: false; synthesize?: true }): Promise<AIChatResponse>;
+  coach(options: AskOptions & { stream: false }): Promise<AIChatResponse | AIRetrievalResponse>;
   coach(options: AskOptions & { stream?: true }): Promise<AsyncIterable<AIEvent>>;
-  coach(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIResponse>;
-  coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse>;
+  coach(options: AskOptions & { synthesize?: true; focus?: never; access?: never }): Promise<AsyncIterable<AIEvent> | AIResponse>;
+  coach(options: AskOptions & { synthesize?: true }): Promise<AsyncIterable<AIEvent> | AIChatResponse>;
+  coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse>;
 
   /**
    * Search - Semantic search with light synthesis
@@ -475,7 +481,7 @@ export interface AIClient {
  * Create AI methods bound to client config
  */
 export function createAI(config: AIConfig): AIClient {
-  async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse> {
+  async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
     const isVideoScoped = !options.focus && !!options.videoId;
     
     const basePath = isVideoScoped
@@ -524,17 +530,17 @@ export function createAI(config: AIConfig): AIClient {
 
     if (options.stream === false) {
       body.stream = false;
-      return jsonRequest<AIResponse | AIRetrievalResponse>(path, body, config);
+      return jsonRequest<AIChatResponse | AIRetrievalResponse>(path, body, config);
     }
 
     return streamRequest(path, body, config);
   }
 
-  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse> {
+  async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
     return chat(options);
   }
 
-  async function coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse> {
+  async function coach(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
     return chat(options);
   }
 

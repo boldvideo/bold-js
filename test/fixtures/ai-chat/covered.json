@@ -1,0 +1,35 @@
+{
+  "citations": [
+    {
+      "timestamp": 12,
+      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+    }
+  ],
+  "content": "Space seeds [00:12].",
+  "conversation_id": "7305083a-a91f-4439-9caa-bca092922b92",
+  "id": "7305083a-a91f-4439-9caa-bca092922b92",
+  "interaction_id": "49421775-fa7c-400c-b01e-39e93f3bb324",
+  "locked_matches": [],
+  "message_id": "0b2324d3-47a4-4efa-99fa-a6b7fca163b6",
+  "pointers": [],
+  "response_type": "answer",
+  "scope": {
+    "answered_from": "focus",
+    "focus": {
+      "title": "Synthetic garden lesson",
+      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+    },
+    "reason": null,
+    "widened_from": null
+  },
+  "sources": [
+    {
+      "timestamp": 12,
+      "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+    }
+  ],
+  "usage": {
+    "input_tokens": 10,
+    "output_tokens": 5
+  }
+}

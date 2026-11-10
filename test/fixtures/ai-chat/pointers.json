@@ -1,0 +1,54 @@
+{
+  "citations": [],
+  "content": "This lesson does not cover watering.",
+  "conversation_id": "fadc5553-1b9a-4d70-b9ad-12ff549f537f",
+  "id": "fadc5553-1b9a-4d70-b9ad-12ff549f537f",
+  "interaction_id": "55a57747-ee86-4236-b4a1-2609d63be37b",
+  "locked_matches": [],
+  "message_id": "b25bcd66-ad24-47e8-99d6-2df0906da7db",
+  "pointers": [
+    {
+      "canonical_url": "http://test.bold.video/v/wzx8z",
+      "collection_id": "9df87b5c-5631-4e53-8b60-7346a1f5e340",
+      "moments": [
+        {
+          "timestamp": 94,
+          "timestamp_end": 111,
+          "timestamp_url": "http://test.bold.video/v/wzx8z?t=94"
+        },
+        {
+          "timestamp": 110,
+          "timestamp_end": 127,
+          "timestamp_url": "http://test.bold.video/v/wzx8z?t=110"
+        }
+      ],
+      "title": "Synthetic watering lesson",
+      "video_id": "36f44dac-6553-4a8a-804a-336086664734"
+    },
+    {
+      "canonical_url": "http://test.bold.video/v/exbqm",
+      "collection_id": "9df87b5c-5631-4e53-8b60-7346a1f5e340",
+      "moments": [
+        {
+          "timestamp": 12,
+          "timestamp_end": 29,
+          "timestamp_url": "http://test.bold.video/v/exbqm?t=12"
+        }
+      ],
+      "title": "Synthetic soil lesson",
+      "video_id": "0ebdfa41-4be2-4b03-9262-c7855008181f"
+    }
+  ],
+  "response_type": "answer",
+  "scope": {
+    "answered_from": "none",
+    "focus": {
+      "title": "Synthetic garden lesson",
+      "video_id": "a2c5ec4d-3209-4235-9d4d-0693d097e937"
+    },
+    "reason": "not_covered",
+    "widened_from": "focus"
+  },
+  "sources": [],
+  "usage": null
+}

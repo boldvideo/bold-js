@@ -1,0 +1,16 @@
+data: {"status":"processing","type":"message_start","conversation_id":"0e861166-7c0e-426e-b739-2e080e0ed4d6"}
+
+data: {"status":"processing","type":"conversation_created","conversation_id":"0e861166-7c0e-426e-b739-2e080e0ed4d6"}
+
+data: {"message":"Sizing up your question…","scope":"library","type":"progress","stage":"planning"}
+
+data: {"message":"Searching your library…","scope":"library","type":"progress","stage":"searching"}
+
+data: {"reason":null,"type":"scope","focus":null,"answered_from":"none","widened_from":null}
+
+data: {"type":"text_delta","delta":"I couldn't find an answer in the available lessons."}
+
+data: {"type":"locked_matches","locked_matches":[{"collection_ids":["f1aae319-d3f9-496d-9d1f-d3163c369889","188d71ea-6530-4abb-9b56-7cca6fe806e5"],"video_count":2,"offer":"membership","titles":["Synthetic advanced seeds","Synthetic advanced water"]}]}
+
+data: {"id":"0e861166-7c0e-426e-b739-2e080e0ed4d6","scope":{"reason":null,"focus":null,"answered_from":"none","widened_from":null},"type":"message_complete","sources":[],"usage":null,"content":"I couldn't find an answer in the available lessons.","citations":[],"conversation_id":"0e861166-7c0e-426e-b739-2e080e0ed4d6","response_type":"answer","interaction_id":"fbf01fa9-ba1b-40bf-8af3-90d9873f09ab","locked_matches":[{"collection_ids":["f1aae319-d3f9-496d-9d1f-d3163c369889","188d71ea-6530-4abb-9b56-7cca6fe806e5"],"video_count":2,"offer":"membership","titles":["Synthetic advanced seeds","Synthetic advanced water"]}],"pointers":[],"message_id":"508a0437-5ede-43f8-9664-84dda529ab1c"}
+

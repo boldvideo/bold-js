@@ -1,0 +1,50 @@
+{
+  "conversation_id": "eaa46346-b8d9-494e-8aa1-c74fd892b05d",
+  "created_at": "2026-11-10T15:57:59",
+  "id": "eaa46346-b8d9-494e-8aa1-c74fd892b05d",
+  "messages": [
+    {
+      "content": "Explain seed spacing",
+      "focus": {
+        "current_time": 42,
+        "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+      },
+      "id": "4c12dc6f-4069-409b-acad-141352a22081",
+      "inserted_at": "2026-11-10T15:57:59",
+      "interaction_id": null,
+      "role": "user",
+      "sources": []
+    },
+    {
+      "content": "Space seeds [00:12].",
+      "id": "85d70a99-9f59-4987-bfd1-df4c242f1797",
+      "inserted_at": "2026-11-10T15:57:59",
+      "interaction_id": "18853a77-d2ea-43d4-87f2-01fe35f79443",
+      "locked_matches": [],
+      "pointers": [],
+      "role": "assistant",
+      "scope": {
+        "answered_from": "focus",
+        "focus": {
+          "title": "Synthetic garden lesson",
+          "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+        },
+        "reason": null,
+        "widened_from": null
+      },
+      "sources": [
+        {
+          "canonical_url": "http://test.bold.video/v/exbym",
+          "slug": null,
+          "timestamp": 12,
+          "timestamp_url": "http://test.bold.video/v/exbym?t=12",
+          "video_id": "8cae9e0d-d3d6-40c5-ba85-aea2f68df7ab"
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "original_query": "Explain seed spacing"
+  },
+  "updated_at": "2026-11-10T15:57:59"
+}

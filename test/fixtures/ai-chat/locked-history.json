@@ -1,0 +1,48 @@
+{
+  "conversation_id": "0e861166-7c0e-426e-b739-2e080e0ed4d6",
+  "created_at": "2026-11-10T15:57:57",
+  "id": "0e861166-7c0e-426e-b739-2e080e0ed4d6",
+  "messages": [
+    {
+      "content": "Find advanced seed advice",
+      "id": "5351d79f-f083-44bd-a118-812cc2699b86",
+      "inserted_at": "2026-11-10T15:57:57",
+      "interaction_id": null,
+      "role": "user",
+      "sources": []
+    },
+    {
+      "content": "I couldn't find an answer in the available lessons.",
+      "id": "508a0437-5ede-43f8-9664-84dda529ab1c",
+      "inserted_at": "2026-11-10T15:57:57",
+      "interaction_id": "fbf01fa9-ba1b-40bf-8af3-90d9873f09ab",
+      "locked_matches": [
+        {
+          "collection_ids": [
+            "f1aae319-d3f9-496d-9d1f-d3163c369889",
+            "188d71ea-6530-4abb-9b56-7cca6fe806e5"
+          ],
+          "offer": "membership",
+          "titles": [
+            "Synthetic advanced seeds",
+            "Synthetic advanced water"
+          ],
+          "video_count": 2
+        }
+      ],
+      "pointers": [],
+      "role": "assistant",
+      "scope": {
+        "answered_from": "none",
+        "focus": null,
+        "reason": null,
+        "widened_from": null
+      },
+      "sources": []
+    }
+  ],
+  "metadata": {
+    "original_query": "Find advanced seed advice"
+  },
+  "updated_at": "2026-11-10T15:57:57"
+}

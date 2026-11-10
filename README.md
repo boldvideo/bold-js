@@ -708,15 +708,21 @@ for await (const event of stream) {
   library synthesis; the SDK preserves `false` as well as `true`. With `false`,
   JSON (`AIRetrievalResponse`) and SSE `message_complete` return
   `responseType: 'retrieval'`, sources, confidence and metadata, without answer
-  content or synthesis usage. JSON calls with omitted or `true` synthesis retain
-  `AIResponse`, an interface with required `content` and `usage`. If synthesis is
-  a dynamic boolean, narrow the JSON response by `responseType` before reading
-  content or usage. Streaming return types are unchanged.
+  content or synthesis usage. Without `focus`/`access`, JSON calls with omitted or
+  `true` synthesis retain `AIResponse`, an interface with required `content` and
+  `usage`. Opt-in `focus`/`access` answers use `AIChatResponse`: content remains a
+  string, but `usage` can be null for pointers/locked matches. `AIChatUsage` is
+  either `{ inputTokens, outputTokens }` or `{ promptTokens, completionTokens,
+  totalCost? }`, matching the server fields without inventing totals. Check null
+  and the field names before displaying usage, including on SSE terminal events.
+  With a dynamic synthesis boolean, also narrow by `responseType` before reading content.
 - `progress` includes `reading` and `widening` and an optional `scope` of `focus`
   or `library`. Render **unknown stages as a generic working state**.
 - `scope.answeredFrom` is `focus`, `library` or `none`. Render a library scope line
   when widened; pointers link to owned content, while locked matches use your offer UI.
   JSON responses and `message_complete` also expose `scope`, `pointers`, and `lockedMatches`.
+  Conversation messages retain these fields and user-message `focus` when present.
+  Pointer `canonicalUrl` and moment `timestampUrl` may be null without a portal URL.
 - Event type strings remain snake_case (`citation_map`, `locked_matches`), while
   payload properties are camelCase (`citationMap`, `lockedMatches`). Citation-map
   entry keys are opaque: look up `[c_a1b2]` using `citationMap['c_a1b2']` unchanged.
@@ -1007,6 +1013,8 @@ import type {
   MenuItem,
   AIEvent,
   AIResponse,
+  AIChatResponse,
+  AIChatUsage,
   AIRetrievalResponse,
   ChatOptions,
   SearchOptions,

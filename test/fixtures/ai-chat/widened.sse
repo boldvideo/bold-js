@@ -1,0 +1,26 @@
+data: {"status":"processing","type":"message_start","conversation_id":"80ed6cfb-7a67-49a1-80f0-7fffb8859576"}
+
+data: {"status":"processing","type":"conversation_created","conversation_id":"80ed6cfb-7a67-49a1-80f0-7fffb8859576"}
+
+data: {"message":"Reading «Synthetic garden lesson»…","scope":"focus","type":"progress","stage":"reading"}
+
+data: {"message":"Looking beyond this lesson. Searching your library…","scope":"library","type":"progress","stage":"widening"}
+
+data: {"message":"Zeroing in on your question about explain seed spacing…","scope":"library","type":"progress","stage":"planning"}
+
+data: {"message":"Sifting through the library for How far apart should seeds be?…","scope":"library","type":"progress","stage":"searching"}
+
+data: {"reason":"not_covered","type":"scope","focus":{"title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49"},"answered_from":"library","widened_from":"focus"}
+
+data: {"message":"Piecing together an answer from 1 source…","scope":"library","type":"progress","stage":"synthesizing"}
+
+data: {"type":"sources","sources":[{"id":null,"timestamp":12,"title":"Synthetic garden lesson","text":"Water seeds carefully.","slug":null,"playback_token":null,"playback_id":null,"video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49","document_type":null,"resource_id":null,"speaker":null,"speaker_label":null,"speaker_name":null,"cited":false,"canonical_url":"http://test.bold.video/v/wyzb8","timestamp_end":17,"source_type":null,"timestamp_url":"http://test.bold.video/v/wyzb8?t=12"}]}
+
+data: {"type":"citation_map","citation_map":{"c_d78787":{"canonical_url":"http://test.bold.video/v/wyzb8","cited":false,"document_type":"transcript","id":"c_d78787","kind":"chunk","mux_playback_id":null,"playback_id":null,"playback_token":null,"published_at":null,"slug":null,"source_type":"transcript","speaker":null,"speaker_label":null,"speaker_name":null,"text":"Water seeds carefully.","timestamp":12,"timestamp_end":17,"timestamp_end_seconds":17,"timestamp_seconds":12,"timestamp_url":"http://test.bold.video/v/wyzb8?t=12","title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49","video_title":"Synthetic garden lesson"}}}
+
+data: {"type":"text_delta","delta":"Water seeds carefully. [c_d78787]"}
+
+data: {"type":"answer","metadata":{"degraded":false,"degraded_reason":null,"retrieval_mode":"normal"},"sources":[{"canonical_url":"http://test.bold.video/v/wyzb8","cited":true,"document_type":"transcript","id":"c_d78787","kind":"chunk","mux_playback_id":null,"playback_id":null,"playback_token":null,"published_at":null,"slug":null,"source_type":"transcript","speaker":null,"speaker_label":null,"speaker_name":null,"text":"Water seeds carefully.","timestamp":12,"timestamp_end":17,"timestamp_end_seconds":17,"timestamp_seconds":12,"timestamp_url":"http://test.bold.video/v/wyzb8?t=12","title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49","video_title":"Synthetic garden lesson"}],"usage":{"total_cost":8.0e-5,"prompt_tokens":10,"completion_tokens":5},"content":"Water seeds carefully. [c_d78787]","confidence":"high","response_shape":"default","response_strategy":"standard","intent":"insight","citation_map":{"c_d78787":0}}
+
+data: {"scope":{"reason":"not_covered","focus":{"title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49"},"answered_from":"library","widened_from":"focus"},"type":"message_complete","sources":[{"canonical_url":"http://test.bold.video/v/wyzb8","cited":true,"document_type":"transcript","id":"c_d78787","kind":"chunk","mux_playback_id":null,"playback_id":null,"playback_token":null,"published_at":null,"slug":null,"source_type":"transcript","speaker":null,"speaker_label":null,"speaker_name":null,"text":"Water seeds carefully.","timestamp":12,"timestamp_end":17,"timestamp_end_seconds":17,"timestamp_seconds":12,"timestamp_url":"http://test.bold.video/v/wyzb8?t=12","title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49","video_title":"Synthetic garden lesson"}],"usage":{"total_cost":8.0e-5,"prompt_tokens":10,"completion_tokens":5},"content":"Water seeds carefully. [c_d78787]","citations":[{"canonical_url":"http://test.bold.video/v/wyzb8","cited":true,"document_type":"transcript","id":"c_d78787","kind":"chunk","mux_playback_id":null,"playback_id":null,"playback_token":null,"published_at":null,"slug":null,"source_type":"transcript","speaker":null,"speaker_label":null,"speaker_name":null,"text":"Water seeds carefully.","timestamp":12,"timestamp_end":17,"timestamp_end_seconds":17,"timestamp_seconds":12,"timestamp_url":"http://test.bold.video/v/wyzb8?t=12","title":"Synthetic garden lesson","video_id":"2b450a58-7dab-473e-9b9e-1497dabafa49","video_title":"Synthetic garden lesson"}],"conversation_id":"80ed6cfb-7a67-49a1-80f0-7fffb8859576","response_type":"answer","interaction_id":"56b12f96-c9fe-41b9-9b76-5b81723a8bd7","locked_matches":[],"pointers":[],"message_id":"43388c33-feac-4995-b8d4-d4ad82a60a9e"}
+

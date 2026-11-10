@@ -336,16 +336,24 @@ export interface AIUsage {
   outputTokens: number;
 }
 
+/** Actual token field names vary between focused and library answers; no totals are inferred. */
+export type AIChatUsage = AIUsage | {
+  promptTokens: number;
+  completionTokens: number;
+  totalCost?: number;
+};
+
 /** Library citation metadata; resources and attachments have no playback timestamps. */
-export interface AICitationSource extends Omit<Segment, 'videoId' | 'title' | 'timestamp' | 'timestampEnd' | 'playbackId' | 'speaker'> {
+export interface AICitationSource extends Omit<Segment, 'id' | 'videoId' | 'title' | 'timestamp' | 'timestampEnd' | 'playbackId' | 'speaker'> {
+  id: string | null;
   videoId: string | null;
   title: string | null;
   timestamp: number | null;
   timestampEnd: number | null;
   playbackId: string | null;
   speaker?: string | null;
-  sourceType?: 'transcript' | 'moment' | 'resource' | 'attachment';
-  documentType?: string;
+  sourceType?: 'transcript' | 'moment' | 'resource' | 'attachment' | null;
+  documentType?: string | null;
   resourceId?: string | null;
   url?: string | null;
   thumbnailUrl?: string | null;
@@ -380,8 +388,8 @@ export interface AIPointer {
   videoId: string;
   title: string;
   collectionId: string;
-  canonicalUrl: string;
-  moments: { timestamp: number; timestampEnd: number; timestampUrl: string }[];
+  canonicalUrl: string | null;
+  moments: { timestamp: number; timestampEnd: number; timestampUrl: string | null }[];
 }
 
 export interface AILockedMatch {
@@ -403,11 +411,11 @@ export type AIEvent =
   | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
   | { type: "sources"; sources: AISource[] }
   | { type: "citation_map"; citationMap: Record<string, AICitationSource> }
-  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number>; usage?: AIChatUsage | null }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | ({ type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; citations?: Segment[]; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string } & (
-    | { responseType?: "answer" | "clarification"; content: string; sources?: AISource[]; usage?: AIUsage }
+  | ({ type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; citations?: AISource[]; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string } & (
+    | { responseType?: "answer" | "clarification"; content: string; sources?: AISource[]; usage?: AIChatUsage | null }
     | { responseType: "retrieval"; content?: never; sources: AICitationSource[]; usage?: never; confidence: string; metadata: Record<string, unknown> }
   ))
   | { type: "error"; code: string; message: string; retryable: boolean }
@@ -448,6 +456,13 @@ export interface AIResponse {
   lockedMatches?: AILockedMatch[];
   model?: string;
   context?: AIContextMessage[];  // Present for /search, absent for /chat
+}
+
+/** Opt-in focus/access answer; routing-only responses have null usage. */
+export interface AIChatResponse extends Omit<AIResponse, 'usage'> {
+  usage: AIChatUsage | null;
+  citations?: AISource[];
+  metadata?: Record<string, unknown>;
 }
 
 /** Non-streaming chat response when synthesize: false; no answer content or synthesis usage. */
@@ -623,8 +638,13 @@ export interface ConversationMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  sources: Segment[];
+  sources: AISource[];
   insertedAt: string;
+  interactionId?: string | null;
+  focus?: ChatFocus;
+  scope?: AIScope;
+  pointers?: AIPointer[];
+  lockedMatches?: AILockedMatch[];
 }
 
 /**

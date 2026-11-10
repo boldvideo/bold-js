@@ -1,4 +1,4 @@
-import { createClient, type AIEvent, type AIResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource } from '../src/index';
+import { createClient, type AIEvent, type AIResponse, type AIChatResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource } from '../src/index';
 
 // SYNTHETIC camelized contracts, not recorded server output.
 const focus = { videoId: 'lesson-1', title: 'Lesson' };
@@ -56,7 +56,7 @@ for (const event of turns) {
 
 const retrieval: AIRetrievalResponse = { responseType: 'retrieval', sources: [resource], confidence: 'high', metadata: {} };
 const focusedRetrieval: AIRetrievalResponse = { ...retrieval, scope: widened };
-function useResponse(response: AIResponse | AIRetrievalResponse): void {
+function useResponse(response: AIChatResponse | AIRetrievalResponse): void {
   if (response.responseType === 'retrieval') {
     const confidence: string = response.confidence;
     const metadata: Record<string, unknown> = response.metadata;
@@ -67,8 +67,11 @@ function useResponse(response: AIResponse | AIRetrievalResponse): void {
     response.usage.inputTokens;
   } else {
     const content: string = response.content;
-    const tokens: number = response.usage.inputTokens;
-    void [content, tokens];
+    if (response.usage) {
+      const tokens: number = 'inputTokens' in response.usage ? response.usage.inputTokens : response.usage.promptTokens;
+      void tokens;
+    }
+    void content;
   }
 }
 useResponse(retrieval);
@@ -89,7 +92,7 @@ const options: ChatOptions = {
 };
 const ai = createClient('test-key').ai;
 const stream: Promise<AsyncIterable<AIEvent>> = ai.chat({ ...options, stream: true });
-const json: Promise<AIResponse | AIRetrievalResponse> = ai.chat({ ...options, stream: false });
+const json: Promise<AIChatResponse | AIRetrievalResponse> = ai.chat({ ...options, stream: false });
 void [stream, json];
 
 async function useSynthesisOptions(synthesize: boolean, stream: boolean): Promise<void> {
@@ -107,17 +110,47 @@ async function useSynthesisOptions(synthesize: boolean, stream: boolean): Promis
     const defaultStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question' });
     const retrievalStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question', synthesize: false });
     const explicitStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question', stream: true, synthesize });
-    const dynamic: AIResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream: false, synthesize });
+    const dynamic: AIChatResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream: false, synthesize });
     useResponse(dynamic);
     // @ts-expect-error An unknown synthesis flag requires narrowing before accessing answer content.
     dynamic.content.trim();
     // @ts-expect-error Retrieval-only calls cannot be assigned to an answer response.
     const wrong: AIResponse = await method({ prompt: 'Question', stream: false, synthesize: false });
-    const dynamicMode: AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream, synthesize });
+    const dynamicMode: AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream, synthesize });
     void [confidence, content, tokens, defaultStream, retrievalStream, explicitStream, wrong, dynamicMode];
+    for (const optIn of [{ focus: { videoId: 'lesson-1' } }, { access: { answer: [] } }]) {
+      const response = await method({ prompt: 'Question', stream: false, ...optIn });
+      const content: string = response.content.trim();
+      // @ts-expect-error Opt-in focus/access usage may be null or use library token names.
+      response.usage.inputTokens;
+      // @ts-expect-error The SDK does not invent token totals.
+      response.usage?.totalTokens;
+      useResponse(response);
+      void content;
+    }
   }
 }
 void useSynthesisOptions;
+
+async function useHistory(): Promise<void> {
+  const history = await ai.getConversation('thread-1');
+  const assistant = history.messages.find(message => message.role === 'assistant');
+  const scope: AIScope | undefined = assistant?.scope;
+  const pointers: AIPointer[] | undefined = assistant?.pointers;
+  const lockedMatches: AILockedMatch[] | undefined = assistant?.lockedMatches;
+  const videoId: string | null | undefined = assistant?.sources[0]?.videoId;
+  const interactionId: string | null | undefined = assistant?.interactionId;
+  const currentTime: number | undefined = history.messages[0]?.focus?.currentTime;
+  void [scope, pointers, lockedMatches, videoId, interactionId, currentTime];
+}
+void useHistory;
+
+// SYNTHETIC no-portal variant; the recorded captures have populated portal URLs.
+const noPortal: AIPointer = { videoId: 'lesson-2', title: 'Lesson', collectionId: 'course', canonicalUrl: null, moments: [{ timestamp: 94, timestampEnd: 111, timestampUrl: null }] };
+const maybeUrl: string | undefined = noPortal.canonicalUrl?.trim();
+// @ts-expect-error Pointer URLs require a null guard.
+noPortal.canonicalUrl.trim();
+void maybeUrl;
 // @ts-expect-error Wire keys are not the SDK's request shape.
 const badFocus: ChatOptions = { prompt: 'Question', focus: { video_id: 'lesson-1' } };
 // @ts-expect-error A locked match uses camelCase fields.

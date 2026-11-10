@@ -504,7 +504,7 @@ type AIEvent =
   | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
   | { type: "sources"; sources: AISource[] }
   | { type: "citation_map"; citationMap: Record<string, AICitationSource> }
-  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, number>; usage?: AIChatUsage | null }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete";
@@ -513,12 +513,12 @@ type AIEvent =
       conversationId?: string;
       content: string;
       sources?: AISource[];
-      citations?: Segment[]; // Legacy video/search payloads
+      citations?: AISource[];
       scope?: AIScope;
       pointers?: AIPointer[];
       lockedMatches?: AILockedMatch[];
       responseType?: "answer" | "clarification";
-      usage?: AIUsage;
+      usage?: AIChatUsage | null;
       context?: AIContextMessage[];
       recommendations?: Recommendation[];
       guidance?: string }
@@ -530,14 +530,14 @@ type AIEvent =
 ```
 
 `AISource` is `AICitationSource` metadata or a focus timestamp `{ videoId: string; timestamp: number }`.
-`AICitationSource` keeps the canonical Segment fields but permits null videoId,
-title, timestamps, playbackId and speaker (resources/attachments have no playback).
+`AICitationSource` keeps the canonical Segment fields but permits null id, videoId,
+title, timestamps, playbackId, sourceType, documentType and speaker (resources/attachments have no playback).
 It also exposes sourceType and optional resource/attachment metadata.
 `AIScope` has `answeredFrom: 'focus' | 'library' | 'none'`,
 `widenedFrom: 'focus' | null`, `reason: 'not_covered' | 'requested' | null`, and
 `focus: { videoId: string; title: string } | null`.
-`AIPointer` has `videoId`, `title`, `collectionId`, `canonicalUrl`, and
-`moments: { timestamp: number; timestampEnd: number; timestampUrl: string }[]`.
+`AIPointer` has `videoId`, `title`, `collectionId`, `canonicalUrl: string | null`, and
+`moments: { timestamp: number; timestampEnd: number; timestampUrl: string | null }[]`.
 `AILockedMatch` has `offer: string`, `collectionIds: string[]`, `videoCount: number`,
 and `titles: string[]`. JSON `AIResponse` also has optional `scope`, `pointers`,
 and `lockedMatches`.
@@ -549,9 +549,16 @@ zero-based sources indices. Neither map is sent in message_complete or JSON answ
 With synthesize:false, JSON AIRetrievalResponse and SSE message_complete have
 responseType:'retrieval', sources, optional scope, confidence and metadata, but no content or
 synthesis usage. AIResponse remains an answer interface with required content
-and usage. With stream:false, omitted/true synthesize returns AIResponse, false
-returns AIRetrievalResponse, and a dynamic boolean returns their union (narrow
-by responseType before accessing content/usage). Streaming returns are unchanged.
+and AIUsage. With stream:false and omitted/true synthesize, calls without focus/access
+retain AIResponse; opt-in focus/access calls return AIChatResponse with required
+content and usage: AIChatUsage | null. AIChatUsage is AIUsage (inputTokens/outputTokens)
+or { promptTokens: number; completionTokens: number; totalCost?: number }.
+Null usage on pointer/locked answers means no synthesis usage, not zero tokens.
+The SDK only camelizes the actual field names and does not infer totals.
+False synthesize returns AIRetrievalResponse; dynamic flags require responseType
+narrowing. Streaming still returns AIEvent, whose answer/message_complete usage
+can also be null or either token shape. ConversationMessage exposes optional
+interactionId, focus, scope, pointers and lockedMatches; sources use AISource[].
 Render unknown progress stages as a generic working state (`reading` and
 `widening` are supported). Unknown event types pass through at runtime; the typed
 union lists known events only. Parsing stops at `message_complete` or `error`.
