@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
+import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, GetConversationOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 import { createVoice } from './voice';
 
@@ -13,15 +13,17 @@ export interface AIConfig {
  */
 export class AIAPIError extends Error {
   readonly status?: number;
+  readonly code?: string;
+  readonly retryable?: boolean;
   readonly originalError?: Error;
 
-  constructor(method: string, url: string, response?: Response, error?: unknown) {
+  constructor(method: string, url: string, response?: Response, error?: unknown, body?: Record<string, unknown>) {
     let status: number | undefined;
     let message: string;
 
     if (response) {
       status = response.status;
-      message = response.statusText || `HTTP ${response.status}`;
+      message = typeof body?.message === 'string' ? body.message : response.statusText || `HTTP ${response.status}`;
     } else if (error instanceof Error) {
       message = error.message;
     } else if (error !== undefined) {
@@ -37,8 +39,15 @@ export class AIAPIError extends Error {
     );
     this.name = 'AIAPIError';
     this.status = status;
+    this.code = typeof body?.code === 'string' ? body.code : undefined;
+    this.retryable = typeof body?.retryable === 'boolean' ? body.retryable : undefined;
     if (error instanceof Error) this.originalError = error;
   }
+}
+
+async function httpError(method: string, url: URL, response: Response): Promise<AIAPIError> {
+  const body = await response.json().catch(() => undefined);
+  return new AIAPIError(method, url.toString(), response, undefined, body);
 }
 
 /**
@@ -109,6 +118,30 @@ function buildURL(baseURL: string, path: string): URL {
   return new URL(path, base);
 }
 
+/** Encode the same per-turn scope in chat bodies and history query values. */
+function chatScopeParams(options: Pick<ChatOptions, 'focus' | 'access'>): Record<string, unknown> {
+  const params: Record<string, unknown> = {};
+  if (options.focus) {
+    params.focus = {
+      video_id: options.focus.videoId,
+      ...(options.focus.currentTime !== undefined ? { current_time: options.focus.currentTime } : {}),
+    };
+  }
+  if (options.access !== undefined) {
+    params.access = {
+      ...(options.access.answer !== undefined ? { answer: options.access.answer } : {}),
+      ...(options.access.point !== undefined ? { point: options.access.point } : {}),
+      ...(options.access.mention !== undefined ? {
+        mention: options.access.mention.map(entry => ({
+          collection_id: entry.collectionId,
+          ...(entry.offer !== undefined ? { offer: entry.offer } : {}),
+        })),
+      } : {}),
+    };
+  }
+  return params;
+}
+
 /**
  * Make streaming request to AI endpoint
  */
@@ -130,7 +163,7 @@ async function streamRequest(
   });
 
   if (!response.ok) {
-    throw new AIAPIError('POST', url.toString(), response);
+    throw await httpError('POST', url, response);
   }
 
   return parseSSE(response);
@@ -158,7 +191,7 @@ async function jsonRequest<T = AIResponse>(
   });
 
   if (!response.ok) {
-    throw new AIAPIError(method, url.toString(), response);
+    throw await httpError(method, url, response);
   }
 
   if (response.status === 204) return undefined as T;
@@ -172,9 +205,14 @@ async function jsonRequest<T = AIResponse>(
  */
 async function getRequest<T>(
   path: string,
-  config: AIConfig
+  config: AIConfig,
+  options?: GetConversationOptions
 ): Promise<T> {
   const url = buildURL(config.baseURL, path);
+  if (options?.viewer !== undefined) url.searchParams.set('viewer', options.viewer);
+  for (const [key, value] of Object.entries(chatScopeParams(options ?? {}))) {
+    url.searchParams.set(key, JSON.stringify(value));
+  }
 
   const response = await fetch(url, {
     method: 'GET',
@@ -185,7 +223,7 @@ async function getRequest<T>(
   });
 
   if (!response.ok) {
-    throw new AIAPIError('GET', url.toString(), response);
+    throw await httpError('GET', url, response);
   }
 
   const raw = await response.json();
@@ -437,7 +475,7 @@ export interface AIClient {
    *   console.log(`${msg.role}: ${msg.content}`);
    * }
    */
-  getConversation(conversationId: string): Promise<Conversation>;
+  getConversation(conversationId: string, options?: GetConversationOptions): Promise<Conversation>;
 
   /** Rate an assistant message. */
   rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>;
@@ -502,24 +540,7 @@ export function createAI(config: AIConfig): AIClient {
     if (options.viewer !== undefined) body.viewer = options.viewer;
     if (options.viewerProfile !== undefined) body.viewer_profile = options.viewerProfile;
     if (options.synthesize !== undefined) body.synthesize = options.synthesize;
-    if (options.focus) {
-      body.focus = {
-        video_id: options.focus.videoId,
-        ...(options.focus.currentTime !== undefined ? { current_time: options.focus.currentTime } : {}),
-      };
-    }
-    if (options.access !== undefined) {
-      body.access = {
-        ...(options.access.answer !== undefined ? { answer: options.access.answer } : {}),
-        ...(options.access.point !== undefined ? { point: options.access.point } : {}),
-        ...(options.access.mention !== undefined ? {
-          mention: options.access.mention.map(entry => ({
-            collection_id: entry.collectionId,
-            ...(entry.offer !== undefined ? { offer: entry.offer } : {}),
-          })),
-        } : {}),
-      };
-    }
+    Object.assign(body, chatScopeParams(options));
     if (options.tags) body.tags = options.tags;
     if (isVideoScoped && options.currentTime !== undefined) {
       body.current_time = options.currentTime;
@@ -592,11 +613,11 @@ export function createAI(config: AIConfig): AIClient {
     return recommendations(options);
   }
 
-  async function getConversation(conversationId: string): Promise<Conversation> {
+  async function getConversation(conversationId: string, options?: GetConversationOptions): Promise<Conversation> {
     if (!conversationId) {
       throw new Error('conversationId is required');
     }
-    return getRequest<Conversation>(`ai/chat/${conversationId}`, config);
+    return getRequest<Conversation>(`ai/chat/${conversationId}`, config, options);
   }
 
   async function rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback> {

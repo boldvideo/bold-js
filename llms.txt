@@ -375,7 +375,7 @@ and non-streaming responses. Voice uses a browser session handle instead of SSE.
 - `bold.ai.chat(options: ChatOptions)` - Conversational Q&A (library-wide or video-scoped)
 - `bold.ai.search(options: SearchOptions)` - Semantic search with AI summary
 - `bold.ai.recommendations(options: RecommendationsOptions)` - Topic-based video recommendations
-- `bold.ai.getConversation(id: string)` - Retrieve conversation history by ID
+- `bold.ai.getConversation(id: string, options?: GetConversationOptions)` - Retrieve history; optional viewer/access/focus for bound conversations, one-argument open-mode call unchanged
 - `bold.ai.rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>` - Rate an assistant message
 - `bold.ai.clearRating(messageId: string): Promise<void>` - Remove an assistant message's rating
 - `bold.ai.voice.createSession(options: VoiceSessionOptions): VoiceSession` - Synchronous, single-use browser voice handle
@@ -402,14 +402,17 @@ for await (const event of stream) {
 
 Defaults are stream:true and synthesize:true. Focus answers from the video first,
 then widens directly to the library on a miss, without a clarification question.
-focus.currentTime is optional playback position in seconds. The focus video must
+focus.currentTime is optional playback position in seconds. Top-level currentTime
+is ignored whenever focus is present, even with top-level videoId; focused requests
+must use focus.currentTime. The focus video must
 still pass its own video authorization gate; collection access is not a bypass.
-Without focus or legacy videoId, chat is normal library Q&A. Omitting access uses
+In open mode (the default), without focus or legacy videoId, chat is normal library Q&A. Omitting access uses
 the whole public, published, ready library, subject to legacy collection filters
 (collectionId/collectionIds), not gated-product entitlements.
 
 Continue with the returned conversationId, but send the current focus and, if used,
-access on every turn. Neither is sticky; the next turn may change or omit them.
+access on every turn. Neither is sticky. Open-mode turns may change or omit them;
+gated conversations require the same bound grants and focus video.
 
 #### Advanced: collection access (trusted server)
 
@@ -437,6 +440,66 @@ Strongest permission wins: answer > point > mention. Answers and pointers end
 resolution; no locked-match offers are appended afterward. Offer keys are opaque
 keys for your UI, not prices or checkout URLs supplied by Bold. Each list permits
 at most 200 entries; optional offer keys are 1–64 characters.
+
+#### Gated tenants: Require verified AI access
+
+The tenant setting Require verified AI access in Mission Control is off by default
+until deliberately enabled. Gated creation/continuation/history require a fresh
+server-only key with verified_ai_access capability and a resolved viewer. Old,
+browser and private keys do not automatically qualify. Never expose this key in
+browser code. Viewer is optional for open chat, but identity/context is not
+authentication; neither viewer nor credentials prove purchases. Your trusted server
+must check purchases and authorization for the focused video before asserting grants.
+
+Send explicit access on every gated request, including access:{} for focus-only
+access. The backend still checks the focus video's authorization gate.
+
+```typescript
+// Server only, after verifying identity, purchases and focus access.
+const serverBold = createClient(verifiedAiAccessKey);
+const focus = { videoId };
+const access = {};
+const answer = await serverBold.ai.chat({
+  prompt: 'What is the main idea here?',
+  viewer, focus, access, stream: false,
+});
+if (answer.conversationId) {
+  const history = await serverBold.ai.getConversation(answer.conversationId, {
+    viewer, access, focus,
+  });
+  console.log(history.messages);
+}
+```
+
+The conversation is bound to tenant/viewer and a digest of normalized grants plus
+focus video ID, not currentTime. Matching scope supports multi-turn; time may change.
+Changed grants or changed/dropped focus require a new conversation: recheck
+entitlements and omit conversationId on the next request, rather than retrying or
+broadening the rejected conversation. Unbound old history is unavailable while
+gated; bound history stays protected even after disabling the setting.
+Legacy video-only chat, search, recommendations, voice and conversation listing
+are unavailable while gated; use unified chat with focus. No cross-conversation
+memory is used.
+
+getConversation(id, options) uses viewer as a plain query value and access/focus
+as URL-encoded JSON with the same snake_case wire fields as POST. Absent fields
+are omitted; explicit access:{} is preserved. Authentication stays in headers.
+
+Gate failures are JSON before SSE starts: catch the awaited chat/history request.
+AIAPIError exposes status?:number, code?:string and retryable?:boolean; message
+includes the server explanation. Gate errors set retryable:false. No automatic
+retry, scope broadening or open-route fallback occurs. Non-JSON HTTP errors retain
+the status/message fallback.
+- 403 verified_ai_access_required: use a fresh server-only verified-access key.
+- 400 ai_access_required: send explicit access, including {} for no library grants.
+- 409 ai_access_scope_changed: recheck entitlements, then start a new conversation
+  with current viewer/access/focus rather than retrying the old conversation.
+- 400 viewer_required: supply a resolvable viewer.
+- 404 viewer_not_found/conversation_not_found/video_not_found: check tenant,
+  identity and resource; do not broaden access on failure.
+- 400 invalid_access/invalid_focus: correct the request shape.
+- 403 verified_ai_route_unsupported: use unified chat with focus.
+- 503 ai_access_unavailable: policy verification failed; fail closed, not open.
 
 ### Message feedback
 
@@ -643,17 +706,30 @@ union lists known events only. Parsing stops at `message_complete` or `error`.
   collectionIds?: string[];    // Legacy plural answer allow-list
   tags?: string[];             // Filter by tags
   videoId?: string;            // Deprecated: legacy video-only route, unless focus is set
-  currentTime?: number;        // Legacy playback position (with top-level videoId)
+  currentTime?: number;        // Legacy position with top-level videoId and no focus; otherwise use focus.currentTime
 }
 ```
 
 Focus always selects `/ai/chat`, including when top-level videoId is also supplied;
 videoId alone keeps `/ai/videos/:id/chat`. Focus/access are per-turn inputs, not
-conversation settings. With access omitted, absent/empty collectionIds means the
+conversation settings. In open mode with access omitted, absent/empty collectionIds means the
 whole public, published, ready library, subject to other legacy filters. The focus
 video must still pass video authorization. See the progressive focus/access examples
 above for trusted collection grants. Render widened scope as a library marker,
 pointers as links, and locked matches using your offer UI.
+
+### GetConversationOptions
+
+```typescript
+interface GetConversationOptions {
+  viewer?: string;
+  access?: ChatAccess;
+  focus?: ChatFocus;
+}
+```
+
+Fields are optional for open-mode compatibility; gated/bound history requires the
+bound viewer/access/focus, even after gated mode is disabled. Omission is not a grant.
 
 ### SearchOptions
 

@@ -72,6 +72,7 @@ export type {
   RecommendOptions,
   RecommendResponse,
   Conversation,
+  GetConversationOptions,
   ConversationMessage,
   ConversationMetadata,
   FeedbackReason,

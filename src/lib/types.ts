@@ -669,6 +669,13 @@ export interface Conversation {
   updatedAt: string;
 }
 
+/** Per-request identity and grants for history. Gated conversations require their bound viewer/access/focus. */
+export interface GetConversationOptions {
+  viewer?: string;
+  access?: ChatAccess;
+  focus?: ChatFocus;
+}
+
 /** Explicit engagement attributed to an AI interaction. Independent of legacy trackEvent. */
 export type TrackEngagementOptions = {
   /** Interaction UUID returned by AI. Skip tracking when it is missing or null. */

@@ -1,4 +1,13 @@
-import { createClient, type AIEvent, type AIResponse, type AIChatResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource, type AISource, type Segment } from '../src/index';
+import { createClient, AIAPIError, type AIEvent, type AIResponse, type AIChatResponse, type AIRetrievalResponse, type ChatOptions, type GetConversationOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource, type AISource, type Segment } from '../src/index';
+
+function useError(error: unknown): void {
+  if (error instanceof AIAPIError) {
+    const code: string | undefined = error.code;
+    const retryable: boolean | undefined = error.retryable;
+    void [code, retryable];
+  }
+}
+void useError;
 
 function useSource(source: AISource): void {
   // @ts-expect-error Focus sources can omit title; library titles can be null.
@@ -150,6 +159,15 @@ void useSynthesisOptions;
 
 async function useHistory(): Promise<void> {
   const history = await ai.getConversation('thread-1');
+  const options: GetConversationOptions = { viewer: 'viewer-1', access: {}, focus: { videoId: 'lesson-1', currentTime: 0 } };
+  const gated = await ai.getConversation('thread-1', options);
+  const conversationId: string = gated.conversationId;
+  await ai.getConversation('thread-1', {});
+  // @ts-expect-error History options use SDK keys, not wire keys.
+  await ai.getConversation('thread-1', { focus: { video_id: 'lesson-1' } });
+  // @ts-expect-error Viewer is an identity string, not an authorization boolean.
+  await ai.getConversation('thread-1', { viewer: true });
+  void conversationId;
   const assistant = history.messages.find(message => message.role === 'assistant');
   assistant?.sources.forEach(useSource);
   const scope: AIScope | undefined = assistant?.scope;

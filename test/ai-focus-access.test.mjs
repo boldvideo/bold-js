@@ -23,10 +23,11 @@ before(async () => {
     let raw = '';
     for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : {};
-    requests.push({ method: req.method, url: req.url, headers: req.headers, body });
+    requests.push({ method: req.method, url: req.url, headers: req.headers, body, raw });
     const capture = body.prompt?.startsWith('recorded:') ? captures[body.prompt.slice(9)] : undefined;
     if (req.method === 'GET') {
-      const history = Object.values(captures).find(item => req.url === `/api/v1/ai/chat/${item.history.conversation_id}`).history;
+      const path = new URL(req.url, 'http://localhost').pathname;
+      const history = Object.values(captures).find(item => path === `/api/v1/ai/chat/${item.history.conversation_id}`).history;
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify(history));
       return;
@@ -208,6 +209,53 @@ for (const scenario of Object.keys(captures)) {
   });
 }
 
+test('history keeps open-mode requests unchanged and preserves explicit empty grants', async () => {
+  const id = captures.covered.history.conversation_id;
+  for (const options of [undefined, {}, { access: {} }, { viewer: 'viewer-1' }, { focus: { videoId: 'lesson-1' } }]) {
+    const history = await ai.getConversation(id, options);
+    const request = requests.at(-1);
+    const url = new URL(request.url, 'http://localhost');
+    assert.equal(history.conversationId, id);
+    assert.equal(url.pathname, `/api/v1/ai/chat/${id}`);
+    assert.deepEqual([...url.searchParams.keys()], options ? Object.keys(options) : []);
+    assert.equal(url.searchParams.get('access'), options?.access ? '{}' : null);
+    assert.equal(url.searchParams.get('viewer'), options?.viewer ?? null);
+    assert.equal(url.searchParams.get('focus'), options?.focus ? '{"video_id":"lesson-1"}' : null);
+    if (!options || !Object.keys(options).length) assert.equal(request.url, `/api/v1/ai/chat/${id}`);
+    assert.equal(request.method, 'GET');
+    assert.equal(request.raw, '');
+    assert.equal(request.headers.authorization, 'synthetic-test-key');
+    assert.equal(request.headers.accept, 'application/json');
+  }
+});
+
+test('history URL-encodes viewer and JSON scope without leaking query delimiters', async () => {
+  const viewer = 'external+viewer & name/é?admin=true#fragment';
+  const history = await ai.getConversation(captures.covered.history.conversation_id, {
+    viewer,
+    focus: { videoId: 'lesson-1', currentTime: 0 },
+    access: {
+      answer: ['course-1', 'course-2'], point: [],
+      mention: [{ collectionId: 'course-3', offer: 'membership + extras' }, { collectionId: 'course-4' }],
+    },
+  });
+  const request = requests.at(-1);
+  const url = new URL(request.url, 'http://localhost');
+  assert.equal(history.conversationId, captures.covered.history.conversation_id);
+  assert.deepEqual([...url.searchParams.keys()].sort(), ['access', 'focus', 'viewer']);
+  assert.equal(url.searchParams.get('viewer'), viewer);
+  assert.equal(url.hash, '');
+  assert.deepEqual(JSON.parse(url.searchParams.get('focus')), { video_id: 'lesson-1', current_time: 0 });
+  assert.deepEqual(JSON.parse(url.searchParams.get('access')), {
+    answer: ['course-1', 'course-2'], point: [],
+    mention: [{ collection_id: 'course-3', offer: 'membership + extras' }, { collection_id: 'course-4' }],
+  });
+  assert.equal(request.method, 'GET');
+  assert.equal(request.raw, '');
+  assert.equal(request.headers.authorization, 'synthetic-test-key');
+  assert.equal(request.headers.accept, 'application/json');
+});
+
 for (const stream of [false, true]) {
   for (const conversationId of [undefined, 'thread-1']) {
     test(`focus takes precedence on ${conversationId ? 'continuation' : 'new'} ${stream ? 'SSE' : 'JSON'} requests`, async () => {
@@ -361,6 +409,49 @@ test('invalid access HTTP failures stay typed and are not retried', async (t) =>
     });
   }
   assert.equal(requests, 2);
+});
+
+// Synthetic HTTP responses using the server's verified error envelope, not recorded captures.
+for (const [status, code, message] of [
+  [403, 'verified_ai_access_required', 'A server-only verified AI access key is required.'],
+  [400, 'ai_access_required', 'Explicit access is required; use {} for no library grants.'],
+  [409, 'ai_access_scope_changed', 'Authorization scope changed or is unproven. Start a new conversation with the current viewer, access and focus.'],
+]) {
+  test(`${code} preserves server error details before JSON/SSE and on history without retry`, async (t) => {
+    let count = 0;
+    t.mock.method(globalThis, 'fetch', async () => {
+      count += 1;
+      return Response.json({ type: 'error', code, message, retryable: false }, { status });
+    });
+    const options = { viewer: 'viewer-1', access: {}, focus: { videoId: 'lesson-1' } };
+    for (const request of [
+      () => ai.chat({ prompt: 'Question', ...options, stream: false }),
+      () => ai.chat({ prompt: 'Question', ...options }),
+      () => ai.getConversation('thread-1', options),
+    ]) {
+      await assert.rejects(request, error => {
+        assert.ok(error instanceof AIAPIError);
+        assert.equal(error.status, status);
+        assert.equal(error.code, code);
+        assert.equal(error.retryable, false);
+        assert.ok(error.message.endsWith(message));
+        return true;
+      });
+    }
+    assert.equal(count, 3);
+  });
+}
+
+test('non-JSON HTTP failures retain status fallback without inventing error details', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response('Bad gateway', { status: 502, statusText: 'Bad Gateway' }));
+  await assert.rejects(ai.getConversation('thread-1'), error => {
+    assert.ok(error instanceof AIAPIError);
+    assert.equal(error.status, 502);
+    assert.equal(error.code, undefined);
+    assert.equal(error.retryable, undefined);
+    assert.ok(error.message.endsWith('Bad Gateway'));
+    return true;
+  });
 });
 
 for (const terminalType of ['message_complete', 'error']) {
