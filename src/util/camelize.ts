@@ -19,6 +19,8 @@ export type CamelizeOptions = {
    * Useful for user-defined metadata maps like `traits` where keys are arbitrary.
    */
   preserveKeys?: string[];
+  /** Maps whose entry keys are opaque identifiers; their values still camelize. */
+  preserveMapKeys?: string[];
 };
 
 /**
@@ -48,6 +50,13 @@ export function camelizeKeys<T>(input: T, options: CamelizeOptions = {}): T {
 
     if (preserve.has(rawKey) || preserve.has(key)) {
       out[key] = value;
+      continue;
+    }
+
+    if (options.preserveMapKeys?.some(name => name === rawKey || name === key) && isPlainObject(value)) {
+      out[key] = Object.fromEntries(
+        Object.entries(value).map(([id, entry]) => [id, camelizeKeys(entry, options)]),
+      );
       continue;
     }
 

@@ -497,8 +497,14 @@ session.dispose();
 ```typescript
 type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
-  | { type: "progress"; stage: string; message: string }
-  | { type: "sources"; sources: Segment[] }
+  | { type: "conversation_created"; conversationId: string }
+  | { type: "progress"; stage: string; message: string; scope?: 'focus' | 'library' }
+  | ({ type: "scope" } & AIScope)
+  | { type: "pointers"; pointers: AIPointer[] }
+  | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
+  | { type: "sources"; sources: AISource[] }
+  | { type: "citation_map"; citationMap: Record<string, Segment> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, Segment> }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
   | { type: "message_complete";
@@ -506,14 +512,35 @@ type AIEvent =
       interactionId?: string | null;
       conversationId?: string;
       content: string;
-      citations: Segment[];
-      responseType: "answer" | "clarification";
+      sources?: AISource[];
+      citations?: Segment[]; // Legacy video/search payloads
+      citationMap?: Record<string, Segment>;
+      scope?: AIScope;
+      pointers?: AIPointer[];
+      lockedMatches?: AILockedMatch[];
+      responseType?: "answer" | "clarification";
       usage?: AIUsage;
       context?: AIContextMessage[];
       recommendations?: Recommendation[];
       guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
 ```
+
+`AISource` is a `Segment` or a focus timestamp `{ videoId: string; timestamp: number }`.
+`AIScope` has `answeredFrom: 'focus' | 'library' | 'none'`,
+`widenedFrom: 'focus' | null`, `reason: 'not_covered' | 'requested' | null`, and
+`focus: { videoId: string; title: string } | null`.
+`AIPointer` has `videoId`, `title`, `collectionId`, `canonicalUrl`, and
+`moments: { timestamp: number; timestampEnd: number; timestampUrl: string }[]`.
+`AILockedMatch` has `offer: string`, `collectionIds: string[]`, `videoCount: number`,
+and `titles: string[]`. JSON `AIResponse` also has optional `scope`, `pointers`,
+`lockedMatches`, and `citationMap`.
+
+Event type strings stay snake_case; payload keys are camelCase. Citation-map entry
+keys are opaque identifiers and stay unchanged, while their values camelize.
+Render unknown progress stages as a generic working state (`reading` and
+`widening` are supported). Unknown event types pass through at runtime; the typed
+union lists known events only. Parsing stops at `message_complete` or `error`.
 
 ## AI Options
 
@@ -527,13 +554,30 @@ type AIEvent =
   clientName?: string;
   clientVersion?: string;
   stream?: boolean;            // Default: true
-  videoId?: string;            // Scope to specific video
+  videoId?: string;            // Deprecated: legacy video-only route, unless focus is set
   currentTime?: number;        // Playback position (with videoId)
+  focus?: ChatFocus;           // { videoId: string; currentTime?: number }
+  access?: ChatAccess;         // { answer?: string[]; point?: string[]; mention?: { collectionId: string; offer?: string }[] }
+  viewer?: string;             // Viewer UUID or external ID
+  viewerProfile?: string | Record<string, string | number | boolean>;
+  synthesize?: boolean;
   conversationId?: string;     // Continue conversation
   collectionId?: string;       // Filter to collection
+  collectionIds?: string[];    // Legacy plural answer allow-list
   tags?: string[];             // Filter by tags
 }
 ```
+
+Focus always selects `/ai/chat`, including when top-level videoId is also supplied;
+videoId alone keeps `/ai/videos/:id/chat`. Focus is per turn. Send access on every
+turn: omitted/empty lists mean none, collectionIds is ignored when access is present,
+and the focus video remains answerable. Without access, absent/empty collectionIds
+means the public library. Answer permits synthesis, point permits links/moments,
+mention permits locked-match metadata only. Access is caller-asserted, not checked
+against viewer; derive it in trusted code. Each list allows up to 200 entries;
+optional offer strings are 1–64 characters. Strongest permission wins:
+answer > point > mention. Render widened scope as a library marker, pointers as
+links, and locked matches using the caller's offer UI (no prices or checkout URLs).
 
 ### SearchOptions
 

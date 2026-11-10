@@ -82,7 +82,7 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
 
         try {
           const raw = JSON.parse(json);
-          const event = camelizeKeys(raw) as AIEvent;
+          const event = camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as AIEvent;
           yield event;
           // Terminate on message_complete or error
           if (event.type === 'message_complete' || event.type === 'error') {
@@ -164,7 +164,7 @@ async function jsonRequest<T = AIResponse>(
   if (response.status === 204) return undefined as T;
 
   const raw = await response.json();
-  return camelizeKeys(raw) as T;
+  return camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as T;
 }
 
 /**
@@ -189,7 +189,7 @@ async function getRequest<T>(
   }
 
   const raw = await response.json();
-  return camelizeKeys(raw) as T;
+  return camelizeKeys(raw, { preserveMapKeys: ['citation_map'] }) as T;
 }
 
 /**
@@ -336,7 +336,8 @@ export interface AIClient {
   /**
    * Chat - Conversational AI for Q&A
    * 
-   * If `videoId` is provided, scopes to that video. Otherwise searches your entire library.
+   * `focus` uses library chat with a video-first answer. Without focus, `videoId`
+   * keeps the legacy video-only route. Otherwise searches your entire library.
    *
    * @example
    * // Library-wide Q&A
@@ -466,7 +467,7 @@ export interface AIClient {
  */
 export function createAI(config: AIConfig): AIClient {
   async function chat(options: ChatOptions): Promise<AsyncIterable<AIEvent> | AIResponse> {
-    const isVideoScoped = !!options.videoId;
+    const isVideoScoped = !options.focus && !!options.videoId;
     
     const basePath = isVideoScoped
       ? `ai/videos/${options.videoId}/chat`
@@ -482,6 +483,28 @@ export function createAI(config: AIConfig): AIClient {
     if (options.clientName !== undefined) body.client_name = options.clientName;
     if (options.clientVersion !== undefined) body.client_version = options.clientVersion;
     if (options.collectionId) body.collection_id = options.collectionId;
+    if (options.collectionIds !== undefined) body.collection_ids = options.collectionIds;
+    if (options.viewer !== undefined) body.viewer = options.viewer;
+    if (options.viewerProfile !== undefined) body.viewer_profile = options.viewerProfile;
+    if (options.synthesize !== undefined) body.synthesize = options.synthesize;
+    if (options.focus) {
+      body.focus = {
+        video_id: options.focus.videoId,
+        ...(options.focus.currentTime !== undefined ? { current_time: options.focus.currentTime } : {}),
+      };
+    }
+    if (options.access !== undefined) {
+      body.access = {
+        ...(options.access.answer !== undefined ? { answer: options.access.answer } : {}),
+        ...(options.access.point !== undefined ? { point: options.access.point } : {}),
+        ...(options.access.mention !== undefined ? {
+          mention: options.access.mention.map(entry => ({
+            collection_id: entry.collectionId,
+            ...(entry.offer !== undefined ? { offer: entry.offer } : {}),
+          })),
+        } : {}),
+      };
+    }
     if (options.tags) body.tags = options.tags;
     if (isVideoScoped && options.currentTime !== undefined) {
       body.current_time = options.currentTime;

@@ -653,11 +653,70 @@ console.log(response.content);
 |-----------|------|-------------|
 | `prompt` | `string` | The user's question (required) |
 | `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
-| `videoId` | `string` | If provided, scope to this video instead of whole library |
+| `videoId` | `string` | Deprecated: legacy video-only route; use `focus` for video-first library chat |
 | `currentTime` | `number` | Current playback position (only with `videoId`) |
 | `conversationId` | `string` | Pass to continue existing conversation |
 | `collectionId` | `string` | Filter to a specific collection |
 | `tags` | `string[]` | Filter by tags |
+
+### Video focus and collection access
+
+Use `focus` to answer from the current video first, with library fallback when the
+video does not cover the question. It always uses `/ai/chat`, even if top-level
+`videoId` is also set. Without `focus`, `videoId` keeps its legacy video-only route.
+Send `focus` and `access` again on every turn; a conversation can change or drop its focus.
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'Where else can I learn about this?',
+  focus: { videoId: 'lesson-id', currentTime: 312 },
+  access: {
+    answer: [],
+    point: ['owned-course-id'],
+    mention: [{ collectionId: 'members-library-id', offer: 'membership' }],
+  },
+  viewer: 'external-viewer-id',
+  viewerProfile: { experience: 'beginner' },
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+  if (event.type === 'scope' && event.widenedFrom === 'focus') {
+    console.log('Looked beyond this lesson:', event.answeredFrom);
+  }
+  if (event.type === 'pointers') {
+    for (const pointer of event.pointers) console.log(pointer.title, pointer.canonicalUrl, pointer.moments);
+  }
+  if (event.type === 'locked_matches') {
+    // Resolve the opaque offer key in your own UI; Bold supplies no price or checkout URL.
+    for (const match of event.lockedMatches) console.log(match.offer, match.videoCount, match.titles);
+  }
+}
+```
+
+- `access.answer` permits answers from those collections. `point` permits links
+  and moments, not answers. `mention` permits locked-match titles/counts, not transcript text.
+- With `access` present, omitted or empty lists mean **none**, and `collectionIds`
+  is ignored by the server. With `access` absent, `collectionIds` is the legacy
+  allow-list; absent or empty means the whole public library. The focus video is always answerable.
+- Access is a caller assertion, not viewer authorization: Bold does not check it
+  against `viewer`. Construct it in a trusted integration, not from untrusted viewer input.
+- The server accepts at most 200 entries per list; optional offer keys are 1–64 characters.
+  Overlapping permissions resolve as `answer` > `point` > `mention`.
+- `viewer` is a viewer UUID or external ID. `viewerProfile` accepts a string or
+  an object of string, number and boolean values. `synthesize` optionally controls
+  library synthesis; the SDK preserves `false` as well as `true`.
+- `progress` includes `reading` and `widening` and an optional `scope` of `focus`
+  or `library`. Render **unknown stages as a generic working state**.
+- `scope.answeredFrom` is `focus`, `library` or `none`. Render a library scope line
+  when widened; pointers link to owned content, while locked matches use your offer UI.
+  JSON responses and `message_complete` also expose `scope`, `pointers`, and `lockedMatches`.
+- Event type strings remain snake_case (`citation_map`, `locked_matches`), while
+  payload properties are camelCase (`citationMap`, `lockedMatches`). Citation-map
+  entry keys are opaque: look up `[c_a1b2]` using `citationMap['c_a1b2']` unchanged.
+  Focus sources may contain only `videoId` and `timestamp`; library sources carry segment details.
+- Unknown event types still pass through at runtime. The parser stops at
+  `message_complete` or `error`; ignore events your application does not recognize.
 
 ### Recommendations
 

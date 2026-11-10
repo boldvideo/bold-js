@@ -336,16 +336,59 @@ export interface AIUsage {
   outputTokens: number;
 }
 
+/** A focus answer can cite a timestamp without a library transcript segment. */
+export type AISource = Segment | Pick<Segment, 'videoId' | 'timestamp'>;
+
+export interface ChatFocus {
+  videoId: string;
+  currentTime?: number;
+}
+
+/** Caller-asserted collection permissions. Omitted lists mean none. */
+export interface ChatAccess {
+  answer?: string[];
+  point?: string[];
+  mention?: { collectionId: string; offer?: string }[];
+}
+
+export interface AIScope {
+  answeredFrom: 'focus' | 'library' | 'none';
+  widenedFrom: 'focus' | null;
+  reason: 'not_covered' | 'requested' | null;
+  focus: { videoId: string; title: string } | null;
+}
+
+export interface AIPointer {
+  videoId: string;
+  title: string;
+  collectionId: string;
+  canonicalUrl: string;
+  moments: { timestamp: number; timestampEnd: number; timestampUrl: string }[];
+}
+
+export interface AILockedMatch {
+  offer: string;
+  collectionIds: string[];
+  videoCount: number;
+  titles: string[];
+}
+
 /**
  * SSE event types for AI streaming responses
  */
 export type AIEvent =
   | { type: "message_start"; conversationId?: string; videoId?: string }
-  | { type: "progress"; stage: string; message: string }
-  | { type: "sources"; sources: Segment[] }
+  | { type: "conversation_created"; conversationId: string }
+  | { type: "progress"; stage: string; message: string; scope?: 'focus' | 'library' }
+  | ({ type: "scope" } & AIScope)
+  | { type: "pointers"; pointers: AIPointer[] }
+  | { type: "locked_matches"; lockedMatches: AILockedMatch[] }
+  | { type: "sources"; sources: AISource[] }
+  | { type: "citation_map"; citationMap: Record<string, Segment> }
+  | { type: "answer"; content: string; sources?: AISource[]; citationMap?: Record<string, Segment> }
   | { type: "text_delta"; delta: string }
   | { type: "recommendations"; recommendations: Recommendation[] }
-  | { type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; content: string; citations: Segment[]; responseType: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
+  | { type: "message_complete"; messageId?: string; interactionId?: string | null; conversationId?: string; content: string; sources?: AISource[]; citations?: Segment[]; citationMap?: Record<string, Segment>; scope?: AIScope; pointers?: AIPointer[]; lockedMatches?: AILockedMatch[]; responseType?: "answer" | "clarification"; usage?: AIUsage; context?: AIContextMessage[]; recommendations?: Recommendation[]; guidance?: string }
   | { type: "error"; code: string; message: string; retryable: boolean }
   | { type: "image_analysis"; status: "analyzing" }
   | { type: "image_analysis"; status: "complete"; description: string };
@@ -375,7 +418,11 @@ export interface AIResponse {
   /** @deprecated Use conversationId instead. Will be removed in v2. */
   id?: string;                   // Deprecated alias for conversationId
   content: string;
-  sources: Source[];
+  sources: AISource[];
+  citationMap?: Record<string, Segment>;
+  scope?: AIScope;
+  pointers?: AIPointer[];
+  lockedMatches?: AILockedMatch[];
   usage: AIUsage;
   model?: string;
   context?: AIContextMessage[];  // Present for /search, absent for /chat
@@ -384,8 +431,8 @@ export interface AIResponse {
 /**
  * Options for bold.ai.chat()
  * 
- * If `videoId` is provided, scopes chat to that video (hits /ai/videos/:id/chat).
- * Otherwise, searches your entire library (hits /ai/chat).
+ * `focus` uses /ai/chat, even when videoId is also provided.
+ * Without focus, videoId keeps using /ai/videos/:id/chat.
  */
 export interface ChatOptions {
   prompt: string;
@@ -398,10 +445,19 @@ export interface ChatOptions {
   stream?: boolean;          // Default: true
   conversationId?: string;   // Pass to continue existing conversation
   collectionId?: string;
+  collectionIds?: string[];
+  viewer?: string;
+  viewerProfile?: string | Record<string, string | number | boolean>;
+  synthesize?: boolean;
+  /** Per-turn video focus on the library chat route. */
+  focus?: ChatFocus;
+  /** Resend on every turn. When present, overrides collectionIds; empty means none. */
+  access?: ChatAccess;
   tags?: string[];           // Filter by tags
   
   /**
-   * If provided, scope chat to a specific video instead of the whole library.
+   * @deprecated Use focus for video-first answers with library fallback.
+   * Without focus, keeps the legacy video-only route.
    */
   videoId?: string;
   
