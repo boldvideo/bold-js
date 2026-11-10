@@ -546,9 +546,12 @@ Event type strings stay snake_case; payload keys are camelCase. Citation-map ent
 keys are opaque identifiers and stay unchanged, while their values camelize.
 The citation_map event maps IDs to source metadata; answer.citationMap maps IDs to
 zero-based sources indices. Neither map is sent in message_complete or JSON answers.
-With synthesize:false, JSON AIResponse and SSE message_complete have
+With synthesize:false, JSON AIRetrievalResponse and SSE message_complete have
 responseType:'retrieval', sources, confidence and metadata, but no content or
-synthesis usage. Narrow by responseType before accessing answer content or usage.
+synthesis usage. AIResponse remains an answer interface with required content
+and usage. With stream:false, omitted/true synthesize returns AIResponse, false
+returns AIRetrievalResponse, and a dynamic boolean returns their union (narrow
+by responseType before accessing content/usage). Streaming returns are unchanged.
 Render unknown progress stages as a generic working state (`reading` and
 `widening` are supported). Unknown event types pass through at runtime; the typed
 union lists known events only. Parsing stops at `message_complete` or `error`.

@@ -706,9 +706,12 @@ for await (const event of stream) {
 - `viewer` is a viewer UUID or external ID. `viewerProfile` accepts a string or
   an object of string, number and boolean values. `synthesize` optionally controls
   library synthesis; the SDK preserves `false` as well as `true`. With `false`,
-  JSON and SSE `message_complete` return `responseType: 'retrieval'`, sources,
-  confidence and metadata, without answer content or synthesis usage. Check
-  `responseType` before reading content or usage.
+  JSON (`AIRetrievalResponse`) and SSE `message_complete` return
+  `responseType: 'retrieval'`, sources, confidence and metadata, without answer
+  content or synthesis usage. JSON calls with omitted or `true` synthesis retain
+  `AIResponse`, an interface with required `content` and `usage`. If synthesis is
+  a dynamic boolean, narrow the JSON response by `responseType` before reading
+  content or usage. Streaming return types are unchanged.
 - `progress` includes `reading` and `widening` and an optional `scope` of `focus`
   or `library`. Render **unknown stages as a generic working state**.
 - `scope.answeredFrom` is `focus`, `library` or `none`. Render a library scope line
@@ -1004,6 +1007,7 @@ import type {
   MenuItem,
   AIEvent,
   AIResponse,
+  AIRetrievalResponse,
   ChatOptions,
   SearchOptions,
   RecommendationsOptions,

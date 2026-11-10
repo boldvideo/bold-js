@@ -427,9 +427,10 @@ export type ImageInput =
   | { type: 'base64'; mediaType: string; data: string };
 
 /**
- * Non-streaming AI response for /ai/chat, /ai/videos/:id/chat, and /ai/search
+ * Non-streaming answer response for /ai/chat, /ai/videos/:id/chat, and /ai/search.
+ * Chat requests with synthesize: false return AIRetrievalResponse instead.
  */
-export type AIResponse = {
+export interface AIResponse {
   /** Assistant message ID for rating feedback, when supplied by the server. */
   messageId?: string;
   /** Analytics correlation ID, not a durable persistence acknowledgement. May be null for search previews. */
@@ -438,16 +439,27 @@ export type AIResponse = {
   videoId?: string;              // Present for /videos/:id/chat
   /** @deprecated Use conversationId instead. Will be removed in v2. */
   id?: string;                   // Deprecated alias for conversationId
+  responseType?: "answer" | "clarification";
+  content: string;
+  usage: AIUsage;
   sources: AISource[];
   scope?: AIScope;
   pointers?: AIPointer[];
   lockedMatches?: AILockedMatch[];
   model?: string;
   context?: AIContextMessage[];  // Present for /search, absent for /chat
-} & (
-  | { responseType?: "answer" | "clarification"; content: string; usage: AIUsage }
-  | { responseType: "retrieval"; content?: never; usage?: never; confidence: string; metadata: Record<string, unknown> }
-);
+}
+
+/** Non-streaming chat response when synthesize: false; no answer content or synthesis usage. */
+export interface AIRetrievalResponse {
+  conversationId?: string;
+  id?: string;
+  interactionId?: string | null;
+  responseType: "retrieval";
+  sources: AICitationSource[];
+  confidence: string;
+  metadata: Record<string, unknown>;
+}
 
 /**
  * Options for bold.ai.chat()

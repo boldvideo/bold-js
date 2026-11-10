@@ -46,6 +46,7 @@ export type {
   AILockedMatch,
   AIEvent,
   AIResponse,
+  AIRetrievalResponse,
   TrackEngagementOptions,
   VoiceStatus,
   VoiceEndReason,

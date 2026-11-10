@@ -50,27 +50,32 @@ after(async () => {
 
 beforeEach(() => { requests.length = 0; });
 
-test('focus/access examples type-check against the built public declarations', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'bold-focus-'));
-  try {
-    const fixture = readFileSync(new URL('./ai-focus-types.ts', import.meta.url), 'utf8');
-    writeFileSync(join(directory, 'types.ts'), fixture.replace("'../src/index'", "'@boldvideo/bold-js'"));
-    writeFileSync(join(directory, 'tsconfig.json'), JSON.stringify({
-      compilerOptions: {
-        target: 'es2020', module: 'esnext', moduleResolution: 'bundler', strict: true,
-        noEmit: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true,
-        paths: { '@boldvideo/bold-js': [fileURLToPath(new URL('../dist/index.d.ts', import.meta.url))] },
-      },
-      files: ['types.ts'],
-    }));
-    execFileSync(process.execPath, [
-      fileURLToPath(new URL('../node_modules/typescript/bin/tsc', import.meta.url)),
-      '-p', join(directory, 'tsconfig.json'),
-    ], { stdio: 'pipe' });
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
-});
+for (const declaration of ['index.d.ts', 'index.d.cts']) {
+  test(`legacy answers and focus/access examples type-check against ${declaration}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), 'bold-focus-'));
+    try {
+      const files = ['ai-answer-compat-types.ts', 'ai-focus-types.ts'];
+      for (const file of files) {
+        const fixture = readFileSync(new URL(file, import.meta.url), 'utf8');
+        writeFileSync(join(directory, file), fixture.replace("'../src/index'", "'@boldvideo/bold-js'"));
+      }
+      writeFileSync(join(directory, 'tsconfig.json'), JSON.stringify({
+        compilerOptions: {
+          target: 'es2020', module: 'esnext', moduleResolution: 'bundler', strict: true,
+          noEmit: true, noUncheckedIndexedAccess: true, exactOptionalPropertyTypes: true,
+          paths: { '@boldvideo/bold-js': [fileURLToPath(new URL(`../dist/${declaration}`, import.meta.url))] },
+        },
+        files,
+      }));
+      execFileSync(process.execPath, [
+        fileURLToPath(new URL('../node_modules/typescript/bin/tsc', import.meta.url)),
+        '-p', join(directory, 'tsconfig.json'),
+      ], { stdio: 'pipe' });
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
 
 for (const stream of [false, true]) {
   for (const conversationId of [undefined, 'thread-1']) {

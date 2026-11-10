@@ -1,4 +1,4 @@
-import { createClient, type AIEvent, type AIResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource } from '../src/index';
+import { createClient, type AIEvent, type AIResponse, type AIRetrievalResponse, type ChatOptions, type AIScope, type AIPointer, type AILockedMatch, type AICitationSource } from '../src/index';
 
 // SYNTHETIC camelized contracts, not recorded server output.
 const focus = { videoId: 'lesson-1', title: 'Lesson' };
@@ -54,12 +54,16 @@ for (const event of turns) {
   }
 }
 
-const retrieval: AIResponse = { responseType: 'retrieval', sources: [resource], confidence: 'high', metadata: {} };
-function useResponse(response: AIResponse): void {
+const retrieval: AIRetrievalResponse = { responseType: 'retrieval', sources: [resource], confidence: 'high', metadata: {} };
+function useResponse(response: AIResponse | AIRetrievalResponse): void {
   if (response.responseType === 'retrieval') {
-    const content: undefined = response.content;
-    const usage: undefined = response.usage;
-    void [content, usage, response.confidence];
+    const confidence: string = response.confidence;
+    const metadata: Record<string, unknown> = response.metadata;
+    void [confidence, metadata];
+    // @ts-expect-error Retrieval does not contain answer content.
+    response.content.trim();
+    // @ts-expect-error Retrieval does not contain synthesis usage.
+    response.usage.inputTokens;
   } else {
     const content: string = response.content;
     const tokens: number = response.usage.inputTokens;
@@ -72,7 +76,7 @@ const badAnswerMap: Extract<AIEvent, { type: 'answer' }> = { type: 'answer', con
 // @ts-expect-error The citation_map event contains metadata, not indices.
 const badSourceMap: Extract<AIEvent, { type: 'citation_map' }> = { type: 'citation_map', citationMap: { c_resource: 0 } };
 // @ts-expect-error Retrieval-only responses do not contain an answer or synthesis usage.
-const badRetrieval: AIResponse = { responseType: 'retrieval', content: 'Invented answer', usage: { inputTokens: 1, outputTokens: 2 }, sources: [], confidence: 'none', metadata: {} };
+const badRetrieval: AIRetrievalResponse = { responseType: 'retrieval', content: 'Invented answer', usage: { inputTokens: 1, outputTokens: 2 }, sources: [], confidence: 'none', metadata: {} };
 void [badAnswerMap, badSourceMap, badRetrieval];
 
 const options: ChatOptions = {
@@ -83,8 +87,30 @@ const options: ChatOptions = {
 };
 const ai = createClient('test-key').ai;
 const stream: Promise<AsyncIterable<AIEvent>> = ai.chat({ ...options, stream: true });
-const json: Promise<AIResponse> = ai.chat({ ...options, stream: false });
+const json: Promise<AIResponse | AIRetrievalResponse> = ai.chat({ ...options, stream: false });
 void [stream, json];
+
+async function useSynthesisOptions(synthesize: boolean, stream: boolean): Promise<void> {
+  for (const method of [ai.chat, ai.ask, ai.coach]) {
+    const retrieval: AIRetrievalResponse = await method({ prompt: 'Question', stream: false, synthesize: false });
+    const confidence: string = retrieval.confidence;
+    const answer: AIResponse = await method({ prompt: 'Question', stream: false, synthesize: true });
+    const content: string = answer.content.trim();
+    const tokens: number = answer.usage.inputTokens;
+    const defaultStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question' });
+    const retrievalStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question', synthesize: false });
+    const explicitStream: AsyncIterable<AIEvent> = await method({ prompt: 'Question', stream: true, synthesize });
+    const dynamic: AIResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream: false, synthesize });
+    useResponse(dynamic);
+    // @ts-expect-error An unknown synthesis flag requires narrowing before accessing answer content.
+    dynamic.content.trim();
+    // @ts-expect-error Retrieval-only calls cannot be assigned to an answer response.
+    const wrong: AIResponse = await method({ prompt: 'Question', stream: false, synthesize: false });
+    const dynamicMode: AsyncIterable<AIEvent> | AIResponse | AIRetrievalResponse = await method({ prompt: 'Question', stream, synthesize });
+    void [confidence, content, tokens, defaultStream, retrievalStream, explicitStream, wrong, dynamicMode];
+  }
+}
+void useSynthesisOptions;
 // @ts-expect-error Wire keys are not the SDK's request shape.
 const badFocus: ChatOptions = { prompt: 'Question', focus: { video_id: 'lesson-1' } };
 // @ts-expect-error A locked match uses camelCase fields.
