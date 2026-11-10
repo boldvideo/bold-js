@@ -652,31 +652,66 @@ console.log(response.content);
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `prompt` | `string` | The user's question (required) |
+| `focus` | `{ videoId: string; currentTime?: number }` | Answer from this video first, then widen to the library on a miss |
 | `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
-| `videoId` | `string` | Deprecated: legacy video-only route; use `focus` for video-first library chat |
-| `currentTime` | `number` | Current playback position (only with `videoId`) |
+| `synthesize` | `boolean` | `true` (default); `false` returns library retrieval results without synthesis |
 | `conversationId` | `string` | Pass to continue existing conversation |
 | `collectionId` | `string` | Filter to a specific collection |
+| `collectionIds` | `string[]` | Legacy library answer allow-list when `access` is omitted |
+| `access` | `ChatAccess` | Advanced: explicit collection grants from a trusted server (see below) |
+| `viewer` | `string` | Viewer UUID or external ID; not an authorization check for `access` |
+| `viewerProfile` | `string \| Record<string, string \| number \| boolean>` | Optional viewer context |
 | `tags` | `string[]` | Filter by tags |
+| `videoId` | `string` | Deprecated: legacy video-only route; use `focus` for video-first library chat |
+| `currentTime` | `number` | Legacy playback position in seconds (only with top-level `videoId`) |
 
 ### Video focus and collection access
 
-Use `focus` to answer from the current video first, with library fallback when the
-video does not cover the question. It always uses `/ai/chat`, even if top-level
-`videoId` is also set. Without `focus`, `videoId` keeps its legacy video-only route.
-Send `focus` and `access` again on every turn; a conversation can change or drop its focus.
+Start with just the question and the current video's `videoId`:
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'What is the main idea here?',
+  focus: { videoId },
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+}
+```
+
+Streaming and synthesis are on by default (`stream: true`, `synthesize: true`).
+With `focus`, chat answers from that video first. If the video does not cover the
+question, it widens directly to the library without asking a clarification question.
+`focus.currentTime` is optional; add it in seconds when playback position matters.
+The focus video must still pass its own video authorization gate.
+
+Without `focus` or legacy `videoId`, chat uses normal library Q&A. Omitting `access`
+uses the whole public, published, ready library, subject to legacy collection filters
+(`collectionId`/`collectionIds`). This default is not a gated-product entitlement policy.
+Focus always selects `/ai/chat`, even when top-level `videoId` is also set;
+`videoId` alone keeps its legacy video-only route.
+
+To continue, keep the returned `conversationId` and send the **current** `focus` and,
+if used, `access` on every turn. They are per-turn inputs, not sticky conversation
+settings: a later turn can change or omit them.
+
+#### Advanced: collection access (trusted server)
+
+For gated products, send explicit collection grants derived by a trusted server
+from your entitlement checks. Access is a caller assertion: Bold does not validate
+it against `viewer`. Do not accept grant lists directly from untrusted viewer input.
+Use real collection IDs from that trusted integration:
 
 ```typescript
 const stream = await bold.ai.chat({
   prompt: 'Where else can I learn about this?',
-  focus: { videoId: 'lesson-id', currentTime: 312 },
+  focus: { videoId, currentTime: 312 },
   access: {
-    answer: [],
-    point: ['owned-course-id'],
-    mention: [{ collectionId: 'members-library-id', offer: 'membership' }],
+    answer: [answerCollectionId],
+    point: [pointCollectionId],
+    mention: [{ collectionId: lockedCollectionId, offer: 'membership' }],
   },
-  viewer: 'external-viewer-id',
-  viewerProfile: { experience: 'beginner' },
 });
 
 for await (const event of stream) {
@@ -697,12 +732,18 @@ for await (const event of stream) {
 - `access.answer` permits answers from those collections. `point` permits links
   and moments, not answers. `mention` permits locked-match titles/counts, not transcript text.
 - With `access` present, omitted or empty lists mean **none**, and `collectionIds`
-  is ignored by the server. With `access` absent, `collectionIds` is the legacy
-  allow-list; absent or empty means the whole public library. The focus video is always answerable.
-- Access is a caller assertion, not viewer authorization: Bold does not check it
-  against `viewer`. Construct it in a trusted integration, not from untrusted viewer input.
+  is ignored by the server. For example, `access: {}` grants no collection access.
+  With `access` absent, absent or empty `collectionIds` means the whole public,
+  published, ready library, subject to other legacy filters. Collection grants do
+  not bypass the focus video's authorization gate.
 - The server accepts at most 200 entries per list; optional offer keys are 1–64 characters.
   Overlapping permissions resolve as `answer` > `point` > `mention`.
+- Answers and pointers end resolution; locked-match offers are not appended after
+  an answer or pointers. Resolve an opaque offer key in your own UI, not as a price
+  or checkout URL supplied by Bold.
+
+#### Response contracts and rendering
+
 - `viewer` is a viewer UUID or external ID. `viewerProfile` accepts a string or
   an object of string, number and boolean values. `synthesize` optionally controls
   library synthesis; the SDK preserves `false` as well as `true`. With `false`,

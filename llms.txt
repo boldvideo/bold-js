@@ -385,6 +385,59 @@ and non-streaming responses. Voice uses a browser session handle instead of SSE.
 - `bold.ai.coach()` -> use `chat()`
 - `bold.ai.recommend()` -> use `recommendations()`
 
+### Video focus
+
+Start with the current video's videoId and a question:
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'What is the main idea here?',
+  focus: { videoId },
+});
+
+for await (const event of stream) {
+  if (event.type === 'text_delta') process.stdout.write(event.delta);
+}
+```
+
+Defaults are stream:true and synthesize:true. Focus answers from the video first,
+then widens directly to the library on a miss, without a clarification question.
+focus.currentTime is optional playback position in seconds. The focus video must
+still pass its own video authorization gate; collection access is not a bypass.
+Without focus or legacy videoId, chat is normal library Q&A. Omitting access uses
+the whole public, published, ready library, subject to legacy collection filters
+(collectionId/collectionIds), not gated-product entitlements.
+
+Continue with the returned conversationId, but send the current focus and, if used,
+access on every turn. Neither is sticky; the next turn may change or omit them.
+
+#### Advanced: collection access (trusted server)
+
+Gated products require explicit collection grants from trusted server entitlement
+checks. Access is caller-asserted, not validated against viewer. Never accept grant
+lists directly from untrusted viewer input. The collection ID variables below
+come from that trusted integration, not placeholder IDs:
+
+```typescript
+const stream = await bold.ai.chat({
+  prompt: 'Where else can I learn about this?',
+  focus: { videoId, currentTime: 312 },
+  access: {
+    answer: [answerCollectionId],
+    point: [pointCollectionId],
+    mention: [{ collectionId: lockedCollectionId, offer: 'membership' }],
+  },
+});
+```
+
+With access present, omitted/empty lists mean none (access:{} grants no collection
+access), and collectionIds is ignored. Answer allows synthesis, point allows only
+links/moments, mention allows only locked-match titles/counts, never transcript text.
+Strongest permission wins: answer > point > mention. Answers and pointers end
+resolution; no locked-match offers are appended afterward. Offer keys are opaque
+keys for your UI, not prices or checkout URLs supplied by Bold. Each list permits
+at most 200 entries; optional offer keys are 1–64 characters.
+
 ### Message feedback
 
 JSON `AIResponse` and SSE `message_complete` expose optional `messageId?: string`
@@ -575,35 +628,32 @@ union lists known events only. Parsing stops at `message_complete` or `error`.
 ```typescript
 {
   prompt: string;              // Required
+  focus?: ChatFocus;           // { videoId: string; currentTime?: number }
   requestId?: string;           // UUID per intentional action; reuse on retries
   channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
   clientName?: string;
   clientVersion?: string;
   stream?: boolean;            // Default: true
-  videoId?: string;            // Deprecated: legacy video-only route, unless focus is set
-  currentTime?: number;        // Playback position (with videoId)
-  focus?: ChatFocus;           // { videoId: string; currentTime?: number }
   access?: ChatAccess;         // { answer?: string[]; point?: string[]; mention?: { collectionId: string; offer?: string }[] }
   viewer?: string;             // Viewer UUID or external ID
   viewerProfile?: string | Record<string, string | number | boolean>;
-  synthesize?: boolean;
+  synthesize?: boolean;        // Default: true
   conversationId?: string;     // Continue conversation
   collectionId?: string;       // Filter to collection
   collectionIds?: string[];    // Legacy plural answer allow-list
   tags?: string[];             // Filter by tags
+  videoId?: string;            // Deprecated: legacy video-only route, unless focus is set
+  currentTime?: number;        // Legacy playback position (with top-level videoId)
 }
 ```
 
 Focus always selects `/ai/chat`, including when top-level videoId is also supplied;
-videoId alone keeps `/ai/videos/:id/chat`. Focus is per turn. Send access on every
-turn: omitted/empty lists mean none, collectionIds is ignored when access is present,
-and the focus video remains answerable. Without access, absent/empty collectionIds
-means the public library. Answer permits synthesis, point permits links/moments,
-mention permits locked-match metadata only. Access is caller-asserted, not checked
-against viewer; derive it in trusted code. Each list allows up to 200 entries;
-optional offer strings are 1–64 characters. Strongest permission wins:
-answer > point > mention. Render widened scope as a library marker, pointers as
-links, and locked matches using the caller's offer UI (no prices or checkout URLs).
+videoId alone keeps `/ai/videos/:id/chat`. Focus/access are per-turn inputs, not
+conversation settings. With access omitted, absent/empty collectionIds means the
+whole public, published, ready library, subject to other legacy filters. The focus
+video must still pass video authorization. See the progressive focus/access examples
+above for trusted collection grants. Render widened scope as a library marker,
+pointers as links, and locked matches using your offer UI.
 
 ### SearchOptions
 
