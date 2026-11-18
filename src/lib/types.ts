@@ -384,6 +384,36 @@ export interface ChatAccess {
   mention?: { collectionId: string; offer?: string }[];
 }
 
+/** MCP uses the same collection permissions as AI chat. An empty object grants nothing. */
+export type McpAccess = ChatAccess;
+
+export interface McpViewerContext {
+  viewerId: string;
+  externalId: string | null;
+}
+
+export interface McpConnectOptions {
+  signingSecret: string;
+  viewer: (req: Request) => string | null | undefined | Promise<string | null | undefined>;
+  /** Context is supplied for signed POST checks, not browser GET requests. */
+  access: (memberId: string, context?: McpViewerContext) => McpAccess | null | undefined | Promise<McpAccess | null | undefined>;
+  signIn: string | ((req: Request) => Response | Promise<Response>);
+  denied?: (req: Request) => Response | Promise<Response>;
+  /** Receives sanitized errors. Return a custom GET response, or nothing for the fallback. */
+  onError?: (error: import('./mcp').McpAPIError, req: Request) => Response | void | Promise<Response | void>;
+  /** Trusted continuation host; defaults to https://mcp.boldvideo.io. */
+  mcpUrl?: string;
+}
+
+export interface McpConnection {
+  id: string;
+  status: string;
+  clientName: string | null;
+  clientRedirectHost: string | null;
+  connectedAt: string | null;
+  lastUsedAt: string | null;
+}
+
 export interface AIScope {
   answeredFrom: 'focus' | 'library' | 'none';
   widenedFrom: 'focus' | null;

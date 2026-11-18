@@ -215,6 +215,95 @@ console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 
 ---
 
+## Connect your members to Claude or ChatGPT
+
+Bold hosts an MCP server for your video library. Members sign in on your site;
+Bold handles OAuth and consent. Add one server route using your existing session
+and entitlement lookups:
+
+```typescript
+// app/connect/route.ts (Next.js, or any framework using Request/Response)
+import { bold } from '@/lib/bold'; // createClient(process.env.BOLD_API_KEY!)
+import { currentMember, accessFor } from '@/lib/members'; // Your own functions
+
+export const { GET, POST } = bold.mcp.connect({
+  signingSecret: process.env.BOLD_CONNECT_SIGNING_SECRET!,
+  viewer: async (req) => (await currentMember(req))?.id,
+  access: async (memberId) => accessFor(memberId),
+  signIn: '/login',
+});
+```
+
+1. A member opens `GET /connect?request=<id>` in their browser.
+2. `viewer(req)` reads your session; an anonymous member goes to `/login` with a local `return_to` path and query.
+3. `access(memberId)` supplies current collection grants; the SDK sends them to Bold and redirects to consent.
+4. About once an hour, Bold sends a signed `POST /connect` to check that member's access again.
+5. The SDK verifies the signature, calls `access` again, and returns updated grants or 404 to withdraw access.
+
+**Keep both secrets on your server.** `BOLD_API_KEY` must be a server-only key issued
+for this purpose, with verified AI access. `BOLD_CONNECT_SIGNING_SECRET` is copied
+from Bold. Configure your route's public URL with Bold; it must accept POST checks
+without requiring a browser session. Never expose either secret in client bundles.
+Apply a request-body size limit at your server or proxy; access checks contain only
+two IDs, and the SDK buffers the raw body to authenticate it.
+`connect()` throws in a browser. It also throws for a missing signing secret when
+`NODE_ENV=development`; elsewhere both handlers return 503 until configured.
+
+The member must already exist as a Bold viewer, with your member ID as their
+`externalId` (see [Viewers API](#viewers-api)). This helper does not create or sync
+viewers. The POST lookup uses `external_id` when non-null, otherwise `viewer_id`.
+If you need both IDs, accept `access(memberId, context)`; POST supplies
+`{ viewerId, externalId }`, with a missing external ID normalized to `null`.
+GET has no context argument. Callbacks can be synchronous or asynchronous.
+
+Return `McpAccess` (an alias of `ChatAccess`) from your trusted entitlement lookup:
+
+```typescript
+return {
+  answer: ['owned-collection-id'], // Bold may answer from these collections
+  point: ['preview-collection-id'], // Links only, without answers
+  mention: [{ collectionId: 'locked-collection-id', offer: 'membership' }],
+};
+```
+
+Omitted lists mean empty. Returning `{}` keeps the member connected with nothing
+to see. Return `null` or `undefined` to deny a new connection (403) or withdraw an
+existing one (404). Throw on temporary lookup failures: POST returns 500, so Bold
+can retain the last answer temporarily rather than revoke access. Derive grants
+from your own data, never browser input. Make `access` safe to call repeatedly:
+valid signed checks can be retried within the five-minute timestamp window.
+
+For custom GET responses, pass `signIn: (req) => Response`, `denied(req)`, or
+`onError(error, req)`. `onError` receives a sanitized `McpAPIError` with `status`
+and `code`; return a response or nothing to keep the plain-text fallback. POST
+does not call these page hooks. Do not log secrets, raw requests, or session data
+in callbacks. Your sign-in handler must validate `return_to` as a local path;
+custom sign-in callbacks own their redirects. All handler responses use `no-store`.
+
+Continuation redirects require HTTPS and the exact host (including any non-default
+port) of `mcpUrl`, default `https://mcp.boldvideo.io`; URL credentials are rejected.
+Set `mcpUrl` only from trusted server configuration. Invalid/duplicate request IDs
+return 400. Unknown, expired (after ten minutes), or used requests return 404;
+feature/key failures return 403 and invalid viewers/grants/collections return 422.
+Upstream server, transport, or continuation failures return 502; callback failures
+return 500. `viewer_not_found` explains that the member must exist via `bold.viewers`.
+
+Manage connections from an authorized server route, after checking the caller's
+permission to manage that member:
+
+```typescript
+const connections = await bold.mcp.connections.list(memberId);
+// [{ id, status, clientName, clientRedirectHost, connectedAt, lastUsedAt }]
+await bold.mcp.connections.revoke(memberId); // Ends all connections for this member
+```
+
+`list` returns `McpConnection[]` directly; `revoke` resolves without a value.
+Both throw sanitized `McpAPIError` on failure. `McpConnectOptions`, `McpAccess`,
+`McpViewerContext`, and `McpConnection` are exported types. Requires Node 20+ or
+an edge runtime with Web Crypto and web-standard `Request`/`Response`.
+
+---
+
 ## Notification Preferences
 
 Read or partially update a viewer's email and push notification channels with

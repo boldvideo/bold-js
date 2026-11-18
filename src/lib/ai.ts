@@ -119,7 +119,7 @@ function buildURL(baseURL: string, path: string): URL {
 }
 
 /** Encode the same per-turn scope in chat bodies and history query values. */
-function chatScopeParams(options: Pick<ChatOptions, 'focus' | 'access'>): Record<string, unknown> {
+export function chatScopeParams(options: Pick<ChatOptions, 'focus' | 'access'>): Record<string, unknown> {
   const params: Record<string, unknown> = {};
   if (options.focus) {
     params.focus = {
