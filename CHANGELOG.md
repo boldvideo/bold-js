@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 3.1.0
+
+### Minor Changes
+
+- 775100d: Add server-only MCP connection handlers for member sign-in and signed access checks, plus methods to list and revoke a member's connections. Includes Web Crypto signature verification, restricted continuation redirects, typed access grants, and framework-independent Request/Response handlers.
+
 ## 3.0.0
 
 ### Major Changes
