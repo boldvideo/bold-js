@@ -39,8 +39,8 @@ function plain(status: number, message: string): Response {
   return noStore(new Response(message, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }));
 }
 
-function redirect(url: URL): Response {
-  return noStore(new Response(null, { status: 302, headers: { Location: url.href } }));
+function redirect(location: string): Response {
+  return noStore(new Response(null, { status: 302, headers: { Location: location } }));
 }
 
 async function callCallback<Arg, Result>(callback: (arg: Arg) => Result | Promise<Result>, arg: Arg): Promise<Result> {
@@ -82,7 +82,6 @@ export function createMcp(config: AIConfig) {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...config.headers },
         body: body === undefined ? undefined : JSON.stringify(body),
         redirect: 'error',
-        cache: 'no-store',
       });
       if (!response.ok) {
         const data = await response.json().catch(() => null);
@@ -135,7 +134,9 @@ export function createMcp(config: AIConfig) {
             throw new McpAPIError(500, 'handler_error');
           }
           login.searchParams.set('return_to', url.pathname + url.search);
-          return redirect(login);
+          // A relative signIn stays relative: behind a proxy req.url can carry an internal origin.
+          const relative = /^\/(?![\\/])/.test(options.signIn);
+          return redirect(relative ? login.pathname + login.search + login.hash : login.href);
         }
         const access = await callCallback(options.access, memberId);
         if (access == null) {
@@ -151,7 +152,7 @@ export function createMcp(config: AIConfig) {
         } catch {
           throw new McpAPIError(502, 'invalid_continue_url');
         }
-        return redirect(next);
+        return redirect(next.href);
       } catch (error) {
         const safe = error instanceof McpAPIError ? new McpAPIError(error.status, error.code) : new McpAPIError(500, 'handler_error');
         const status = safe.code === 'handler_error' ? 500 : safe.status >= 400 && safe.status < 500 ? safe.status : 502;

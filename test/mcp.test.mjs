@@ -39,7 +39,8 @@ function api(t, response = () => Response.json({ continue_url: continuation })) 
     assert.equal(init.headers.Authorization, apiKey);
     assert.equal(init.headers['X-Custom'], 'value');
     assert.equal(init.redirect, 'error');
-    assert.equal(init.cache, 'no-store');
+    // Older Cloudflare Workers throw on any `cache` option.
+    assert.equal('cache' in init, false);
     return response(url, init);
   });
 }
@@ -86,7 +87,9 @@ test('GET sends anonymous members to sign-in with a local path and intact query'
   for (const memberId of [null, undefined, '']) {
     const req = new Request(`${endpoint}&next=https%3A%2F%2Fevil.example&lang=es`);
     const result = await handlers({ viewer: () => memberId, access: () => assert.fail(), signIn: '/login?language=es&return_to=old' }).GET(req);
-    const login = new URL(result.headers.get('Location'));
+    // Relative, so a proxy's internal origin in req.url never reaches the browser.
+    assert.match(result.headers.get('Location'), /^\/login\?/);
+    const login = new URL(result.headers.get('Location'), 'https://tenant.example');
     assert.equal(result.status, 302);
     assert.equal(result.headers.get('Cache-Control'), 'no-store');
     assert.equal(login.origin, 'https://tenant.example');
