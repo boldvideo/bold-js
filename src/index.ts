@@ -42,6 +42,10 @@ export type {
   AISource,
   ChatFocus,
   ChatAccess,
+  McpAccess,
+  McpViewerContext,
+  McpConnectOptions,
+  McpConnection,
   AIScope,
   AIPointer,
   AILockedMatch,
@@ -162,5 +166,6 @@ export { NotificationsAPIError } from "./lib/notifications";
 export { ConversationStartersAPIError } from "./lib/conversation-starters";
 export { CommunityAPIError } from "./lib/community";
 export { AIAPIError } from "./lib/ai";
+export { McpAPIError } from "./lib/mcp";
 export { VoiceAPIError } from "./lib/voice";
 export { appendVoiceCaption, splitVoiceTimestamps } from "./lib/voice-captions";

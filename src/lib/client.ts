@@ -9,6 +9,7 @@ import { DEFAULT_API_BASE_URL } from './constants'
 import { createNotifications } from './notifications'
 import { createSessionManagement } from './session-management'
 import { createConversationStarters } from './conversation-starters'
+import { createMcp } from './mcp'
 
 export type ClientOptions = {
   baseURL?: string
@@ -79,6 +80,7 @@ function createClient(apiKey: string, options: ClientOptions = {}) {
     sessionManagement: createSessionManagement(apiClient),
     conversationStarters: createConversationStarters(apiClient),
     ai: createAI(aiConfig),
+    mcp: createMcp(aiConfig),
     community: {
       search: searchCommunity(apiClient),
       mentions: {

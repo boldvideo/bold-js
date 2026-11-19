@@ -141,6 +141,66 @@ const { data: progress, meta } = await bold.viewers.listProgress(viewer.id, { co
 console.log(`Completed ${meta.completed} of ${meta.total} videos`);
 ```
 
+## MCP Connections (Server Only)
+
+`bold.mcp.connect(options: McpConnectOptions)` returns web-standard async GET and
+POST handlers for one tenant route. No framework adapters or browser component.
+
+```typescript
+export const { GET, POST } = bold.mcp.connect({
+  signingSecret: process.env.BOLD_CONNECT_SIGNING_SECRET!,
+  viewer: async req => (await currentMember(req))?.id,
+  access: async memberId => accessFor(memberId),
+  signIn: '/login',
+});
+```
+
+Use createClient with BOLD_API_KEY, a server-only key issued for MCP with verified
+AI access. Copy BOLD_CONNECT_SIGNING_SECRET from Bold. Configure the public route
+URL with Bold. Keep both secrets server-side. connect throws where window exists;
+a missing secret throws at construction in NODE_ENV=development, otherwise both
+handlers return 503. Existing createClient browser use is unaffected.
+
+GET validates request (nonempty, <=512 characters, no duplicate/dot-segment IDs),
+calls viewer(req), redirects anonymous members to signIn with local path+query in
+return_to, then calls access(memberId). Null/undefined denies with 403, without
+calling Bold. Otherwise PUT mcp/connections/:request receives {viewer,access}.
+On success redirects 302 to continue_url only if HTTPS with the exact mcpUrl host
+(default https://mcp.boldvideo.io), including port, and no URL credentials.
+Known API failures preserve 4xx with fixed messages; upstream server/transport or
+invalid continuation failures return 502. Callback errors return 500. Optional
+signIn(req), denied(req), onError(error,req) return custom GET Responses; onError
+may return void for the fallback. It receives sanitized McpAPIError status/code,
+never upstream messages/errors. POST does not use page hooks. All responses no-store.
+
+POST verifies Bold-Signature t=<decimal seconds>,v1=<64 lowercase hex> before
+parsing: Web Crypto HMAC-SHA256, key UTF-8 secret, message literal t + '.' + raw
+body bytes. Constant-time MAC verification and ±300-second freshness. Invalid
+signature ->401; authenticated invalid JSON/identity ->400. No body normalization
+before verification. Valid checks can repeat within the window; access must be
+safe to call repeatedly. No in-memory replay cache.
+Limit request-body size at the server/proxy; the SDK buffers raw bytes to verify.
+
+POST accepts {viewer_id,external_id?}; memberId = external_id ?? viewer_id.
+access(memberId, {viewerId,externalId}) gets both IDs; absent external_id becomes
+null. GET supplies no second argument. Access null/undefined ->404; throw ->500
+(temporary failure, never a revocation); grants ->200 {access: snake-case grants}.
+McpAccess aliases ChatAccess: answer?: string[], point?: string[],
+mention?: {collectionId:string,offer?:string}[]. Omitted lists are empty; {} means
+connected with no grants, not denial. Mention wire keys are collection_id/offer.
+Sync and async callbacks supported. Derive permissions from trusted server data.
+Viewers must already exist with the member's external ID; no automatic sync.
+viewer_not_found explains using bold.viewers to create/sync the member first.
+Custom login code must validate return_to as local; custom response hooks own
+their redirects and must not leak secrets or log raw requests.
+
+bold.mcp.connections.list(memberId): Promise<McpConnection[]> unwraps GET
+mcp/connections?viewer=<id> and camelizes fields. revoke(memberId): Promise<void>
+DELETEs the same URL, ending all the member's connections (204). Both server-only;
+authorize the acting member before calling. McpConnection fields: id/status strings,
+clientName/clientRedirectHost/connectedAt/lastUsedAt nullable strings. Exported:
+McpConnectOptions, McpViewerContext, McpAccess, McpConnection, McpAPIError.
+
 ## Notification Preferences
 
 Use the tenant API-key client to read or partially update a viewer's
