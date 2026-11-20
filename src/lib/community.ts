@@ -3,6 +3,7 @@ import { camelizeKeys } from "../util/camelize";
 import type {
   Post,
   ReactionResponse,
+  ReactOptions,
   ListPostsOptions,
   CreatePostData,
   UpdatePostData,
@@ -252,16 +253,17 @@ export function deletePost(client: ApiClient) {
 }
 
 /**
- * Toggle reaction on a post (like/unlike)
+ * Set the viewer's reaction on a post. A viewer holds at most one.
+ * Without `opts.type` this toggles a like.
  */
 export function reactToPost(client: ApiClient) {
-  return async (viewerId: string, id: string) => {
+  return async (viewerId: string, id: string, opts: ReactOptions = {}) => {
     requireViewerId(viewerId);
     if (!id) throw new Error("Post ID is required");
     return post<ReactionResponse>(
       client,
       `community/posts/${id}/react`,
-      undefined,
+      opts.type ? { type: opts.type } : undefined,
       viewerId
     );
   };
@@ -314,16 +316,17 @@ export function deleteComment(client: ApiClient) {
 }
 
 /**
- * Toggle reaction on a comment (like/unlike)
+ * Set the viewer's reaction on a comment. A viewer holds at most one.
+ * Without `opts.type` this toggles a like.
  */
 export function reactToComment(client: ApiClient) {
-  return async (viewerId: string, id: string) => {
+  return async (viewerId: string, id: string, opts: ReactOptions = {}) => {
     requireViewerId(viewerId);
     if (!id) throw new Error("Comment ID is required");
     return post<ReactionResponse>(
       client,
       `community/comments/${id}/react`,
-      undefined,
+      opts.type ? { type: opts.type } : undefined,
       viewerId
     );
   };
