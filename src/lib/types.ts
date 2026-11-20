@@ -1077,14 +1077,34 @@ export type PostAuthor = UserSummary & {
 };
 
 /**
+ * The kinds of reaction a viewer can leave. These are names, not emoji:
+ * your app decides how to draw each one.
+ */
+export type ReactionType =
+  | "like"
+  | "love"
+  | "thanks"
+  | "insightful"
+  | "celebrate"
+  | "funny";
+
+/**
+ * Reactions per type. Types with none are omitted; the values sum to `count`.
+ */
+export type ReactionCounts = Partial<Record<ReactionType, number>>;
+
+/**
  * Reaction summary with users who reacted
  */
 export type ReactionSummary = {
   count: number;
-  /** Users who reacted (capped to 10 from API) */
-  reactedBy: UserSummary[];
+  counts: ReactionCounts;
+  /** Users who reacted (capped to 10 from API), each with the reaction they left */
+  reactedBy: (UserSummary & { reaction: ReactionType })[];
   /** Present when viewer context exists */
   viewerHasReacted?: boolean;
+  /** The viewer's reaction, null if none. Present when viewer context exists */
+  viewerReaction?: ReactionType | null;
 };
 
 /**
@@ -1093,8 +1113,11 @@ export type ReactionSummary = {
  */
 export type CommentReactionSummary = {
   count: number;
+  counts: ReactionCounts;
   /** Present when viewer context (X-Viewer-ID) exists */
   viewerHasReacted?: boolean;
+  /** The viewer's reaction, null if none. Present when viewer context exists */
+  viewerReaction?: ReactionType | null;
 };
 
 /**
@@ -1201,7 +1224,21 @@ export type Post = {
  */
 export type ReactionResponse = {
   reacted: boolean;
+  /** The viewer's reaction after the call, null once removed */
+  reaction: ReactionType | null;
   reactionsCount: number;
+  counts: ReactionCounts;
+};
+
+/**
+ * Options for react calls
+ */
+export type ReactOptions = {
+  /**
+   * The reaction to leave. Omit it to toggle a like. Sending the type the
+   * viewer already holds removes it; sending a different one changes it.
+   */
+  type?: ReactionType;
 };
 
 export type MentionSkippedReport = {

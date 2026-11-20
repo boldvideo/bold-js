@@ -44,6 +44,12 @@ async function checkResponses(): Promise<void> {
   checkComment(created.data);
   checkComment(updated.data);
   const count: number = created.data.reactions.count;
+  const loves: number | undefined = created.data.reactions.counts.love;
+  await bold.community.posts.react('viewer', 'post');
+  const reacted = await bold.community.comments.react('viewer', 'comment', { type: 'thanks' });
+  const mine: 'like' | 'love' | 'thanks' | 'insightful' | 'celebrate' | 'funny' | null = reacted.reaction;
+  // @ts-expect-error Unknown reaction type.
+  bold.community.posts.react('viewer', 'post', { type: 'angry' });
   // @ts-expect-error Legacy flat reaction counts are not in API responses.
   created.data.reactionsCount;
   const post = await bold.community.posts.get('post');

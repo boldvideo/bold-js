@@ -518,9 +518,14 @@ const { data: pinned } = await admin.community.posts.setPinned('post-id', true);
 console.log(pinned.pinned, pinned.pinnedAt); // re-pinning keeps the original pinnedAt
 await admin.community.posts.setPinned('post-id', false);
 
-// React to a post (toggle like/unlike)
-const reaction = await bold.community.posts.react('viewer-uuid', 'post-id');
-console.log(reaction.reacted, reaction.reactionsCount);
+// React to a post. A viewer holds one reaction per post or comment.
+// Types: like, love, thanks, insightful, celebrate, funny.
+// These are names, not emoji; your app decides how to draw each one.
+const reaction = await bold.community.posts.react('viewer-uuid', 'post-id', { type: 'love' });
+console.log(reaction.reacted, reaction.reaction, reaction.reactionsCount, reaction.counts);
+// - the same type again removes it; a different type changes it
+// - without a type, the call toggles a like
+await bold.community.posts.react('viewer-uuid', 'post-id');
 ```
 
 ### Comments
@@ -543,13 +548,17 @@ const { data: reply } = await bold.community.comments.create(
 // Delete a comment (owner or admin only)
 await bold.community.comments.delete('viewer-uuid', 'comment-id');
 
-// React to a comment (toggle)
-const reaction = await bold.community.comments.react('viewer-uuid', 'comment-id');
+// React to a comment (same options as posts.react)
+const reaction = await bold.community.comments.react('viewer-uuid', 'comment-id', { type: 'thanks' });
 
-// Read nested reaction state on comments/replies (viewerId enables viewerHasReacted)
+// Read nested reaction state on comments/replies
+// (viewerId enables viewerHasReacted and viewerReaction)
 const { data: post } = await bold.community.posts.get('post-id', 'viewer-uuid');
+console.log(post.reactions.counts);        // e.g. { like: 3, love: 2 }; sums to reactions.count
+console.log(post.reactions.viewerReaction); // 'love' | null
+console.log(post.reactions.reactedBy[0]?.reaction); // what that viewer left
 for (const thread of post.comments.items ?? []) {
-  console.log(thread.createdAt, thread.reactions.count, thread.reactions.viewerHasReacted);
+  console.log(thread.createdAt, thread.reactions.count, thread.reactions.counts, thread.reactions.viewerReaction);
 }
 ```
 
@@ -1261,6 +1270,9 @@ import type {
   PostAuthor,
   Comment,
   ReactionResponse,
+  ReactionType,
+  ReactionCounts,
+  ReactOptions,
   Mention,
   MentionSkippedReport,
   CommunityPostCreateResponse,
