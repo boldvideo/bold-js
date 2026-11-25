@@ -47,9 +47,11 @@ async function checkResponses(): Promise<void> {
   const loves: number | undefined = created.data.reactions.counts.love;
   await bold.community.posts.react('viewer', 'post');
   const reacted = await bold.community.comments.react('viewer', 'comment', { type: 'thanks' });
-  const mine: 'like' | 'love' | 'thanks' | 'insightful' | 'celebrate' | 'funny' | null = reacted.reaction;
-  // @ts-expect-error Unknown reaction type.
-  bold.community.posts.react('viewer', 'post', { type: 'angry' });
+  const mine: string | null = reacted.reaction;
+  // Any name works: Bold keeps no list of reaction types.
+  bold.community.posts.react('viewer', 'post', { type: 'mind_blown' });
+  // @ts-expect-error A reaction type is a name, not a number.
+  bold.community.posts.react('viewer', 'post', { type: 7 });
   // @ts-expect-error Legacy flat reaction counts are not in API responses.
   created.data.reactionsCount;
   const post = await bold.community.posts.get('post');

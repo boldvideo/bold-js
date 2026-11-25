@@ -519,8 +519,8 @@ console.log(pinned.pinned, pinned.pinnedAt); // re-pinning keeps the original pi
 await admin.community.posts.setPinned('post-id', false);
 
 // React to a post. A viewer holds one reaction per post or comment.
-// Types: like, love, thanks, insightful, celebrate, funny.
-// These are names, not emoji; your app decides how to draw each one.
+// The type is any name your app chooses (lowercase, e.g. 'love', 'thanks').
+// Bold stores the name; your app decides which names it offers and how to draw them.
 const reaction = await bold.community.posts.react('viewer-uuid', 'post-id', { type: 'love' });
 console.log(reaction.reacted, reaction.reaction, reaction.reactionsCount, reaction.counts);
 // - the same type again removes it; a different type changes it

@@ -1077,21 +1077,17 @@ export type PostAuthor = UserSummary & {
 };
 
 /**
- * The kinds of reaction a viewer can leave. These are names, not emoji:
- * your app decides how to draw each one.
+ * The name of a reaction, such as `like`, `love` or `thanks`. Bold keeps no
+ * list of them: your app chooses the names it offers and how to draw each one.
+ * A name is a lowercase letter followed by up to 31 lowercase letters, digits
+ * or underscores. `like` is what a reaction without a type is.
  */
-export type ReactionType =
-  | "like"
-  | "love"
-  | "thanks"
-  | "insightful"
-  | "celebrate"
-  | "funny";
+export type ReactionType = string;
 
 /**
  * Reactions per type. Types with none are omitted; the values sum to `count`.
  */
-export type ReactionCounts = Partial<Record<ReactionType, number>>;
+export type ReactionCounts = Record<ReactionType, number>;
 
 /**
  * Reaction summary with users who reacted
