@@ -574,6 +574,20 @@ test("reply-preserving deletion is opt-in and existing delete requests stay unch
   assert.equal(requests[1].viewerId, "viewer-1");
 });
 
+test("react sends a type only when asked, so a bare call is still a like toggle", async () => {
+  const community = createCommunityClient();
+  await community.posts.react("viewer-1", "post-1");
+  await community.posts.react("viewer-1", "post-1", { type: "love" });
+  await community.comments.react("viewer-1", "comment-1", { type: "thanks" });
+  assert.equal(requests[0].method, "POST");
+  assert.equal(requests[0].url, "/api/v1/community/posts/post-1/react");
+  assert.equal(requests[0].body, null);
+  assert.deepEqual(requests[1].body, { type: "love" });
+  assert.equal(requests[2].url, "/api/v1/community/comments/comment-1/react");
+  assert.deepEqual(requests[2].body, { type: "thanks" });
+  assert.equal(requests[2].viewerId, "viewer-1");
+});
+
 function createCommunityClient(options = {}) {
   return createClient("tenant-key", { baseURL, ...options }).community;
 }
