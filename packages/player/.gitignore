@@ -1,0 +1,6 @@
+node_modules
+dist
+*.tgz
+proof/out
+proof/*.log
+proof/react/harness.*

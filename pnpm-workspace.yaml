@@ -1,0 +1,4 @@
+packages:
+  # The SDK is the repository root; every other package lives in packages/.
+  - "."
+  - "packages/*"

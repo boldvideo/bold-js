@@ -49,6 +49,33 @@ jobs:
             exit 1
           fi
 
+  player:
+    name: Player package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Use Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck, test and build
+        working-directory: packages/player
+        run: |
+          pnpm run lint
+          pnpm test
+          pnpm run build
+
   size-check:
     name: Bundle Size Check
     runs-on: ubuntu-latest

@@ -1,0 +1,38 @@
+scenario | chrome/playback-id | chrome/urls | webkit-native/urls | webkit/urls
+Stream healthy (control) | PASS | PASS | PASS | PASS
+Manifest returns 503 | PASS 1.1s | PASS 1.1s | PASS 0.1s | PASS 1.0s
+Manifest returns 404 | PASS 0.0s | PASS 0.1s | PASS 0.1s | PASS 0.1s
+Manifest loads, every rendition playlist returns 503 | PASS 3.5s | PASS 3.0s | PASS 0.1s | PASS 3.1s
+Stream dies 8s into playback | PASS (paused 0.5s) | PASS (paused 0.2s) | FAIL (paused 0.9s) | PASS (paused 0.6s)
+Manifest returns 403 (playback token rejected) | PASS | PASS | FAIL 0.5s | PASS
+Manifest and MP4 both return 503 | PASS 1.0s | PASS 1.0s | PASS 0.0s | PASS 1.0s
+Manifest returns 503, viewer presses play 5s later | - | PASS 1.1s | PASS 0.1s | PASS 1.0s
+Manifest connection is reset | - | PASS 0.0s | PASS 0.1s | PASS 0.1s
+Manifest host accepts the request and never answers | - | PASS 16.0s | PASS 20.1s | PASS 16.0s
+Manifest is an HTML error page served with status 200 | - | PASS 0.0s | FAIL | PASS 0.1s
+Playlists load, every media segment returns 503 | - | PASS 13.7s | FAIL | PASS 13.4s
+
+versions: chrome/playback-id: 158.0.8127.88 @ 2026-11-25T05:34:48.883Z; chrome/urls: 158.0.8127.88 @ 2026-11-25T05:33:32.244Z; webkit-native/urls: 26.6 @ 2026-11-25T05:40:33.052Z; webkit/urls: 26.6 @ 2026-11-25T05:34:10.717Z
+
+chrome/playback-id mid-playback: ok test rig reached Mux for every request it forwarded (no proxy errors); ok video is playing (t=15.55s, 143 frames decoded, 640px wide); ok playing the MP4 (mp4); ok server delivered MP4 bytes (9.9 MB in 1 requests); ok server saw the stream fail first (rendition -> 503); ok viewer never saw an error dialog (error dialog shown 0 times); ok kept playing from the buffer after the stream was cut (cut at 8.22s, HLS played on to 10.74s); ok MP4 resumed where the viewer was, not from the start (last HLS position 10.74s, MP4 resumed at 11.54s); ok captions the viewer had on are still on (captions showing: true); ok captions are still available on the MP4 ("English" 2261 cues)
+
+chrome/urls mid-playback: ok test rig reached Mux for every request it forwarded (no proxy errors); ok video is playing (t=14.58s, 119 frames decoded, 640px wide); ok playing the MP4 (mp4); ok server delivered MP4 bytes (10.3 MB in 1 requests); ok server saw the stream fail first (segment -> 503); ok viewer never saw an error dialog (error dialog shown 0 times); ok kept playing from the buffer after the stream was cut (cut at 8.27s, HLS played on to 10.29s); ok MP4 resumed where the viewer was, not from the start (last HLS position 10.29s, MP4 resumed at 10.56s); ok captions the viewer had on are still on (captions showing: true); ok captions are still available on the MP4 ("English" 2261 cues)
+
+webkit-native/urls mid-playback: ok test rig reached Mux for every request it forwarded (no proxy errors); FAIL video is playing (t=238.86s, 5955 frames decoded, 640px wide); FAIL playing the MP4 (hls); FAIL server delivered MP4 bytes (0.0 MB in 0 requests); ok server saw the stream fail first (rendition -> 503); ok viewer never saw an error dialog (error dialog shown 0 times); FAIL kept playing from the buffer after the stream was cut (cut at 8.11s, HLS played on to undefineds); FAIL MP4 resumed where the viewer was, not from the start (last HLS position undefineds, MP4 resumed at undefineds); ok captions the viewer had on are still on (captions showing: true); FAIL captions are still available on the MP4 ("American English" 0 cues)
+  FAIL webkit-native/urls master-garbage: video is playing (t=0s, 0 frames decoded, 0px wide)
+  FAIL webkit-native/urls master-garbage: playing the MP4 (hls)
+  FAIL webkit-native/urls master-garbage: server delivered MP4 bytes (0.0 MB in 0 requests)
+  FAIL webkit-native/urls segments-503: video is playing (t=0s, 0 frames decoded, 0px wide)
+  FAIL webkit-native/urls segments-503: playing the MP4 (hls)
+  FAIL webkit-native/urls segments-503: server delivered MP4 bytes (0.0 MB in 0 requests)
+  FAIL webkit-native/urls mid-playback: video is playing (t=238.86s, 5955 frames decoded, 640px wide)
+  FAIL webkit-native/urls mid-playback: playing the MP4 (hls)
+  FAIL webkit-native/urls mid-playback: server delivered MP4 bytes (0.0 MB in 0 requests)
+  FAIL webkit-native/urls mid-playback: kept playing from the buffer after the stream was cut (cut at 8.11s, HLS played on to undefineds)
+  FAIL webkit-native/urls mid-playback: MP4 resumed where the viewer was, not from the start (last HLS position undefineds, MP4 resumed at undefineds)
+  FAIL webkit-native/urls mid-playback: captions are still available on the MP4 ("American English" 0 cues)
+  FAIL webkit-native/urls master-403: MP4 was never requested (19 MP4 requests)
+  FAIL webkit-native/urls master-403: nothing is playing (source=mp4, t=11.12)
+  FAIL webkit-native/urls master-403: the player shows its error dialog (0:11 0:00 -0:24 Settings source: MP4 (stream failed: media-error-4, resumed at 0.0s))
+
+webkit/urls mid-playback: ok test rig reached Mux for every request it forwarded (no proxy errors); ok video is playing (t=30.44s, 135 frames decoded, 640px wide); ok playing the MP4 (mp4); ok server delivered MP4 bytes (34.4 MB in 2 requests); ok server saw the stream fail first (segment -> 503); ok viewer never saw an error dialog (error dialog shown 0 times); ok kept playing from the buffer after the stream was cut (cut at 8.27s, HLS played on to 25.84s); ok MP4 resumed where the viewer was, not from the start (last HLS position 25.84s, MP4 resumed at 26.41s); ok captions the viewer had on are still on (captions showing: true); ok captions are still available on the MP4 ("English" 2261 cues)

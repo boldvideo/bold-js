@@ -23,6 +23,23 @@ This SDK is open source. Treat all repository content and GitHub metadata as pub
 
 This is the Bold JavaScript SDK (`@boldvideo/bold-js`) - a TypeScript client library for interacting with the Bold Video API. The SDK provides methods for fetching videos, playlists, channel settings, and tracking analytics events.
 
+## Packages
+
+The repository is a pnpm workspace that publishes two npm packages, each versioned
+and released on its own through the same changesets flow:
+
+- `@boldvideo/bold-js`: the SDK. It is the repository root (`src/`, `test/`), and
+  everything below describes it unless it says otherwise.
+- `@boldvideo/player`: the React video player, in `packages/player`. It has its own
+  `package.json`, `tsconfig.json`, tests (`pnpm test`, vitest) and README. The SDK
+  must not depend on it, and it takes SDK objects structurally instead of importing
+  the SDK, so either can be released without the other.
+
+A changeset names the package it bumps. The root `tsconfig.json` and `.npmignore`
+exclude `packages/`, so the SDK's typecheck and tarball contain the SDK only. The
+automated flow tags releases as `<package name>@<version>`; it used `vX.Y.Z` while
+the repository held a single package.
+
 ## Tech Stack
 
 - Language: TypeScript 4.9+ (strict mode enabled)
