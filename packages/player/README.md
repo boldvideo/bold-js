@@ -55,22 +55,48 @@ That is a Next.js server component. The player is a client component, so the pag
 
 ## Analytics
 
-Pass a bold-js client as `bold` and the player reports load, play, pause and progress to Bold. The client has to exist in the browser, so in Next.js it goes in a client component:
+Pass an SDK client as `bold` and the player reports load, play, pause and progress to Bold.
+
+The player runs in the browser, and your API key must not. So the browser's client sends events to a route on your own site, and that route passes them to Bold with the key. In Next.js:
+
+```ts
+// app/api/bold/event/route.ts
+export async function POST(request: Request) {
+  // Only accept events from pages on this site.
+  const origin = request.headers.get("origin");
+  if (origin && new URL(origin).host !== request.headers.get("host")) {
+    return new Response(null, { status: 403 });
+  }
+
+  await fetch("https://app.boldvideo.io/api/v1/event", {
+    method: "POST",
+    headers: { Authorization: process.env.BOLD_API_KEY!, "Content-Type": "application/json" },
+    body: await request.text(),
+  }).catch(() => {});
+
+  return new Response(null, { status: 204 });
+}
+```
 
 ```tsx
+// components/player.tsx
 "use client";
 
 import { createClient, type Video } from "@boldvideo/bold-js";
 import { BoldPlayer } from "@boldvideo/player";
 
-const bold = createClient(process.env.NEXT_PUBLIC_BOLD_API_KEY!);
+// "browser" is not a Bold credential. Events go to the route above,
+// which adds the real key on the server.
+const bold = createClient("browser", { baseURL: "/api/bold" });
 
 export function Player({ video }: { video: Video }) {
   return <BoldPlayer video={video} bold={bold} />;
 }
 ```
 
-`bold` can be any object with a `trackEvent(video, event)` method, so you can route the same events through your own endpoint instead.
+Do not create the client in the browser with your real key, for example through a `NEXT_PUBLIC_` variable: anything in the browser bundle can be read by every visitor.
+
+`bold` can be any object with a `trackEvent(video, event)` method, if you would rather send the events yourself.
 
 ## Open at the minute
 
