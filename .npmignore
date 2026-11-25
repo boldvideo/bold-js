@@ -9,6 +9,10 @@ thoughts
 src
 tsconfig.json
 
+# Other packages in this repository (published separately)
+packages
+pnpm-workspace.yaml
+
 # Development configs
 .changeset
 .github

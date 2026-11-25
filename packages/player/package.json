@@ -1,0 +1,72 @@
+{
+  "name": "@boldvideo/player",
+  "version": "0.1.0",
+  "description": "The Bold video player for React: Video.js 10, with analytics, chapters, captions and an automatic MP4 fallback.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/boldvideo/bold-js.git",
+    "directory": "packages/player"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && node scripts/build-css.mjs",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@videojs/hlsjs-video": "~10.7.0",
+    "@videojs/mux-video": "~10.7.0",
+    "@videojs/react": "~10.7.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "jsdom": "^27.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "keywords": [
+    "bold",
+    "video",
+    "player",
+    "react",
+    "videojs",
+    "hls",
+    "mux"
+  ],
+  "homepage": "https://github.com/boldvideo/bold-js/tree/main/packages/player#readme"
+}

@@ -1,0 +1,36 @@
+/* Default size: fills its container's width at 16:9. Override with className or style. */
+.bold-player {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+/* The logo of a branded player: top right (the title, when shown, is top left), shown and hidden with the controls. */
+.bold-player-brand {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 1;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.45));
+}
+.bold-player[data-controls-visible] .bold-player-brand {
+  opacity: 0.92;
+}
+.bold-player-brand svg {
+  display: block;
+  height: 14px;
+  width: auto;
+}
+.bold-player-brand img {
+  display: block;
+  /* A fixed height: an SVG logo without its own dimensions would collapse under max-height alone. */
+  height: 26px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+  object-position: right center;
+}
