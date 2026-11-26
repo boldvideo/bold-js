@@ -449,6 +449,7 @@ to interrupt a pending read.
 - `bold.ai.search(options: SearchOptions)` - Semantic search with AI summary
 - `bold.ai.recommendations(options: RecommendationsOptions)` - Topic-based video recommendations
 - `bold.ai.getConversation(id: string, options?: GetConversationOptions)` - Retrieve history; optional viewer/access/focus for bound conversations, one-argument open-mode call unchanged
+- `bold.ai.listConversations(options: ListConversationsOptions): Promise<ConversationList>` - List a viewer's conversations, newest first, within the credential's visibility; server-only key, not a verified AI access key
 - `bold.ai.rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>` - Rate an assistant message
 - `bold.ai.clearRating(messageId: string): Promise<void>` - Remove an assistant message's rating
 - `bold.ai.voice.createSession(options: VoiceSessionOptions): VoiceSession` - Synchronous, single-use browser voice handle
@@ -807,6 +808,55 @@ interface GetConversationOptions {
 
 Fields are optional for open-mode compatibility; gated/bound history requires the
 bound viewer/access/focus, even after gated mode is disabled. Omission is not a grant.
+
+### ListConversationsOptions and ConversationList
+
+```typescript
+interface ListConversationsOptions {
+  viewer: string; // Required viewer UUID or external ID
+  limit?: number; // Server default 20, clamped to 1..100
+  offset?: number; // Server default 0, minimum 0
+}
+interface ConversationVideo {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  url: string | null;
+}
+interface ConversationSummary {
+  conversationId: string;
+  scope: 'library' | 'video' | null;
+  title: string | null;
+  preview: string | null;
+  status: string;
+  messageCount: number;
+  video: ConversationVideo | null;
+  createdAt: string;
+  updatedAt: string;
+  channel: NonNullable<ChatOptions['channel']>;
+  client: string | null;
+}
+interface ConversationList {
+  conversations: ConversationSummary[];
+  pagination: { limit: number; offset: number; hasMore: boolean };
+}
+
+// Server only. Derive viewer from your authenticated session.
+const serverBold = createClient(process.env.BOLD_API_KEY!);
+const page = await serverBold.ai.listConversations({ viewer, limit: 20, offset: 0 });
+const nextOffset = page.pagination.hasMore
+  ? page.pagination.offset + page.pagination.limit
+  : null;
+```
+
+All four types are exported. GET /ai/conversations sends viewer, limit and offset
+as query values; omitted pagination stays omitted. Responses are camelized, not
+unwrapped or reshaped. Preserve server pagination values when fetching the next
+page. Only video-scoped summaries have a video. Never expose the key in browser
+code or trust a caller-supplied viewer without authenticating it on your server.
+HTTP failures throw AIAPIError: 400 viewer_required, 404 viewer_not_found,
+403 feature_disabled or 403 verified_ai_route_unsupported. Verified AI access keys
+cannot use this route.
 
 ### SearchOptions
 

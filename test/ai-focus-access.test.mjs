@@ -77,7 +77,7 @@ for (const declaration of ['index.d.ts', 'index.d.cts']) {
   test(`legacy answers, captured contracts and focus/access examples type-check against ${declaration}`, async () => {
     const directory = mkdtempSync(join(tmpdir(), 'bold-focus-'));
     try {
-      const files = ['ai-answer-compat-types.ts', 'ai-focus-types.ts'];
+      const files = ['ai-answer-compat-types.ts', 'ai-focus-types.ts', 'ai-conversations-types.ts'];
       for (const file of files) {
         const fixture = readFileSync(new URL(file, import.meta.url), 'utf8');
         writeFileSync(join(directory, file), fixture.replace("'../src/index'", "'@boldvideo/bold-js'"));

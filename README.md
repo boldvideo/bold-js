@@ -1109,6 +1109,36 @@ SDK shapes as chat. The SDK sends `viewer` as a query value and `access`/`focus`
 URL-encoded JSON in the GET query, preserving explicit `access: {}`; credentials
 stay in the client's authentication headers, not the query.
 
+### List a Viewer's Conversations
+
+Call this on your server, keeping the API key out of browser code. Derive `viewer`
+from your authenticated session, not an untrusted request parameter.
+
+```typescript
+// Server only. Derive viewer from your authenticated session.
+const serverBold = createClient(process.env.BOLD_API_KEY!);
+const page = await serverBold.ai.listConversations({ viewer, limit: 20, offset: 0 });
+for (const conversation of page.conversations) {
+  console.log(conversation.conversationId, conversation.title, conversation.preview);
+}
+const nextOffset = page.pagination.hasMore
+  ? page.pagination.offset + page.pagination.limit
+  : null;
+```
+
+Returns `ConversationList`: `{ conversations: ConversationSummary[], pagination: { limit, offset, hasMore } }`.
+Items include library and video conversations visible to the credential, newest
+first. Keys are camelized, including `messageCount` and nested `video.thumbnailUrl`;
+nullable fields and the server's pagination values are preserved without reshaping.
+`video` is only populated for video-scoped conversations. `viewer` accepts a UUID
+or external ID. The server defaults `limit` to 20 (clamped to 1–100) and `offset`
+to 0 (minimum 0).
+
+HTTP failures throw `AIAPIError`, as with `getConversation`: missing viewer is
+400 (`viewer_required`), unknown viewer is 404 (`viewer_not_found`), and disabled
+AI is 403 (`feature_disabled`). Keys requiring verified AI access are not supported
+on this route and return 403 (`verified_ai_route_unsupported`).
+
 ### Rate an AI Answer
 
 Use the optional `messageId` from a non-streaming `AIResponse` or a streaming
@@ -1262,6 +1292,10 @@ import type {
   Recommendation,
   Conversation,
   GetConversationOptions,
+  ListConversationsOptions,
+  ConversationList,
+  ConversationSummary,
+  ConversationVideo,
   ConversationMessage,
   Source,
   Viewer,
