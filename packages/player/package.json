@@ -1,6 +1,6 @@
 {
   "name": "@boldvideo/player",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The Bold video player for React: Video.js 10, with analytics, chapters, captions and an automatic MP4 fallback.",
   "license": "MIT",
   "type": "module",

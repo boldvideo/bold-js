@@ -1,5 +1,12 @@
 # @boldvideo/bold-js
 
+## 3.3.0
+
+### Minor Changes
+
+- 31503da: Add AbortSignal support to AI chat, ask, coach, and search in streaming and JSON modes. Aborting preserves the native AbortError. Exiting stream iteration early now cancels the response body and closes the upstream request.
+- 8920e57: Add `bold.ai.listConversations({ viewer, limit, offset })` to list a viewer's AI conversations with typed summaries and pagination. Responses preserve the API's values with camelCase keys.
+
 ## 3.2.0
 
 ### Minor Changes

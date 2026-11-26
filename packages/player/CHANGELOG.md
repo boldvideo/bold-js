@@ -1,5 +1,11 @@
 # @boldvideo/player
 
+## 0.1.1
+
+### Patch Changes
+
+- 6156e7e: Correct the analytics example in the README. It created the SDK client in the browser with the account's API key; it now sends events through a route on your own site, so the key stays on the server. No code changes.
+
 ## 0.1.0
 
 First release.
