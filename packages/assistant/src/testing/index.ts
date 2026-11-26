@@ -62,7 +62,7 @@ for (let video = 0; video < 4; video++) {
   for (let sentence = 0; sentence < 64; sentence++) {
     const id = `c_${video}_${sentence}`;
     citationMap[id] = {
-      id, videoId: `video-${video + 1}`, title: `A lesson in paper craft ${video + 1}`,
+      id, videoId: `video-${video + 1}`, title: `Paper craft video ${video + 1}`,
       text: `Practice fold ${sentence + 1} on sheet ${video + 1} before joining the edges.`,
       timestamp: 20 + sentence * 11, timestampEnd: 24 + sentence * 11,
       playbackId: `synthetic-playback-${video + 1}`, sourceType: "transcript",
@@ -71,7 +71,7 @@ for (let video = 0; video < 4; video++) {
 }
 const sources = Array.from({ length: 4 }, (_, video) => ({
   ...citationMap[`c_${video}_0`], id: `chunk-${video + 1}`, timestamp: 15, timestampEnd: 80,
-  text: `This invented lesson describes measuring, folding and joining paper for model ${video + 1}.`,
+  text: `This invented video describes measuring, folding and joining paper for model ${video + 1}.`,
 }));
 const sentences = [
   "Measure the first edge before folding [c_0_0]. ",
@@ -90,7 +90,7 @@ const sentences = [
 export const syntheticAnswer: readonly AssistantEvent[] = [
   { type: "message_start", conversationId: "synthetic-conversation" },
   { type: "conversation_created", conversationId: "synthetic-conversation" },
-  { type: "progress", stage: "searching", message: "Searching the lessons", scope: "library" },
+  { type: "progress", stage: "searching", message: "Searching the videos", scope: "library" },
   { type: "sources", sources },
   { type: "citation_map", citationMap },
   ...sentences.map(delta => ({ type: "text_delta" as const, delta })),

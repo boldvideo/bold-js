@@ -5,9 +5,11 @@ import type {
 
 export interface ProgressStep {
   stage: string;
-  label: string;
   state: "active" | "done";
   scope?: "focus" | "library";
+  /** Server wording, unchanged. Locally inferred steps have no message. */
+  message?: string;
+  found?: { passages: number; videos: number };
 }
 export interface ThreadMessage {
   id: string;
@@ -48,8 +50,7 @@ export const emptyThread: Thread = { messages: [], isStreaming: false };
 function finishSteps(steps: ProgressStep[]): ProgressStep[] {
   return steps.flatMap((step): ProgressStep[] => {
     if (step.state === "done") return [step];
-    if (step.stage === "reading") return [{ ...step, state: "done", label: "Read this lesson" }];
-    if (step.stage === "searching") return [{ ...step, state: "done", label: "Searched your library" }];
+    if (step.stage === "reading" || step.stage === "searching") return [{ ...step, state: "done" }];
     return [];
   });
 }
@@ -59,7 +60,7 @@ function withScope(message: ThreadMessage, scope: AnswerScope): ThreadMessage {
     ...message, scope,
     steps: scope.widenedFrom === "focus"
       ? message.steps.map(step => step.stage === "reading"
-        ? { ...step, state: "done", label: "Not in this lesson" } : step)
+        ? { ...step, state: "done" } : step)
       : message.steps,
   };
 }
@@ -97,8 +98,8 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
           focus: request.focus, status: "complete" },
         { ...base, id: `assistant-${request.requestId}`, role: "assistant", content: "", status: "loading",
           steps: [request.focus
-            ? { stage: "reading", label: "Reading this lesson…", state: "active", scope: "focus" }
-            : { stage: "planning", label: "Thinking about your question…", state: "active", scope: "library" }] },
+            ? { stage: "reading", state: "active", scope: "focus" }
+            : { stage: "planning", state: "active", scope: "library" }] },
       ],
     };
   }
@@ -119,11 +120,10 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
       return conversationId || !event.conversationId ? state : { ...state, conversationId: event.conversationId };
     case "progress": {
       if (message.content) return state;
-      const label = event.message.trim().replace(/^[A-Z][\w .'-]{0,24}:\s+/, "") || "Working…";
       const last = message.steps[message.steps.length - 1];
       const steps = last?.state === "active" && last.stage === event.stage
         ? message.steps.slice(0, -1) : finishSteps(message.steps);
-      message = { ...message, steps: [...steps, { stage: event.stage, label, scope: event.scope, state: "active" }] };
+      message = { ...message, steps: [...steps, { stage: event.stage, message: event.message, scope: event.scope, state: "active" }] };
       break;
     }
     case "scope": {
@@ -136,15 +136,13 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
     case "recommendations": message = { ...message, recommendations: event.recommendations }; break;
     case "citation_map": message = { ...message, citationMap: event.citationMap }; break;
     case "sources": {
-      let steps = message.steps;
-      if (event.sources.length) {
-        const videos = new Set(event.sources.map(source => source.videoId).filter(Boolean)).size;
-        const label = `Searched your library: found ${event.sources.length} passage${event.sources.length === 1 ? "" : "s"} in ${videos} video${videos === 1 ? "" : "s"}`;
-        const found: ProgressStep = { stage: "searching", label, state: "done", scope: "library" };
-        steps = steps.some(step => step.stage === "searching")
-          ? steps.map(step => step.stage === "searching" ? found : step)
-          : [...steps.filter(step => step.state === "done"), found, ...steps.filter(step => step.state === "active")];
-      }
+      const videos = new Set(event.sources.map(source => source.videoId).filter(Boolean)).size;
+      const found = { passages: event.sources.length, videos };
+      const steps: ProgressStep[] = message.steps.some(step => step.stage === "searching")
+        ? message.steps.map(step => step.stage === "searching" ? { ...step, state: "done", found } : step)
+        : [...message.steps.filter(step => step.state === "done"),
+          { stage: "searching", state: "done", scope: "library", found },
+          ...message.steps.filter(step => step.state === "active")];
       message = { ...message, sources: event.sources, steps };
       break;
     }
@@ -153,7 +151,8 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
       if (!message.content) {
         steps = message.scope?.answeredFrom === "focus" ? [] : steps.filter(step => step.state === "done");
         if (!message.scope || message.scope.answeredFrom === "library") {
-          steps = [...steps, { stage: "synthesizing", label: "Writing the answer…", state: "active", scope: "library" }];
+          const synthesizing = message.steps.find(step => step.stage === "synthesizing");
+          steps = [...steps, synthesizing ?? { stage: "synthesizing", state: "active", scope: "library" }];
         }
       }
       message = { ...message, content: message.content + event.delta, status: "answer", steps };

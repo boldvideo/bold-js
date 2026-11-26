@@ -60,20 +60,20 @@ async function owns(bold: AssistantBold, viewer: string, id: string, signal: Abo
   // Bold's continue/load endpoints are tenant-scoped, not viewer-scoped. The
   // viewer's list proves ownership. Remove this when Bold checks the viewer itself.
   const seen = new Set<string>();
+  let offset = 0;
   for (let page = 0; page < 100; page++) {
     signal.throwIfAborted();
-    const offset = page * 100;
     const result = await bold.ai.listConversations({ viewer, limit: 100, offset });
-    if (!Array.isArray(result?.conversations) || result.pagination?.limit !== 100 ||
-        result.pagination.offset !== offset || typeof result.pagination.hasMore !== "boolean" ||
-        result.conversations.length > 100 || result.conversations.some(item => !safeId(item?.conversationId))) {
+    if (!Array.isArray(result?.conversations) || typeof result.pagination?.hasMore !== "boolean" ||
+        result.conversations.some(item => !safeId(item?.conversationId))) {
       throw new Error("Invalid ownership page");
     }
     if (result.conversations.some(item => item.conversationId === id)) return true;
-    if (!result.pagination.hasMore) return false;
+    if (!result.conversations.length || !result.pagination.hasMore) return false;
     const signature = JSON.stringify(result.conversations.map(item => item.conversationId));
     if (seen.has(signature)) throw new Error("Repeated ownership page");
     seen.add(signature);
+    offset += result.conversations.length;
   }
   return false;
 }

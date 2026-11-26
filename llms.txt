@@ -9,6 +9,9 @@
 `citationPlayStart`, `DEFAULT_PASSAGE_GAP_SECONDS`, `momentAfterMove`,
 `momentAfterStandingStill`, `PAUSE_AFTER_MS`, `createVideoStore`, `shouldSetAside`
 and `createFetchTransport`, plus their types. All playback times are seconds.
+Progress steps expose `stage`, `state`, optional `scope`, unchanged server `message`
+and `found: { passages, videos }` counts; locally inferred steps have no message.
+The answer's `scope.widenedFrom` records widening. Panels supply labels and translations.
 `@boldvideo/assistant/server` exports `createAssistantHandler({ bold, authorize })`:
 POST streams chat, GET lists the authorized viewer's conversations, and
 GET `?conversation=id` loads an owned conversation. Access is always decided by

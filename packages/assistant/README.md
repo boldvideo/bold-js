@@ -4,7 +4,7 @@
 
 - `@boldvideo/assistant/core`: replayable thread state, cited passages, pause/re-listen detection, the current-video store, the set-aside rule and fetch transport.
 - `@boldvideo/assistant/server`: one web-standard handler for chat and viewer-owned history. Takes a structural SDK client; imports no SDK at runtime.
-- `@boldvideo/assistant/testing`: `createReplayTransport`, `createFakeBold`, and `syntheticAnswer` (four invented lessons and 256 sentence citations), with no key or network.
+- `@boldvideo/assistant/testing`: `createReplayTransport`, `createFakeBold`, and `syntheticAnswer` (four invented videos and 256 sentence citations), with no key or network.
 
 The later React entry will add the provider, hooks, dock, panel and stylesheet. Browser storage, navigation, rendering, entitlements and checkout are not implemented here.
 
@@ -33,7 +33,7 @@ export const POST = handler;
 export const GET = handler;
 ```
 
-Missing access returns 500 and logs a developer-facing message. Explicit `access: {}` grants nothing. Continue and load first check the viewer's own list, up to 100 pages of 100 conversations; absent IDs return 404. Invalid or repeated ownership pages fail closed. The host must propagate browser disconnection to `request.signal`; cancelling the response body also aborts upstream work.
+Missing access returns 500 and logs a developer-facing message. Explicit `access: {}` grants nothing. Continue and load first check the viewer's own list, requesting 100 items per page for at most 100 pages. The offset advances by the number of items returned, so smaller server page limits work. An empty page or `hasMore: false` ends the search; absent IDs return 404. Invalid items or repeated ownership pages fail closed. The host must propagate browser disconnection to `request.signal`; cancelling the response body also aborts upstream work.
 
 Events, including unknown types and typed error events, are serialized unchanged as `data: <JSON>\n\n`. Thrown errors before streaming return sanitized JSON with the upstream HTTP status; after headers, they become a sanitized SSE error. This is event passthrough, not preservation of the original HTTP wire formatting (the SDK supplies objects).
 
@@ -42,6 +42,8 @@ Events, including unknown types and typed error events, are serialized unchanged
 `createFetchTransport(endpoint, { fetch?, headers? })` serves all three operations. Custom `AssistantTransport` objects may omit `list`/`load`; a panel should offer history only when both exist. `ask(request, { signal })` is an async iterable; request IDs belong to intentional actions and can be reused on retries. Headers can be a value or a function refreshed for each request.
 
 `events.reduce(reduceThread, emptyThread)` replays a thread. Start a turn with `{ type: "question_asked", request }`. In an async provider, wrap received events in `{ type: "event_received", requestId, event }` so late events cannot overwrite a replacement. Stop and unexpected EOF use `viewer_stopped` and `stream_ended`, each with `requestId`. Reset uses `thread_reset`; loading uses `conversation_loaded` with the detail object. Guard stale async history responses in the caller before dispatch. Do not overlap attempts with the same request ID. A completed stream is not a guarantee of durable persistence.
+
+Progress steps are data: `stage`, `state`, optional `scope`, and the server's `message` unchanged, including prefixes and whitespace. Locally inferred steps have no message. A searching step's `found: { passages, videos }` counts retrieved sources and distinct nonempty video IDs, not the groups returned by `buildPassages`. The answer's `scope.widenedFrom` records whether it widened from the focus. Panels choose all labels, translations and fallback wording from these facts; core supplies no UI copy.
 
 `buildPassages(content, { citationMap?, sources?, citationIndices? }, { gapSeconds? })` returns `passages`, `citationsById` and `passageNumberByCitationId`. The sentence map and the answer's zero-based source indices are separate. Only cited sentences merge; the default end-to-start gap is 45 seconds. Passages follow first mention, excerpts follow spoken order, and numeric references remain unmerged, reserving their labels. `citationPlayStart(passage, { id, timestamp })` seeks to that citation with one second of lead-in, clamped to the passage start. Non-video documents remain in `citationsById`, without playable passages. Loaded history can resolve only metadata the SDK actually returns; unresolved stable tokens are not guessed.
 

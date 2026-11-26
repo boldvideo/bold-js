@@ -89,7 +89,7 @@ describe("thread replay", () => {
       { type: "recommendations", recommendations }, { type: "text_delta", delta: "A pointer" },
       { type: "message_complete", responseType: "retrieval", sources: [], confidence: "high", metadata: {} });
     expect(thread.messages[1]).toMatchObject({ content: "A pointer", pointers, lockedMatches, recommendations,
-      scope: scope("none"), steps: [{ stage: "reading", state: "done", label: "Not in this lesson" }] });
+      scope: scope("none"), steps: [{ stage: "reading", state: "done", scope: "focus" }] });
     const final = fold(question(), { type: "answer", content: "Draft", sources: [], citationMap: { c_a: 1 }, usage: { inputTokens: 2, outputTokens: 1 } },
       { type: "message_complete", responseType: "clarification", content: "Which fold?", scope: scope(),
         pointers, lockedMatches, recommendations, citations: [citation("c_a", 10)], usage: { promptTokens: 3, completionTokens: 2 } });
@@ -98,24 +98,57 @@ describe("thread replay", () => {
   });
 
   it("reduces progress stages without retaining transient steps or replacing answer text", () => {
+    expect(fold(question("one", "a")).messages[1].steps).toEqual([
+      { stage: "reading", state: "active", scope: "focus" },
+    ]);
+    expect(fold(question()).messages[1].steps).toEqual([
+      { stage: "planning", state: "active", scope: "library" },
+    ]);
+    const reading = "  Assistant: Lecture en cours…  ";
     let thread = fold(question("one", "a"),
-      { type: "progress", stage: "reading", message: "Assistant: Reading", scope: "focus" },
+      { type: "progress", stage: "reading", message: reading, scope: "focus" },
       { type: "progress", stage: "searching", message: "Search" },
       { type: "progress", stage: "searching", message: "Search again" },
-      { type: "progress", stage: "planning", message: " " },
-      { type: "progress", stage: "working", message: "Work" });
-    expect(thread.messages[1].steps.map(s => s.label)).toEqual(["Read this lesson", "Searched your library", "Work"]);
+      { type: "progress", stage: "planning", message: " " });
+    expect(thread.messages[1].steps.at(-1)).toEqual({ stage: "planning", state: "active", message: " " });
+    thread = reduceThread(thread, { type: "progress", stage: "working", message: "Work" });
+    expect(thread.messages[1].steps).toEqual([
+      { stage: "reading", state: "done", scope: "focus", message: reading },
+      { stage: "searching", state: "done", message: "Search again" },
+      { stage: "working", state: "active", message: "Work" },
+    ]);
     thread = reduceThread(thread, { type: "sources", sources: [] });
+    expect(thread.messages[1].steps[1]).toEqual({ stage: "searching", state: "done",
+      message: "Search again", found: { passages: 0, videos: 0 } });
     thread = reduceThread(thread, { type: "sources", sources: [citation("c_a", 10)] });
-    expect(thread.messages[1].steps[1].label).toBe("Searched your library: found 1 passage in 1 video");
+    expect(thread.messages[1].steps[1]).toEqual({ stage: "searching", state: "done",
+      message: "Search again", found: { passages: 1, videos: 1 } });
+    thread = reduceThread(thread, { type: "sources", sources: [citation("c_a", 10), citation("c_b", 20),
+      citation("c_c", 30, 35, "b"), { ...citation("c_doc", 0), videoId: null }] });
+    expect(thread.messages[1].steps[1]).toEqual({ stage: "searching", state: "done",
+      message: "Search again", found: { passages: 4, videos: 2 } });
+    thread = reduceThread(thread, { type: "sources", sources: [] });
+    expect(thread.messages[1].sources).toEqual([]);
+    expect(thread.messages[1].steps[1]).toEqual({ stage: "searching", state: "done",
+      message: "Search again", found: { passages: 0, videos: 0 } });
+    const widened = reduceThread(thread, { type: "scope", ...scope() });
+    expect(widened.messages[1].scope?.widenedFrom).toBe("focus");
+    expect(widened.messages[1].steps[0]).toEqual({ stage: "reading", state: "done", scope: "focus", message: reading });
     thread = reduceThread(thread, { type: "scope", ...scope("focus"), widenedFrom: null });
     thread = reduceThread(thread, { type: "text_delta", delta: "Text" });
     expect(thread.messages[1].steps).toEqual([]);
     expect(reduceThread(thread, { type: "progress", stage: "searching", message: "Late" })).toBe(thread);
     expect(reduceThread(thread, { type: "future_event" })).toBe(thread);
-    expect(fold(question(), { type: "scope", ...scope() }, { type: "text_delta", delta: "Text" }).messages[1].steps.at(-1)?.stage).toBe("synthesizing");
+    expect(fold(question(), { type: "scope", ...scope() }, { type: "text_delta", delta: "Text" }).messages[1].steps.at(-1))
+      .toEqual({ stage: "synthesizing", state: "active", scope: "library" });
+    const synthesis = fold(question(), { type: "progress", stage: "synthesizing", message: "Server: Drafting", scope: "library" },
+      { type: "text_delta", delta: "Text" });
+    expect(synthesis.messages[1].steps).toEqual([
+      { stage: "synthesizing", state: "active", scope: "library", message: "Server: Drafting" },
+    ]);
     const withoutSteps = { ...thread, messages: [thread.messages[0], { ...thread.messages[1], content: "", steps: [] }] };
-    expect(reduceThread(withoutSteps, { type: "progress", stage: "new", message: "" }).messages[1].steps[0].label).toBe("Working…");
+    expect(reduceThread(withoutSteps, { type: "progress", stage: "new", message: "" }).messages[1].steps[0])
+      .toEqual({ stage: "new", state: "active", message: "" });
   });
 
   it("loads history without inventing citation metadata, and supplies a missing original question", () => {

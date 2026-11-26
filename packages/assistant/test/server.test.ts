@@ -97,13 +97,34 @@ describe("assistant handler", () => {
     expect((await (await handler(get("?offset=100"))).json()).conversations[0].conversationId).toBe("conversation-100");
   });
 
-  it.each(["bad-offset", "repeated-page", "missing-pagination", "upstream-error"])("fails closed on %s", async kind => {
+  it("finds owned conversations when the upstream caps pages at twenty", async () => {
+    const conversations = Array.from({ length: 45 }, (_, i) => conversation(`conversation-${i}`));
+    conversations.push(conversation("other", "another-viewer"));
+    const bold = createFakeBold({ conversations });
+    const list = bold.ai.listConversations;
+    bold.ai.listConversations = options => list({ ...options, limit: 20 });
+    const handler = createAssistantHandler({ bold, authorize });
+    expect(await (await handler(get("?conversation=conversation-44"))).json()).toEqual(conversations[44].detail);
+    const continued = await handler(post({ prompt: "Continue", conversationId: "conversation-20" }));
+    expect(continued.status).toBe(200);
+    expect(await continued.text()).toContain('"type":"message_complete"');
+    expect((await handler(get("?conversation=other"))).status).toBe(404);
+
+    // Pagination echoes are not a cursor; advance by the actual items returned.
+    bold.ai.listConversations = async options => ({ ...await list({ ...options, limit: 20 }),
+      pagination: { limit: 100, offset: 0, hasMore: true } });
+    expect((await handler(get("?conversation=conversation-44"))).status).toBe(200);
+    // A server reporting hasMore on an empty page must terminate, not fail at a repeated-page guard.
+    expect((await handler(get("?conversation=missing"))).status).toBe(404);
+  });
+
+  it.each(["invalid-item", "repeated-page", "missing-pagination", "upstream-error"])("fails closed on %s", async kind => {
     const bold = createFakeBold();
     bold.ai.listConversations = async ({ offset = 0 }) => {
       if (kind === "upstream-error") throw Object.assign(new Error("sensitive"), { status: 503 });
       if (kind === "missing-pagination") return { conversations: [] } as never;
-      return { conversations: [conversation("not-target").summary],
-        pagination: { limit: 100, offset: kind === "bad-offset" ? 50 : offset, hasMore: true } };
+      return { conversations: [conversation(kind === "invalid-item" ? "../invalid" : "not-target").summary],
+        pagination: { limit: 100, offset, hasMore: true } };
     };
     const response = await createAssistantHandler({ bold, authorize })(get("?conversation=target"));
     expect(response.status).toBe(kind === "upstream-error" ? 503 : 502);
