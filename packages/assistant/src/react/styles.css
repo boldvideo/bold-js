@@ -67,7 +67,9 @@
 .bold-assistant-panel form { border-top: 1px solid var(--ba-border); padding: 12px 16px; }
 .bold-assistant-scope { margin: 0 0 8px; font-size: 12px; color: var(--ba-muted); }
 .bold-assistant-compose { border: 1px solid var(--ba-border); border-radius: calc(var(--ba-radius) / 2); display: flex; align-items: flex-end; padding: 6px; gap: 6px; }
+.bold-assistant-compose:focus-within { outline: 2px solid var(--ba-accent); outline-offset: 3px; }
 .bold-assistant-compose textarea { resize: none; min-width: 0; flex: 1; border: 0; border-radius: 4px; padding: 6px; color: var(--ba-text); background: transparent; }
+.bold-assistant-compose textarea:focus { outline: none; }
 .bold-assistant-compose textarea::placeholder { color: var(--ba-muted); }
 .bold-assistant-compose button { color: var(--ba-accent); }
 .bold-assistant-disclaimer { display: block; margin-top: 8px; font-size: 10px; }

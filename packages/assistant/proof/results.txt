@@ -804,3 +804,173 @@ $ rg -n -i "$DISALLOWED_WORD" packages/assistant
 $ rg -n -i -f PRIVATE_PATTERNS packages/assistant
 PASS word scan: no matches in packages/assistant.
 PASS derived-name and identifier scan: no matches in packages/assistant.
+
+
+=== Header icons and composer focus polish ===
+
+$ pnpm run lint && pnpm --filter @boldvideo/assistant run lint && pnpm --filter @boldvideo/assistant exec vitest run --coverage
+
+> @boldvideo/bold-js@3.3.1 lint /home/user/workspace/repo
+> tsc
+
+
+> @boldvideo/assistant@0.1.0 lint /home/user/workspace/repo/packages/assistant
+> tsc --noEmit
+
+
+ RUN  v3.2.7 /home/user/workspace/repo/packages/assistant
+      Coverage enabled with v8
+
+ ✓ test/react.test.tsx (22 tests) 925ms
+   ✓ public React contracts > renders and asks through the exact hooks-only README example  310ms
+ ✓ test/server.test.ts (20 tests) 176ms
+ ✓ test/transport.test.ts (11 tests) 40ms
+ ✓ test/core.test.ts (17 tests) 47ms
+
+ Test Files  4 passed (4)
+      Tests  70 passed (70)
+   Start at  18:16:43
+   Duration  5.69s (transform 588ms, setup 0ms, collect 1.55s, tests 1.19s, environment 1.34s, prepare 546ms)
+
+ % Coverage report from v8
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------------|---------|----------|---------|---------|-------------------
+All files       |     100 |      100 |     100 |     100 |
+ moment.ts      |     100 |      100 |     100 |     100 |
+ passages.ts    |     100 |      100 |     100 |     100 |
+ set-aside.ts   |     100 |      100 |     100 |     100 |
+ thread.ts      |     100 |      100 |     100 |     100 |
+ transport.ts   |     100 |      100 |     100 |     100 |
+ video-store.ts |     100 |      100 |     100 |     100 |
+----------------|---------|----------|---------|---------|-------------------
+
+$ bash packages/assistant/proof/build.sh
+
+> @boldvideo/assistant@0.1.0 build /home/user/workspace/repo/packages/assistant
+> rm -rf dist && tsup && cp src/react/styles.css dist/styles.css
+
+CLI Building entry: src/index.ts
+CLI Using tsconfig: tsconfig.json
+CLI tsup v8.5.1
+CLI Using tsup config: /home/user/workspace/repo/packages/assistant/tsup.config.ts
+CLI Building entry: src/core/index.ts, src/server/index.ts, src/testing/index.ts
+CLI Using tsconfig: tsconfig.json
+CLI tsup v8.5.1
+CLI Using tsup config: /home/user/workspace/repo/packages/assistant/tsup.config.ts
+CLI Target: es2020
+ESM Build start
+CLI Target: es2020
+ESM Build start
+ESM dist/core/index.js    17.59 KB
+ESM dist/server/index.js  7.56 KB
+ESM dist/testing/index.js 3.78 KB
+ESM ⚡️ Build success in 68ms
+ESM dist/index.js          5.07 KB
+ESM dist/panel-DFMELSNT.js 14.87 KB
+ESM dist/chunk-MUITRFM5.js 39.20 KB
+ESM ⚡️ Build success in 92ms
+DTS Build start
+DTS Build start
+DTS ⚡️ Build success in 6693ms
+DTS dist/index.d.ts 15.26 KB
+DTS ⚡️ Build success in 7924ms
+DTS dist/core/index.d.ts     6.60 KB
+DTS dist/testing/index.d.ts  1.15 KB
+DTS dist/server/index.d.ts   1.45 KB
+DTS dist/types-DgSpLuOC.d.ts 6.12 KB
+Bundled 251 modules in 343ms
+
+  harness.js                  215.31 KB  (entry point)
+  harness-qwftj6gn.js         25.35 KB   (chunk)
+  panel-DFMELSNT-3vfa4tak.js  178.52 KB  (chunk)
+  harness.css                 7.24 KB    (asset)
+
+
+$ node run.mjs
+PASS focus extra: the same focused citation survives later streaming chunks and completion.
+PASS 1: 192 animation frames; lossless run-length frame log:
+[
+  {
+    "firstFrame": 1,
+    "lastFrame": 2,
+    "scope": "Looking at your library",
+    "setAside": false,
+    "switching": false,
+    "thread": true,
+    "top": ""
+  },
+  {
+    "firstFrame": 3,
+    "lastFrame": 63,
+    "scope": "Looking at your library",
+    "setAside": false,
+    "switching": true,
+    "thread": true,
+    "top": ""
+  },
+  {
+    "firstFrame": 64,
+    "lastFrame": 66,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 1Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 67,
+    "lastFrame": 125,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": true,
+    "thread": false,
+    "top": "This videoPaper craft video 1Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 126,
+    "lastFrame": 131,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 2Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 132,
+    "lastFrame": 191,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": true,
+    "thread": false,
+    "top": "This videoPaper craft video 2Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 192,
+    "lastFrame": 192,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 3Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  }
+]
+PASS 2: clean set-aside; Continue, source-follow, and mid-answer navigation each retain the thread after completion.
+PASS 3: real muted HTMLVideoElement: arriving paused has no offer; play/pause offers explanation; backward seek offers Explain what was just said · 0:30–0:40 · Folding the base; playback clears it.
+PASS 4: sentences at 20s and 31s share passage 1; second chip seeks the actual player to 30s; two passages render chips 6 and 7.
+PASS 5 (1440x900): close restores launcher focus; identical open/closed page box {"x":196,"y":48,"width":1048,"height":659.625,"top":48,"right":1244,"bottom":707.625,"left":196}
+PASS composer focus (1440x900): frame has a solid 2px outline; textarea has none.
+PASS 5 (390x844): close restores launcher focus; identical open/closed page box {"x":0,"y":16,"width":390,"height":564.25,"top":16,"right":390,"bottom":580.25,"left":0}
+PASS composer focus (390x844): frame has a solid 2px outline; textarea has none.
+PASS 6: / opens and focuses; typing / in page input stays closed; Escape closes, makes panel inert, and returns focus.
+PASS appearance extras: dark surface rgb(32, 34, 37); reduced-motion transition 0s; hidden dock inert and draft preserved on return.
+PASS 7: 3 built client JS files contain no API credential marker, Authorization header, or Bold API host. No real credential is used by this fixture.
+Panel lazy chunk (production, minified, Markdown dependencies included; React shared): 178522 bytes; 53965 bytes gzip.
+PASS extras: Stop reaches fake Bold's signal; retry reuses UUID and replaces one turn; verified-access message unchanged; history lists, loads and resumes after reload.
+PASS navigation extra: Library cancels an in-flight route; rapid video choices commit only the latest destination.
+All seven browser proofs and extra route checks passed in Chromium. Narrow viewport is not a real phone test.
+
+PASS both package privacy scans: no matches.
+Seven Chromium screenshots refreshed and visually inspected.
+Keyboard/pointer clip inspected at 5 fps: history/back, typing, Tab to Send and back.
+Packed React 18/19 checks above are from the prior public-API review; not rerun for this SVG/CSS-only polish.

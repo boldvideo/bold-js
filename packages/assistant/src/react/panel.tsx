@@ -6,6 +6,7 @@ import { useAssistantSources, assistantSafeHref, type AssistantNavigation } from
 import { formatAssistantTime } from "./labels";
 import { assistantChapterAt } from "./video";
 import { remarkAssistantCitations } from "./markdown";
+import { icons } from "./icons";
 import type { ThreadMessage } from "../core";
 
 export interface AssistantPanelProps extends AssistantNavigation {
@@ -73,10 +74,10 @@ export function AssistantPanelContent({ expandHref, onClose, inputRef, className
       <strong>{assistant.name}</strong>
       <nav>
         {history && <button type="button" aria-label={showHistory ? labels.back : labels.history} title={showHistory ? labels.back : labels.history}
-          onClick={() => { setShowHistory(!showHistory); if (!showHistory) void history.refresh(); }}>{showHistory ? "←" : "↶"}</button>}
-        {!setAside && <button type="button" aria-label={labels.newQuestion} title={labels.newQuestion} onClick={() => { assistant.startNew(); setShowHistory(false); }}>＋</button>}
-        {expandHref && <a href={assistantSafeHref(expandHref)} aria-label={labels.expand} title={labels.expand}>↗</a>}
-        {onClose && <button type="button" aria-label={labels.close} title={labels.close} onClick={onClose}>×</button>}
+          onClick={() => { setShowHistory(!showHistory); if (!showHistory) void history.refresh(); }}>{showHistory ? icons.back : icons.history}</button>}
+        {!setAside && <button type="button" aria-label={labels.newQuestion} title={labels.newQuestion} onClick={() => { assistant.startNew(); setShowHistory(false); }}>{icons.plus}</button>}
+        {expandHref && <a href={assistantSafeHref(expandHref)} aria-label={labels.expand} title={labels.expand}>{icons.expand}</a>}
+        {onClose && <button type="button" aria-label={labels.close} title={labels.close} onClick={onClose}>{icons.close}</button>}
       </nav>
     </header>
     <div className="bold-assistant-scroll" ref={scroll} onScroll={() => {

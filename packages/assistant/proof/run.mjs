@@ -124,8 +124,13 @@ try {
     click(".bold-assistant-launcher");
     wait(`${dock}.dataset.state === 'open'`);
     assert.equal(evaluate("JSON.stringify(document.querySelector('#page-box').getBoundingClientRect().toJSON())"), before);
+    browser("focus", "textarea");
+    assert.equal(evaluate("getComputedStyle(document.querySelector('textarea')).outlineStyle"), "none");
+    assert.equal(evaluate("getComputedStyle(document.querySelector('.bold-assistant-compose')).outlineWidth"), "2px");
+    assert.equal(evaluate("getComputedStyle(document.querySelector('.bold-assistant-compose')).outlineStyle"), "solid");
     screenshot(w === 390 ? "assistant-narrow" : "assistant-video-answer");
     console.log(`PASS 5 (${w}x${h}): close restores launcher focus; identical open/closed page box ${before}`);
+    console.log(`PASS composer focus (${w}x${h}): frame has a solid 2px outline; textarea has none.`);
   }
   browser("set", "viewport", "1440", "900", "2");
   browser("focus", "textarea"); browser("press", "Escape");
@@ -141,6 +146,8 @@ try {
 
   browser("set", "media", "dark");
   assert.equal(evaluate("getComputedStyle(document.querySelector('.bold-assistant-panel')).backgroundColor"), "rgb(32, 34, 37)");
+  assert.equal(evaluate("getComputedStyle(document.querySelector('textarea')).outlineStyle"), "none");
+  assert.equal(evaluate("getComputedStyle(document.querySelector('.bold-assistant-compose')).outlineWidth"), "2px");
   screenshot("assistant-dark");
   browser("set", "media", "light", "reduced-motion");
   assert.equal(evaluate("getComputedStyle(document.querySelector('.bold-assistant-shell')).transitionDuration"), "0s");
