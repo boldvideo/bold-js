@@ -1,5 +1,11 @@
 # @boldvideo/bold-js
 
+## 3.3.1
+
+### Patch Changes
+
+- 2d876ac: 3.3.0 was published without its compiled files and cannot be imported. 3.3.1 is the same code with the build included. Upgrade from 3.3.0 to 3.3.1.
+
 ## 3.3.0
 
 ### Minor Changes
