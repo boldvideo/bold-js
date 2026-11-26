@@ -39,10 +39,17 @@ try {
   ask("How do I fold the base?", false);
   wait("!!document.querySelector('[data-citation=c_0_0]')");
   browser("focus", "[data-citation=c_0_0]");
-  evaluate("window.focusedCitation = document.activeElement; true");
+  assert(evaluate(`(() => {
+    window.focusedCitation = document.activeElement;
+    window.focusedContent = document.querySelector('.bold-assistant-answer > p').textContent;
+    return window.focusedCitation.dataset.citation === 'c_0_0'
+      && [...document.querySelectorAll('button')].some(b => b.textContent === 'Stop');
+  })()`), "Citation must receive focus before streaming completes");
+  wait("document.querySelector('.bold-assistant-answer > p').textContent !== window.focusedContent && [...document.querySelectorAll('button')].some(b => b.textContent === 'Stop')");
+  assert(evaluate("document.activeElement === window.focusedCitation && window.focusedCitation.isConnected"));
   wait("![...document.querySelectorAll('button')].some(b => b.textContent === 'Stop')");
   assert(evaluate("document.activeElement === window.focusedCitation && window.focusedCitation.isConnected"));
-  console.log("PASS focus extra: the same focused citation survives later streaming chunks and completion.");
+  console.log("PASS focus extra: citation focused while Stop is present; a later answer-text update observed during streaming; the same node stays focused through completion.");
   screenshot("assistant-answer");
 
   evaluate(`(() => { window.framesSeen = []; window.frameCount = 0; window.captureFrames = true; let previous;

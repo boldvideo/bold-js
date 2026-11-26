@@ -148,22 +148,32 @@ describe("public React contracts", () => {
     expect(api.setAside).toBe(true);
   });
 
-  it("keeps followed canonical sources on aliased video routes, including the next request", async () => {
+  it("retained asks keep followed canonical sources but set unrelated navigation aside", async () => {
     const requests: AskRequest[] = [];
     const transport: AssistantTransport = { async *ask(request, options) {
       requests.push(request); yield* replay.ask(request, options);
     } };
-    function Video() { useAssistantVideo({ id: "route-alias", canonicalVideoId: "video-1" }); return null; }
+    function Video({ id }: { id: string }) { useAssistantVideo({ id: `route-${id}`, canonicalVideoId: id }); return null; }
     await preloadAssistantPanel();
     await act(async () => root.render(tree(<><Probe /><AssistantPanel navigate={() => {}} videoHref={id => `/watch/${id}`} /></>, transport)));
+    const ask = api.ask;
     await act(async () => api.ask("Question"));
     const id = api.conversationId;
     await act(async () => host.querySelector<HTMLElement>('[data-citation="c_0_0"]')!.click());
-    await act(async () => root.render(tree(<><Video /><Probe /></>, transport)));
+    await act(async () => root.render(tree(<><Video id="video-1" /><Probe /></>, transport)));
     expect(api.setAside).toBe(false);
-    await act(async () => api.ask("Follow up"));
+    await act(async () => ask("Follow up"));
     expect(requests[1].conversationId).toBe(id);
     expect(api.messages).toHaveLength(4);
+    await act(async () => root.render(tree(<><Video id="video-2" /><Probe /></>, transport)));
+    expect(api.setAside).toBe(true);
+    await act(async () => ask("Unrelated question"));
+    expect(requests[2].conversationId).toBeUndefined();
+    expect(api.messages).toHaveLength(2);
+    await act(async () => root.render(tree(<><Video id="video-1" /><Probe /></>, transport)));
+    expect(api.setAside).toBe(true);
+    await act(async () => ask("Return after replacing the conversation"));
+    expect(requests[3].conversationId).toBeUndefined();
   });
 
   it("keeps a library answer that finishes in the initial video fallback and blocks unfocused asks", async () => {

@@ -73,6 +73,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
   const continued = useRef<Place | null>(null);
   const continuingNavigation = useRef(false);
   const [followed, setFollowed] = useState<Followed>(null);
+  const followedSource = useRef<Followed>(null);
   const [history, setHistory] = useState<ConversationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -110,6 +111,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
   function clearPlace() {
     continued.current = null;
     continuingNavigation.current = false;
+    followedSource.current = null;
     setContinuedAt(null);
     setFollowed(null);
   }
@@ -119,6 +121,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
   }
   function isAside() {
     const video = store.getSnapshot().video;
+    const followed = followedSource.current;
     return shouldSetAside({ messages: current.current.messages, streaming: current.current.isStreaming,
       place: placeNow(), continuedAt: continued.current, canonicalVideoId: video?.canonicalVideoId,
       followedAnswerId: video && followed && (followed.videoId === video.videoId
@@ -279,7 +282,10 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
       error: historyError ?? listError, hasMore: historyHasMore,
       refresh: () => listHistory(), more: () => listHistory(true) } : null,
     continuedAt, continueHere, followed,
-    follow: (answerId, videoId) => setFollowed({ answerId, videoId }),
+    follow: (answerId, videoId) => {
+      followedSource.current = { answerId, videoId };
+      setFollowed(followedSource.current);
+    },
   };
   return <VideoContext.Provider value={store}><ConversationContext.Provider value={value}>
     {children}
