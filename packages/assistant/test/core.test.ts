@@ -183,6 +183,31 @@ describe("passages", () => {
     expect(resolved.passages.map(p => [p.videoId, p.start])).toEqual([["first-video", 12], ["second-video", 91]]);
   });
 
+  it("keeps answer citation indices bound to their sources after completion", () => {
+    const a = { videoId: "first-video", timestamp: 12 }, b = { videoId: "second-video", timestamp: 91 };
+    for (const finalSources of [{ sources: [b, a] }, { citations: [b, a] }]) {
+      const thread = fold(question(), { type: "answer", content: "[c_a] [1]", sources: [a, b], citationMap: { c_a: 0 } },
+        { type: "message_complete", content: "[c_a] [1]", ...finalSources });
+      const answer = thread.messages[1];
+      expect(answer.sources).toEqual([b, a]);
+      const result = buildPassages(answer.content, answer);
+      expect(result.citationsById.get("c_a")).toEqual(a);
+      expect(result.citationsById.get("1")).toEqual(b);
+      const metadata = citation("c_a", 33, 38, "third-video");
+      expect(buildPassages(answer.content, { ...answer, citationMap: { c_a: metadata } }).citationsById.get("c_a"))
+        .toEqual(metadata);
+    }
+    for (const sources of [undefined, []]) {
+      const answer = fold(question(), { type: "answer", content: "[c_a]", sources, citationMap: { c_a: 0 } },
+        { type: "message_complete", content: "[c_a]", sources: [a] }).messages[1];
+      expect(buildPassages(answer.content, answer).citationsById.get("c_a")).toEqual(sources ? undefined : a);
+    }
+    const inherited = fold(question(), { type: "sources", sources: [a, b] },
+      { type: "answer", content: "[c_a]", citationMap: { c_a: 0 } },
+      { type: "message_complete", content: "[c_a]", sources: [b, a] }).messages[1];
+    expect(buildPassages(inherited.content, inherited).citationsById.get("c_a")).toEqual(a);
+  });
+
   it("reserves literal labels without splitting nearby stable citations or duplicating numbers", () => {
     const result = buildPassages("[2] [c_a] [c_b] [c_c]", {
       sources: [citation("unused", 0), citation("numeric", 0, 4, "b")],
@@ -222,6 +247,11 @@ describe("passages", () => {
     expect(result.passages[0].excerpt).toBe("First. Second.");
     expect(buildPassages("[c_a] [c_b]", { citationMap }, { gapSeconds: 2 }).passages).toHaveLength(2);
     expect(buildPassages("No citations", {}).passages).toEqual([]);
+    const overlapping = buildPassages("[c_a] [c_b] [c_c] [c_d]", { citationMap: {
+      c_a: citation("c_a", 0, 20, "a", "Long."), c_b: citation("c_b", 5, 6, "a", "Nested."),
+      c_c: citation("c_c", 10, 12, "a", "Still covered."), c_d: citation("c_d", 25, 30, "a", "After gap."),
+    } });
+    expect(overlapping.passages[0].excerpt).toBe("Long. Nested. Still covered. … After gap.");
   });
 
   it("preserves numeric references and supports sparse sources and non-playable documents", () => {

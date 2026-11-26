@@ -24,6 +24,8 @@ export interface ThreadMessage {
   citationMap: Record<string, CitationSource>;
   /** The answer event's zero-based source indices are distinct from sentence metadata. */
   citationIndices?: Record<string, number>;
+  /** Keep indices bound to the answer's sources even when completion replaces sources. */
+  citationSources?: AssistantSource[];
   steps: ProgressStep[];
   pointers?: Pointer[];
   lockedMatches?: LockedMatch[];
@@ -160,7 +162,8 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
     }
     case "answer":
       message = { ...message, content: event.content, status: "answer",
-        sources: event.sources ?? message.sources, citationIndices: event.citationMap, usage: event.usage };
+        sources: event.sources ?? message.sources, citationIndices: event.citationMap,
+        citationSources: event.sources ?? (message.sources.length ? message.sources : undefined), usage: event.usage };
       break;
     case "message_complete":
       if (event.scope) message = withScope(message, event.scope);

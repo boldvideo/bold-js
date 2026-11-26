@@ -131,6 +131,22 @@ describe("assistant handler", () => {
     expect(await response.text()).not.toContain("sensitive");
   });
 
+  it("fails closed when verified-access keys cannot list ownership", async () => {
+    const forbiddenFallback = () => { throw Object.assign(new Error("Ownership was bypassed"), { status: 418 }); };
+    const bold = createFakeBold({ answer: forbiddenFallback });
+    bold.ai.getConversation = forbiddenFallback;
+    bold.ai.listConversations = async () => {
+      throw Object.assign(new Error("Unsupported credential details"), { status: 403, code: "verified_ai_route_unsupported" });
+    };
+    const handler = createAssistantHandler({ bold, authorize });
+    for (const request of [get(), get("?conversation=owned"), post({ prompt: "Continue", conversationId: "owned" })]) {
+      const response = await handler(request);
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ type: "error", code: "upstream_error",
+        message: "The assistant request could not be completed.", retryable: false });
+    }
+  });
+
   it("passes fresh access to history and authorizes GET with no focus", async () => {
     const bold = createFakeBold({ conversations: [conversation("owned")] });
     const original = bold.ai.getConversation;

@@ -15,8 +15,10 @@ export interface Passage {
 export interface AnswerCitations {
   citationMap?: Readonly<Record<string, CitationSource>>;
   sources?: readonly AssistantSource[];
-  /** Stable citation IDs to zero-based indices in sources, from the answer event. */
+  /** Stable citation IDs to zero-based indices in citationSources, falling back to sources. */
   citationIndices?: Readonly<Record<string, number>>;
+  /** Sources paired with citationIndices, when completion supplies a different array. */
+  citationSources?: readonly AssistantSource[];
 }
 export interface PassageResult {
   passages: Passage[];
@@ -37,8 +39,9 @@ export function buildPassages(content: string, citations: AnswerCitations, optio
   ids.forEach((id, order) => {
     const literal = /^\d+$/.test(id);
     const position = literal ? Number(id) - 1 : citations.citationIndices?.[id];
+    const indexedSources = literal ? citations.sources : citations.citationSources ?? citations.sources;
     const source = citations.citationMap?.[id]
-      ?? (position !== undefined ? citations.sources?.[position] : citations.sources?.find(source => "id" in source && source.id === id));
+      ?? (position !== undefined ? indexedSources?.[position] : citations.sources?.find(source => "id" in source && source.id === id));
     // Retrieval-time cited flags predate synthesis; the text itself proves use.
     if (!source) return;
     citationsById.set(id, source);
@@ -76,7 +79,7 @@ export function buildPassages(content: string, citations: AnswerCitations, optio
       if (!text || seen.has(text)) continue;
       seen.add(text);
       excerpt += excerpt ? `${item.start - lastEnd! > 3 ? " … " : " "}${text}` : text;
-      lastEnd = item.end;
+      lastEnd = Math.max(lastEnd ?? item.end, item.end);
     }
     return { number, videoId: first.source.videoId!, title: first.source.title ?? null,
       start: first.start, end: group.end, excerpt, source: first.source,
