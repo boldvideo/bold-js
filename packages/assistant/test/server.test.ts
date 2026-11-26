@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { AIAPIError } from "@boldvideo/bold-js";
 import { createAssistantHandler, type AssistantBold, type AssistantHandlerOptions, type ChatRequest } from "../src/server";
 import { createFakeBold, syntheticAnswer, type FakeConversation } from "../src/testing";
 import { createFetchTransport, emptyThread, reduceThread, type AssistantEvent } from "../src/core";
@@ -131,19 +132,24 @@ describe("assistant handler", () => {
     expect(await response.text()).not.toContain("sensitive");
   });
 
-  it("fails closed when verified-access keys cannot list ownership", async () => {
+  it("explains verified-access refusals without exposing upstream details or bypassing ownership", async () => {
+    const refuse = () => { throw new AIAPIError("GET", "https://api.example/private", new Response(null, { status: 403 }), undefined,
+      { code: "verified_ai_route_unsupported", message: "Sensitive upstream details", retryable: true }); };
     const forbiddenFallback = () => { throw Object.assign(new Error("Ownership was bypassed"), { status: 418 }); };
     const bold = createFakeBold({ answer: forbiddenFallback });
     bold.ai.getConversation = forbiddenFallback;
-    bold.ai.listConversations = async () => {
-      throw Object.assign(new Error("Unsupported credential details"), { status: 403, code: "verified_ai_route_unsupported" });
-    };
+    bold.ai.listConversations = refuse;
     const handler = createAssistantHandler({ bold, authorize });
-    for (const request of [get(), get("?conversation=owned"), post({ prompt: "Continue", conversationId: "owned" })]) {
-      const response = await handler(request);
+    const owned = createFakeBold({ conversations: [conversation("owned")], answer: refuse });
+    owned.ai.getConversation = refuse;
+    const ownedHandler = createAssistantHandler({ bold: owned, authorize });
+    for (const response of await Promise.all([
+      handler(get()), handler(get("?conversation=owned")), handler(post({ prompt: "Continue", conversationId: "owned" })),
+      ownedHandler(get("?conversation=owned")), ownedHandler(post()),
+    ])) {
       expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ type: "error", code: "upstream_error",
-        message: "The assistant request could not be completed.", retryable: false });
+      expect(await response.json()).toEqual({ type: "error", code: "verified_ai_access_unsupported",
+        message: 'The assistant cannot run while Bold\'s "Require verified AI access" setting is on for this account. Turn it off in Bold\'s AI settings.', retryable: false });
     }
   });
 

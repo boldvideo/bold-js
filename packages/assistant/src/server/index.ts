@@ -30,6 +30,11 @@ function error(status: number, code: string, message: string, retryable = false)
   return Response.json({ type: "error", code, message, retryable }, { status, headers: { "Cache-Control": "no-store" } });
 }
 function upstreamError(cause: unknown) {
+  // AIAPIError exposes the parsed response body's code; never forward its message or body.
+  if (cause && typeof cause === "object" && "code" in cause && cause.code === "verified_ai_route_unsupported") {
+    return error(403, "verified_ai_access_unsupported",
+      'The assistant cannot run while Bold\'s "Require verified AI access" setting is on for this account. Turn it off in Bold\'s AI settings.');
+  }
   const status = cause && typeof cause === "object" && "status" in cause ? cause.status : undefined;
   const safeStatus = typeof status === "number" && Number.isInteger(status) && status >= 400 && status <= 599 ? status : 502;
   return error(safeStatus, "upstream_error", "The assistant request could not be completed.", safeStatus === 429 || safeStatus >= 500);
