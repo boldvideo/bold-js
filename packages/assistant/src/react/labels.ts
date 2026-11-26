@@ -1,0 +1,58 @@
+/** All default UI copy. Server messages and video titles are displayed unchanged. */
+export const defaultAssistantLabels = {
+  name: "Assistant",
+  greeting: "What would you like to explore?",
+  open: "Open assistant",
+  close: "Close assistant",
+  loading: "Opening assistant…",
+  history: "Earlier conversations",
+  back: "Back to conversation",
+  newQuestion: "New question",
+  expand: "Open as full page",
+  question: "Your question",
+  placeholder: "Ask a question…",
+  send: "Send",
+  stop: "Stop",
+  retry: "Try again",
+  stopped: "Stopped",
+  failed: "The assistant could not finish. Please try again.",
+  historyFailed: "Earlier conversations could not be loaded.",
+  emptyHistory: "No earlier conversations yet.",
+  moreHistory: "Load more",
+  loadingHistory: "Loading conversations…",
+  untitledConversation: "Conversation",
+  thisVideo: "This video",
+  library: "Your library",
+  lookingAtVideo: "Looking at this video",
+  lookingAtLibrary: "Looking at your library",
+  disclaimer: "Answers come from your library, never the web.",
+  lastConversation: "Your last conversation",
+  continue: "Continue",
+  keyPoints: "Key points",
+  keyPointsPrompt: "What are the key points in this video?",
+  quiz: "Quiz me",
+  quizPrompt: "Quiz me on this video, one question at a time.",
+  explain: "Explain this part",
+  relisten: "Explain what was just said",
+  explainPrompt: (at: string, chapter: string) => `Explain this part of the video at ${at}${chapter ? ` (${chapter})` : ""}.`,
+  relistenPrompt: (from: string, to: string) => `Explain what was said from ${from} to ${to} in this video.`,
+  widened: "Not in this video · from your library",
+  answeredVideo: "From this video",
+  answeredLibrary: "From your library",
+  sources: "Sources",
+  source: (number: number, title: string, at: string) => `Source ${number}: ${title}, ${at}`,
+  document: "Source document",
+  reading: "Reading this video…",
+  planning: "Thinking about your question…",
+  searching: "Searching your library…",
+  synthesizing: "Writing an answer…",
+  working: "Working…",
+  found: (passages: number, videos: number) => `Found ${passages} ${passages === 1 ? "passage" : "passages"} in ${videos} ${videos === 1 ? "video" : "videos"}`,
+};
+
+export type AssistantLabels = typeof defaultAssistantLabels;
+
+export function formatAssistantTime(seconds: number): string {
+  const value = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(value / 60)}:${String(value % 60).padStart(2, "0")}`;
+}

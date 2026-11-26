@@ -22,5 +22,6 @@ export function shouldSetAside({ messages, place, followedAnswerId, continuedAt,
   const videoId = answer?.scope?.focus?.videoId ?? question.focus?.videoId;
   const askedAt: Place = videoId ? `video:${videoId}` : "library";
   if (askedAt === place || (place !== "library" && videoId && videoId === canonicalVideoId)) return false;
-  return !followedAnswerId || !messages.some(message => message.role === "assistant" && message.interactionId === followedAnswerId);
+  return !followedAnswerId || !messages.some(message => message.role === "assistant"
+    && (message.interactionId === followedAnswerId || message.id === followedAnswerId));
 }

@@ -11,14 +11,43 @@ const question = (requestId = "one", videoId?: string): ThreadEvent => ({
   type: "question_asked", request: { prompt: "How does the fold work?", requestId, focus: videoId ? { videoId } : undefined },
 });
 const scope = (answeredFrom: AnswerScope["answeredFrom"] = "library"): AnswerScope => ({
-  answeredFrom, widenedFrom: "focus", reason: "not_covered", focus: { videoId: "a", title: "A lesson" },
+  answeredFrom, widenedFrom: "focus", reason: "not_covered", focus: { videoId: "a", title: "A video" },
 });
 const citation = (id: string, start: number, end = start + 4, videoId = "a", text = `Sentence ${id}.`): CitationSource => ({
-  id, timestamp: start, timestampEnd: end, videoId, text, title: "A lesson", playbackId: "playback",
+  id, timestamp: start, timestampEnd: end, videoId, text, title: "A video", playbackId: "playback",
 });
 const fold = (...events: ThreadEvent[]) => events.reduce(reduceThread, emptyThread);
 
 describe("thread replay", () => {
+  it("retries only the last interrupted or retryable question, without duplicate turns", () => {
+    const request = { prompt: "Retry me", requestId: "retry" };
+    const retry = { type: "question_asked" as const, request, retry: true };
+    const started = fold({ type: "question_asked", request });
+    expect(reduceThread(emptyThread, retry)).toBe(emptyThread);
+    expect(reduceThread(started, retry)).toBe(started);
+    for (const event of [
+      { type: "viewer_stopped", requestId: "retry" },
+      { type: "error", code: "offline", message: "Offline", retryable: true },
+    ] as ThreadEvent[]) {
+      const stopped = reduceThread(reduceThread(started, { type: "conversation_created", conversationId: "abandoned" }), event);
+      const repeated = reduceThread(stopped, retry);
+      expect(repeated.messages).toHaveLength(2);
+      expect(repeated.conversationId).toBeUndefined();
+      expect(repeated.messages[1]).toMatchObject({ id: "assistant-retry", content: "", status: "loading" });
+      expect(repeated.activeRequestId).toBe("retry");
+      expect(reduceThread(stopped, { ...retry, request: { ...request, prompt: "Different" } })).toBe(stopped);
+      const noAnswer = { ...stopped, messages: [stopped.messages[0], stopped.messages[0]] };
+      expect(reduceThread(noAnswer, retry)).toBe(noAnswer);
+    }
+    for (const event of [
+      { type: "message_complete", content: "Finished" },
+      { type: "error", code: "forbidden", message: "Denied", retryable: false },
+    ] as ThreadEvent[]) {
+      const settled = reduceThread(started, event);
+      expect(reduceThread(settled, retry)).toBe(settled);
+    }
+  });
+
   it("folds the shared fixture and keeps sentence metadata separate from retrieved chunks", () => {
     const thread = fold(question(), ...syntheticAnswer);
     expect(thread.isStreaming).toBe(false);
@@ -81,8 +110,8 @@ describe("thread replay", () => {
   });
 
   it("records scope, pointers, locked matches and retrieval-only completion", () => {
-    const pointers = [{ videoId: "b", title: "Another lesson", collectionId: "collection", canonicalUrl: null, moments: [] }];
-    const lockedMatches = [{ offer: "course", collectionIds: ["other"], videoCount: 1, titles: ["A lesson"] }];
+    const pointers = [{ videoId: "b", title: "Another video", collectionId: "collection", canonicalUrl: null, moments: [] }];
+    const lockedMatches = [{ offer: "course", collectionIds: ["other"], videoCount: 1, titles: ["A video"] }];
     const recommendations = [{ topic: "Folding", videos: [] }];
     const thread = fold(question("one", "a"), { type: "scope", ...scope("none") },
       { type: "pointers", pointers }, { type: "locked_matches", lockedMatches },
@@ -300,12 +329,14 @@ describe("video store", () => {
     const unsubscribe = store.subscribe(() => states.push(store.getSnapshot().video?.videoId ?? null));
     const initial = store.getSnapshot();
     store.beginPending();
-    expect(store.getSnapshot()).toBe(initial);
+    expect(initial).toEqual({ video: null, switching: false });
+    expect(store.getSnapshot()).toEqual({ video: null, switching: true });
     store.set({ videoId: "a" }); store.endPending();
     const a = store.getSnapshot();
     store.set({ videoId: "a" });
     expect(store.getSnapshot()).toBe(a);
     store.release("a");
+    expect(store.getSnapshot().switching).toBe(true);
     vi.advanceTimersByTime(100);
     store.beginPending();
     expect(store.getSnapshot()).toMatchObject({ video: { videoId: "a" }, switching: true });
@@ -315,7 +346,7 @@ describe("video store", () => {
     expect(store.getSnapshot().video?.videoId).toBe("a");
     store.set({ videoId: "b", currentTime: 2 }); store.endPending();
     vi.advanceTimersByTime(120);
-    expect(states).not.toContain(null);
+    expect(states.slice(states.indexOf("a"))).not.toContain(null);
     expect(store.getSnapshot().switching).toBe(false);
     store.release("a");
     store.release("b");
@@ -368,6 +399,7 @@ describe("set aside", () => {
     expect(shouldSetAside({ ...input, continuedAt: "video:b" })).toBe(false);
     expect(shouldSetAside({ ...input, continuedAt: "video:c" })).toBe(true);
     expect(shouldSetAside({ ...input, followedAnswerId: "followed" })).toBe(false);
+    expect(shouldSetAside({ ...input, followedAnswerId: messages[1].id })).toBe(false);
     expect(shouldSetAside({ ...input, followedAnswerId: "elsewhere" })).toBe(true);
     const beside = fold(question("one", "a"), { type: "scope", ...scope() }, { type: "message_complete", content: "" }).messages;
     expect(shouldSetAside({ ...input, messages: beside, place: "video:a" })).toBe(false);

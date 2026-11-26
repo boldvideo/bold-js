@@ -22,6 +22,13 @@ export function createFetchTransport(endpoint: string, options: {
   }
   async function check(response: Response) {
     if (response.ok) return;
+    if (response.headers.get("Content-Type")?.includes("application/json")) {
+      const error = await response.json().catch(() => null);
+      if (error?.type === "error" && typeof error.code === "string"
+        && typeof error.message === "string" && typeof error.retryable === "boolean") {
+        throw Object.assign(new Error(error.message), error, { status: response.status });
+      }
+    }
     // Do not echo an HTML error page or an upstream response body.
     throw Object.assign(new Error(`Assistant request failed (${response.status})`), { status: response.status });
   }

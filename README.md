@@ -17,6 +17,7 @@ This repository holds Bold's JavaScript packages. Each is published to npm on it
 | --- | --- |
 | [`@boldvideo/bold-js`](https://www.npmjs.com/package/@boldvideo/bold-js) | The SDK. This README. |
 | [`@boldvideo/player`](https://github.com/boldvideo/bold-js/tree/main/packages/player) | The video player for React: chapters, captions, analytics and an automatic MP4 fallback, from one component. |
+| [`@boldvideo/assistant`](https://github.com/boldvideo/bold-js/tree/main/packages/assistant) | The React assistant: a floating panel, video context, cited answers and viewer-owned history. |
 
 ## Installation
 

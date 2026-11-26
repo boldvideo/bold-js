@@ -8,6 +8,19 @@ async function collect<T>(stream: AsyncIterable<T>) { const values: T[] = []; fo
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("fetch transport", () => {
+  it("preserves typed route errors for questions and history, but not malformed bodies", async () => {
+    const error = { type: "error", code: "verified_ai_access_unsupported", message: "Turn off verified access.", retryable: false };
+    const transport = createFetchTransport("/assistant", { fetch: async () => Response.json(error, { status: 403 }) });
+    await expect(collect(transport.ask(request, { signal: signal() }))).rejects.toMatchObject({ ...error, status: 403 });
+    await expect(transport.list!()).rejects.toMatchObject(error);
+    await expect(transport.load!("owned")).rejects.toMatchObject(error);
+    for (const body of ["broken", "null", "{}", JSON.stringify({ ...error, code: null }),
+      JSON.stringify({ ...error, message: null }), JSON.stringify({ ...error, retryable: null })]) {
+      const invalid = createFetchTransport("/assistant", { fetch: async () => new Response(body, { status: 502, headers: { "Content-Type": "application/json" } }) });
+      await expect(invalid.list!()).rejects.toMatchObject({ message: "Assistant request failed (502)" });
+    }
+  });
+
   it("decodes split UTF-8, CRLF, multiline data, unknown events and a final unterminated block", async () => {
     const text = ': heartbeat\r\n\r\nevent: delta\r\ndata: {"type":"text_delta",\r\ndata: "delta":"A café"}\r\n\r\ndata: {"type":"future","extra":1}\r\n\r\ndata: {"type":"text_delta","delta":"!"}';
     const bytes = new TextEncoder().encode(text);
