@@ -12,3 +12,4 @@ export type { AssistantNavigation } from "./react/sources";
 export { defaultAssistantLabels, formatAssistantTime } from "./react/labels";
 export type { AssistantLabels } from "./react/labels";
 export { remarkAssistantCitations } from "./react/markdown";
+export type { AssistantCitationOptions } from "./react/markdown";

@@ -1,6 +1,8 @@
-import { useCallback, useContext, useEffect, useMemo, useRef, type RefCallback } from "react";
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, type RefCallback } from "react";
 import { momentAfterMove, momentAfterStandingStill, PAUSE_AFTER_MS, type AssistantVideo, type StuckMoment } from "../core";
 import { VideoContext } from "./provider";
+
+const useCommitEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 export interface AssistantVideoInput {
   id: string;
@@ -28,7 +30,7 @@ export function useAssistantVideo(video: AssistantVideoInput | null, options: As
   const player = useRef<AssistantPlayerHandle | null>(null);
   const mounted = useRef(false);
   const latest = useRef({ video, options });
-  latest.current = { video, options };
+  useCommitEffect(() => { latest.current = { video, options }; });
   const state = useRef<{ id?: string; time?: number; played: boolean; events: boolean; moment: StuckMoment | null }>({ played: false, events: false, moment: null });
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const getCurrentTime = useCallback(() => latest.current.options.currentTime ?? player.current?.currentTime ?? state.current.time ?? 0, []);

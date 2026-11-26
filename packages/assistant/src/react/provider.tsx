@@ -137,6 +137,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
     setHistoryError(null);
   }
   async function run(request: AskRequest, fresh = false, retry = false) {
+    if (retry && reduceThread(current.current, { type: "question_asked", request, retry }) === current.current) return;
     touched.current = true;
     invalidate();
     const attempt = generation.current;
@@ -186,7 +187,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
   const canRetry = !!lastRequest.current && !thread.isStreaming
     && (last?.status === "stopped" || (last?.status === "error" && !!last.error?.retryable));
   async function retry() {
-    if (!canRetry || current.current.isStreaming || !lastRequest.current || store.getSnapshot().switching) return;
+    if (current.current.isStreaming || !lastRequest.current || store.getSnapshot().switching) return;
     // Replay the same request, including its original focus and conversation ID.
     await run(lastRequest.current, false, true);
   }
@@ -252,7 +253,7 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
       } catch { /* Invalid or blocked storage starts empty. */ }
     }
     return () => {
-      invalidate();
+      stop();
       listGeneration.current++;
       unsubscribe();
       // Child cleanup can release a video after parent cleanup. Dispose after it.

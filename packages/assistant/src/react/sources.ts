@@ -24,8 +24,9 @@ export function useAssistantSources(message: ThreadMessage, navigation: Assistan
     const passage = result.passages.find(p => p.number === number);
     const seconds = passage ? citationPlayStart(passage, wholePassage ? null : { id, timestamp: source?.timestamp ?? null }) : 0;
     const videoId = passage?.videoId;
-    let href = videoId ? navigation.videoHref?.(videoId, seconds)
-      ?? source?.timestampUrl ?? source?.canonicalUrl : source && "url" in source ? source.url : undefined;
+    const target = wholePassage && passage ? passage.source : source;
+    let href = (videoId ? navigation.videoHref?.(videoId, seconds) : undefined)
+      ?? target?.timestampUrl ?? target?.canonicalUrl ?? (target && "url" in target ? target.url : undefined);
     href = assistantSafeHref(href);
     if (href && message.interactionId) {
       const hashAt = href.indexOf("#");
@@ -38,7 +39,7 @@ export function useAssistantSources(message: ThreadMessage, navigation: Assistan
       onClick(event: MouseEvent<HTMLElement>) {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.defaultPrevented) return;
         if (!canSeek && !href) return;
-        if (videoId) follow(message.interactionId ?? message.id, videoId);
+        if (source?.videoId) follow(message.interactionId ?? message.id, source.videoId);
         if (canSeek) { event.preventDefault(); video!.onSeek!(seconds, message.interactionId); }
         else if (href && navigation.navigate) { event.preventDefault(); navigation.navigate(href); }
       },

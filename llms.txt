@@ -22,6 +22,9 @@ and videoHref(videoId, seconds). Source links carry interactionId; same-video so
 All defaults live in defaultAssistantLabels; data from the server is displayed unchanged.
 Other public helpers: formatAssistantTime, assistantChapterAt, assistantSafeHref,
 remarkAssistantCitations, preloadAssistantPanel. The panel is a lazy chunk.
+remarkAssistantCitations accepts AssistantCitationOptions with optional resolve(id), returning
+{ text, title, href?, canSeek } or undefined. It emits native citation elements; the panel
+delegates clicks so links keep focus across streaming updates. Without options it emits fragment links.
 Dock state: data-state="open|closed". Dock/panel: data-place="video|library", presence
 attributes data-switching and data-set-aside. Styles use --bold-assistant-* variables;
 the package README lists every default and includes a tested hooks-only panel example.

@@ -21,28 +21,23 @@ export function AssistantAnswer({ message, ...navigation }: { message: ThreadMes
   const { labels } = useAssistant();
   const { passages, sourceLink } = useAssistantSources(message, navigation);
   const videos = passages.filter((p, i) => passages.findIndex(other => other.videoId === p.videoId) === i).slice(0, 3);
-  return <article className="bold-assistant-answer" data-answer={message.id}>
+  return <article className="bold-assistant-answer" data-answer={message.id} onClick={event => {
+    const citation = (event.target as Element).closest<HTMLElement>("[data-citation]");
+    if (citation) sourceLink(citation.dataset.citation!).onClick(event);
+  }}>
     {message.steps.length > 0 && <ul className="bold-assistant-progress" aria-live="polite">{message.steps.map((step, i) =>
       <li key={i} data-state={step.state}>{step.message ?? (step.found ? labels.found(step.found.passages, step.found.videos)
         : step.stage === "reading" ? labels.reading : step.stage === "searching" ? labels.searching
           : step.stage === "planning" ? labels.planning : step.stage === "synthesizing" ? labels.synthesizing : labels.working)}
         {step.message && step.found && <> · {labels.found(step.found.passages, step.found.videos)}</>}</li>)}</ul>}
     {message.scope?.widenedFrom === "focus" && <p className="bold-assistant-origin">{labels.widened}</p>}
-    <ReactMarkdown remarkPlugins={[remarkGfm, remarkAssistantCitations]} components={{
-      a: ({ href, children }) => {
-        if (href?.startsWith("#bold-citation-")) {
-          const id = href.slice("#bold-citation-".length);
-          const link = sourceLink(id);
-          if (!link.source) return <>{children}</>;
-          const text = link.number ?? labels.document;
-          const title = labels.source(link.number ?? 0, link.source.title ?? labels.thisVideo, formatAssistantTime(link.seconds));
-          return link.href ? <a className="bold-assistant-citation" href={link.href} onClick={link.onClick} aria-label={title} data-citation={id}>{text}</a>
-            : link.canSeek ? <button type="button" className="bold-assistant-citation" onClick={link.onClick} aria-label={title} data-citation={id}>{text}</button>
-              : <span className="bold-assistant-citation" title={title}>{text}</span>;
-        }
-        return <a href={assistantSafeHref(href)} rel="noreferrer">{children}</a>;
+    <ReactMarkdown urlTransform={url => assistantSafeHref(url) ?? ""} remarkPlugins={[remarkGfm, [remarkAssistantCitations, {
+      resolve: (id: string) => {
+        const link = sourceLink(id);
+        return link.source ? { text: String(link.number ?? labels.document), href: link.href, canSeek: link.canSeek,
+          title: labels.source(link.number ?? 0, link.source.title ?? labels.thisVideo, formatAssistantTime(link.seconds)) } : undefined;
       },
-    }}>{message.content}</ReactMarkdown>
+    }]]}>{message.content}</ReactMarkdown>
     {message.status === "complete" && message.scope && !message.scope.widenedFrom && message.scope.answeredFrom !== "none"
       && <p className="bold-assistant-meta">{message.scope.answeredFrom === "focus" ? labels.answeredVideo : labels.answeredLibrary}</p>}
     {videos.length > 0 && <div className="bold-assistant-sources" aria-label={labels.sources}>{videos.map(p => {

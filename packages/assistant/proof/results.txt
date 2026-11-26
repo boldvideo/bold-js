@@ -1,4 +1,4 @@
-Assistant React proof run
+Assistant React proof runs — initial run below; final review-fix verification appended
 Thu Nov 26 16:34:33 UTC 2026
 
 Runtime versions
@@ -286,3 +286,208 @@ PASS hydration: no browser errors or React warnings. Question reached the real h
 
 Additional keyboard repetition (scratch harness)
 PASS 30 close/open keyboard cycles, narrow and wide, focus returned to textarea every time.
+
+Final review-fix verification
+Thu Nov 26 17:00:56 UTC 2026
+
+Regression control: current React tests against the initial PR source, in an isolated scratch checkout
+$ pnpm exec vitest run test/react.test.tsx
+ Test Files  1 failed (1)
+      Tests  6 failed | 15 passed (21)
+   Start at  16:54:08
+   Duration  2.71s (transform 357ms, setup 0ms, collect 875ms, tests 784ms, environment 623ms, prepare 130ms)
+
+
+$ pnpm --filter @boldvideo/assistant exec vitest run --coverage
+
+ RUN  v3.2.7 /home/user/workspace/repo/packages/assistant
+      Coverage enabled with v8
+
+ ✓ test/react.test.tsx (21 tests) 587ms
+ ✓ test/server.test.ts (20 tests) 154ms
+ ✓ test/core.test.ts (17 tests) 31ms
+ ✓ test/transport.test.ts (11 tests) 39ms
+
+ Test Files  4 passed (4)
+      Tests  69 passed (69)
+   Start at  16:55:25
+   Duration  3.54s (transform 389ms, setup 0ms, collect 985ms, tests 810ms, environment 475ms, prepare 322ms)
+
+ % Coverage report from v8
+----------------|---------|----------|---------|---------|-------------------
+File            | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+----------------|---------|----------|---------|---------|-------------------
+All files       |     100 |      100 |     100 |     100 |
+ moment.ts      |     100 |      100 |     100 |     100 |
+ passages.ts    |     100 |      100 |     100 |     100 |
+ set-aside.ts   |     100 |      100 |     100 |     100 |
+ thread.ts      |     100 |      100 |     100 |     100 |
+ transport.ts   |     100 |      100 |     100 |     100 |
+ video-store.ts |     100 |      100 |     100 |     100 |
+----------------|---------|----------|---------|---------|-------------------
+
+$ node run.mjs (from packages/assistant/proof)
+PASS focus extra: the same focused citation survives later streaming chunks and completion.
+PASS 1: 194 animation frames; lossless run-length frame log:
+[
+  {
+    "firstFrame": 1,
+    "lastFrame": 2,
+    "scope": "Looking at your library",
+    "setAside": false,
+    "switching": false,
+    "thread": true,
+    "top": ""
+  },
+  {
+    "firstFrame": 3,
+    "lastFrame": 62,
+    "scope": "Looking at your library",
+    "setAside": false,
+    "switching": true,
+    "thread": true,
+    "top": ""
+  },
+  {
+    "firstFrame": 63,
+    "lastFrame": 67,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 1Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 68,
+    "lastFrame": 124,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": true,
+    "thread": false,
+    "top": "This videoPaper craft video 1Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 125,
+    "lastFrame": 131,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 2Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 132,
+    "lastFrame": 191,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": true,
+    "thread": false,
+    "top": "This videoPaper craft video 2Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  },
+  {
+    "firstFrame": 192,
+    "lastFrame": 194,
+    "scope": "Looking at this video",
+    "setAside": true,
+    "switching": false,
+    "thread": false,
+    "top": "This videoPaper craft video 3Key pointsQuiz meHow do I align the edges?Which fold comes first?How do I check the base?"
+  }
+]
+PASS 2: clean set-aside; Continue, source-follow, and mid-answer navigation each retain the thread after completion.
+PASS 3: real muted HTMLVideoElement: arriving paused has no offer; play/pause offers explanation; backward seek offers Explain what was just said · 0:30–0:40 · Folding the base; playback clears it.
+PASS 4: sentences at 20s and 31s share passage 1; second chip seeks the actual player to 30s; two passages render chips 6 and 7.
+PASS 5 (1440x900): close restores launcher focus; identical open/closed page box {"x":196,"y":48,"width":1048,"height":659.625,"top":48,"right":1244,"bottom":707.625,"left":196}
+PASS 5 (390x844): close restores launcher focus; identical open/closed page box {"x":0,"y":16,"width":390,"height":564.25,"top":16,"right":390,"bottom":580.25,"left":0}
+PASS 6: / opens and focuses; typing / in page input stays closed; Escape closes, makes panel inert, and returns focus.
+PASS appearance extras: dark surface rgb(32, 34, 37); reduced-motion transition 0s; hidden dock inert and draft preserved on return.
+PASS 7: 3 built client JS files contain no API credential marker, Authorization header, or Bold API host. No real credential is used by this fixture.
+Panel lazy chunk (production, minified, Markdown dependencies included; React shared): 177323 bytes; 53719 bytes gzip.
+PASS extras: Stop reaches fake Bold's signal; retry reuses UUID and replaces one turn; verified-access message unchanged; history lists, loads and resumes after reload.
+PASS navigation extra: Library cancels an in-flight route; rapid video choices commit only the latest destination.
+All seven browser proofs and extra route checks passed in Chromium. Narrow viewport is not a real phone test.
+
+Final tarball reinstalled into each fresh compatibility fixture, then rebuilt:
+$ npm run build (React 18 fixture)
+
+> build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Experiments (use with caution):
+    · cpus
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/5) ...
+   Generating static pages (1/5)
+   Generating static pages (2/5)
+   Generating static pages (3/5)
+ ✓ Generating static pages (5/5)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    9.3 kB         96.6 kB
+├ ○ /_not-found                          873 B          88.1 kB
+└ ƒ /api/assistant                       0 B                0 B
++ First Load JS shared by all            87.3 kB
+  ├ chunks/117-de207dd02d708323.js       31.7 kB
+  ├ chunks/fd9d1056-e66763f9af1814fb.js  53.6 kB
+  └ other shared chunks (total)          1.89 kB
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+$ npm run build (React 19 fixture)
+
+> build
+> next build --webpack
+
+▲ Next.js 16.4.6 (webpack)
+✓ Running next.config.mjs took 58ms
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+- Experiments (use with caution):
+  · cpus: 2
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.6s
+  Running TypeScript ...
+  Finished TypeScript in 2.7s ...
+  Collecting page data using 2 workers ...
+  Generating static pages using 2 workers (0/4) ...
+  Generating static pages using 2 workers (1/4)
+  Generating static pages using 2 workers (2/4)
+  Generating static pages using 2 workers (3/4)
+✓ Generating static pages using 2 workers (4/4) in 2.2s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+└ ƒ /api/assistant
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+$ node packages/assistant/proof/check-packed.mjs http://localhost:4508
+PASS server render: heading, assistant and labeled composer in the HTTP HTML, before JavaScript.
+PASS hydration: no browser errors or React warnings. Question reached the real handler/fake Bold; source chip 1 links to its sentence at 30s.
+
+$ node packages/assistant/proof/check-packed.mjs http://localhost:4509
+PASS server render: heading, assistant and labeled composer in the HTTP HTML, before JavaScript.
+PASS hydration: no browser errors or React warnings. Question reached the real handler/fake Bold; source chip 1 links to its sentence at 30s.
+
+$ diff -qr packages/assistant/dist INSTALLED_PACKAGE/dist (both React versions)
+No differences; both installed archives contain the final built code.

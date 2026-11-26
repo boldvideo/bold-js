@@ -297,4 +297,118 @@ describe("public React contracts", () => {
     expect(navigate).toHaveBeenCalledWith("/watch/right?t=31");
     expect(assistantSafeHref("java\nscript:alert(1)")).toBeUndefined();
   });
+
+  it("retained retry actions use the current turn and never send an invisible completed retry", async () => {
+    const requests: AskRequest[] = [];
+    const transport: AssistantTransport = { async *ask(request) {
+      requests.push(request);
+      if (requests.length === 1) yield { type: "error", code: "offline", message: "Offline", retryable: true };
+      else yield { type: "message_complete", content: "Complete" };
+    } };
+    await act(async () => root.render(tree(<Probe />, transport)));
+    const initialRetry = api.retry;
+    await act(async () => api.ask("First"));
+    const retryableRetry = api.retry;
+    await act(async () => initialRetry());
+    expect(requests).toHaveLength(2);
+    await act(async () => api.ask("Second"));
+    await act(async () => retryableRetry());
+    expect(requests).toHaveLength(3);
+    expect(api.messages.at(-1)?.content).toBe("Complete");
+  });
+
+  it("retains partial text but settles cancellation across Activity hide/reveal", async () => {
+    const wait = deferred<AssistantEvent>();
+    let signal!: AbortSignal;
+    const transport: AssistantTransport = { async *ask(_request, options) {
+      signal = options.signal; yield { type: "text_delta", delta: "Partial" }; yield await wait.promise;
+    } };
+    const view = (mode: "visible" | "hidden") => <React.Activity mode={mode}>{tree(<Probe />, transport)}</React.Activity>;
+    await act(async () => root.render(view("visible")));
+    let asking!: Promise<void>;
+    await act(async () => { asking = api.ask("Question"); });
+    await act(async () => root.render(view("hidden")));
+    expect(signal.aborted).toBe(true);
+    await act(async () => root.render(view("visible")));
+    expect(api.isStreaming).toBe(false);
+    expect(api.messages.at(-1)).toMatchObject({ content: "Partial", status: "stopped" });
+    await act(async () => { wait.resolve({ type: "message_complete", content: "Late" }); await asking; });
+    expect(api.messages.at(-1)?.content).toBe("Partial");
+  });
+
+  it("player events cannot publish props from an uncommitted suspended video render", async () => {
+    const pending = new Promise<void>(() => {});
+    let setId!: (id: string) => void;
+    function Video() {
+      const [id, change] = useState("a"); setId = change;
+      const player = useAssistantVideo({ id });
+      if (id === "b") throw pending;
+      return <video {...player.props} ref={player.ref} />;
+    }
+    await act(async () => root.render(tree(<><React.Suspense fallback={null}><Video /></React.Suspense><Probe /></>)));
+    await act(async () => React.startTransition(() => setId("b")));
+    await act(async () => host.querySelector("video")!.dispatchEvent(new Event("timeupdate", { bubbles: true })));
+    expect(api.video?.videoId).toBe("a");
+    await act(async () => setId("a"));
+  });
+
+  it.each(["link", "button"])("preserves focused citation %s nodes across streaming chunks", async kind => {
+    const wait = deferred<AssistantEvent>();
+    const seek = vi.fn();
+    function Video() { useAssistantVideo({ id: "a" }, { onSeek: seek }); return null; }
+    const transport: AssistantTransport = { async *ask() {
+      yield { type: "answer", content: "First [c_one].", citationMap: { c_one: 0 },
+        sources: [{ videoId: "a", timestamp: 20, canonicalUrl: kind === "link" ? "/watch/a" : undefined }] };
+      yield await wait.promise;
+    } };
+    await preloadAssistantPanel();
+    await act(async () => root.render(tree(<><Video /><Probe /><AssistantPanel /></>, transport)));
+    let asking!: Promise<void>;
+    await act(async () => { asking = api.ask("Question"); });
+    const link = host.querySelector<HTMLElement>("[data-citation=c_one]")!;
+    link.focus();
+    await act(async () => { wait.resolve({ type: "message_complete", content: "First [c_one]. More text." }); await asking; });
+    expect(document.activeElement).toBe(link);
+    expect(host.querySelector("[data-citation=c_one]")).toBe(link);
+    expect(link.tagName).toBe(kind === "link" ? "A" : "BUTTON");
+    await act(async () => link.click());
+    expect(seek).toHaveBeenCalledWith(20, undefined);
+  });
+
+  it("links untimed video sources and starts passage rows at the earliest source URL", async () => {
+    let links!: ReturnType<typeof useAssistantSources>;
+    const requests: AskRequest[] = [];
+    const content = "Later [c_late], earlier [c_early], overview [c_overview].";
+    const replaySources = createReplayTransport([
+      { type: "answer", content, citationMap: { c_late: 0, c_early: 1, c_overview: 2 }, sources: [
+          { videoId: "a", timestamp: 60, timestampUrl: "/watch/a?t=60" },
+          { videoId: "a", timestamp: 30, timestampUrl: "/watch/a?t=30" },
+          { id: null, videoId: "a", title: null, text: "", timestamp: null, timestampEnd: null, playbackId: null, canonicalUrl: "/watch/a" },
+      ] }, { type: "message_complete", content, conversationId: "linked" },
+    ]);
+    const transport: AssistantTransport = { async *ask(request, options) {
+      requests.push(request); yield* replaySources.ask(request, options);
+    } };
+    function Sources() {
+      const message = useAssistant().messages.at(-1);
+      return message?.role === "assistant" ? <Links message={message} /> : null;
+    }
+    function Links({ message }: { message: Parameters<typeof useAssistantSources>[0] }) {
+      links = useAssistantSources(message, { navigate: () => {} });
+      const link = links.sourceLink("c_overview");
+      return <a href={link.href} onClick={link.onClick}>Overview</a>;
+    }
+    function Video() { useAssistantVideo({ id: "alias", canonicalVideoId: "a" }); return null; }
+    await act(async () => root.render(tree(<><Probe /><Sources /></>, transport)));
+    await act(async () => api.ask("Question"));
+    expect(links.sourceLink("c_overview").href).toBe("/watch/a");
+    expect(links.sourceLink("c_overview").canSeek).toBe(false);
+    expect(links.sourceLink("c_late", true)).toMatchObject({ seconds: 30, href: "/watch/a?t=30" });
+    expect(links.sourceLink("c_late").href).toBe("/watch/a?t=60");
+    await act(async () => host.querySelector("a")!.click());
+    await act(async () => root.render(tree(<><Video /><Probe /><Sources /></>, transport)));
+    expect(api.setAside).toBe(false);
+    await act(async () => api.ask("Follow up"));
+    expect(requests[1].conversationId).toBe("linked");
+  });
 });

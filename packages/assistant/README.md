@@ -163,6 +163,8 @@ Keep `video.conversationStarters` and callback inputs stable. Times are seconds 
 
 State is inspectable: the dock has `data-state="open|closed"`; dock and panel have `data-place="video|library"`, and presence attributes `data-switching` and `data-set-aside`. All hooks and helpers used by the default panel are exported. `formatAssistantTime`, `assistantChapterAt`, `assistantSafeHref`, `remarkAssistantCitations`, and `preloadAssistantPanel` are available for custom rendering.
 
+`remarkAssistantCitations({ resolve })` optionally turns citation IDs into native links, buttons or spans. `resolve(id)` returns `{ text, title, href?, canSeek }`, or `undefined` for an unresolved token. `AssistantCitationOptions` describes it. The panel delegates citation clicks instead of replacing link components on each streaming update, so keyboard focus survives new text. Without options, the plugin emits `#bold-citation-ID` links for your renderer.
+
 ## Build your own panel
 
 Mount this inside `AssistantProvider`. It uses only hooks: plain text answers, playable numbered passages, set-aside handling, Send and Stop. Add Markdown or history when you need them. This exact example is rendered in the test suite.

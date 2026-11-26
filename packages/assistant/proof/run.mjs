@@ -36,7 +36,13 @@ try {
   screenshot("assistant-closed");
   click(".bold-assistant-launcher"); browser("wait", "textarea");
   screenshot("assistant-library");
-  ask("How do I fold the base?");
+  ask("How do I fold the base?", false);
+  wait("!!document.querySelector('[data-citation=c_0_0]')");
+  browser("focus", "[data-citation=c_0_0]");
+  evaluate("window.focusedCitation = document.activeElement; true");
+  wait("![...document.querySelectorAll('button')].some(b => b.textContent === 'Stop')");
+  assert(evaluate("document.activeElement === window.focusedCitation && window.focusedCitation.isConnected"));
+  console.log("PASS focus extra: the same focused citation survives later streaming chunks and completion.");
   screenshot("assistant-answer");
 
   evaluate(`(() => { window.framesSeen = []; window.frameCount = 0; window.captureFrames = true; let previous;
@@ -150,11 +156,20 @@ try {
   console.log(`PASS 7: ${bundleFiles.length} built client JS files contain no API credential marker, Authorization header, or Bold API host. No real credential is used by this fixture.`);
   console.log(`Panel lazy chunk (production, minified, Markdown dependencies included; React shared): ${panel.length} bytes; ${gzipSync(panel).length} bytes gzip.`);
 
+  const priorRequests = (await (await fetch(`${url}/__requests`)).json()).length;
+  async function waitForStopRequest(aborted = false) {
+    for (let attempt = 0; attempt < 50; attempt++) {
+      const logs = await (await fetch(`${url}/__requests`)).json();
+      if (logs.slice(priorRequests).some(r => r.prompt === "stop this" && (!aborted || r.aborted))) return;
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    throw new Error(`Stop proof: timed out waiting for ${aborted ? "abort" : "request"} at fake Bold`);
+  }
   newQuestion(); ask("stop this", false);
   wait("[...document.querySelectorAll('button')].some(b => b.textContent === 'Stop')");
+  await waitForStopRequest();
   browser("find", "role", "button", "click", "--name", "Stop");
-  const logs = await (await fetch(`${url}/__requests`)).json();
-  assert(logs.some(r => r.prompt === "stop this" && r.aborted));
+  await waitForStopRequest(true);
   newQuestion(); ask("retry failure", false);
   browser("wait", "[role=alert]");
   browser("find", "role", "button", "click", "--name", "Try again");
@@ -174,6 +189,14 @@ try {
   browser("reload");
   wait("!!document.querySelector('[data-citation]')");
   console.log("PASS extras: Stop reaches fake Bold's signal; retry reuses UUID and replaces one turn; verified-access message unchanged; history lists, loads and resumes after reload.");
+  click("#video-2"); click("#library");
+  browser("wait", "1200");
+  assert.equal(evaluate("location.pathname"), "/");
+  assert.equal(evaluate("document.querySelector('main h1').textContent"), "Paper craft library");
+  click("#video-2"); click("#video-3");
+  wait("document.querySelector('[data-top-block] h2')?.textContent === 'Paper craft video 3'");
+  assert.equal(evaluate("location.pathname"), "/watch/video-3");
+  console.log("PASS navigation extra: Library cancels an in-flight route; rapid video choices commit only the latest destination.");
   const errors = browser("errors");
   assert(!errors.errors?.length, JSON.stringify(errors));
   console.log("All seven browser proofs and extra route checks passed in Chromium. Narrow viewport is not a real phone test.");

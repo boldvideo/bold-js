@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AssistantProvider, AssistantDock, AssistantVideoPending, useAssistantVideo } from "../dist/index.js";
 import "../dist/styles.css";
@@ -14,17 +14,20 @@ function Video({ id, at }: { id: string; at: number }) {
 function App() {
   const [route, setRoute] = useState({ id: "", at: 0, pending: false });
   const [hidden, setHidden] = useState(false);
+  const navigation = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   function navigate(href: string) {
+    clearTimeout(navigation.current);
     const url = new URL(href, location.href);
     const id = url.pathname.split("/")[2] ?? "";
     history.pushState({}, "", href);
     if (!id) { setRoute({ id: "", at: 0, pending: false }); return; }
     setRoute(previous => ({ ...previous, pending: true }));
-    setTimeout(() => setRoute({ id, at: Number(url.searchParams.get("t") ?? 0), pending: false }), 1000);
+    navigation.current = setTimeout(() => setRoute({ id, at: Number(url.searchParams.get("t") ?? 0), pending: false }), 1000);
   }
   useEffect(() => {
     const url = new URL(location.href);
     setRoute({ id: url.pathname.split("/")[2] ?? "", at: Number(url.searchParams.get("t") ?? 0), pending: false });
+    return () => clearTimeout(navigation.current);
   }, []);
   return <AssistantProvider endpoint="/api/assistant" viewerKey="proof-viewer" settings={{ aiName: "Guide", aiGreeting: "What would you like to make?" }}>
     <main id="page-box"><nav aria-label="Library navigation">

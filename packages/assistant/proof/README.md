@@ -36,7 +36,7 @@ The script checks:
 6. `/`, Escape, editing another field, focus return, and closed-panel inertness.
 7. The minified client files contain no Bold API host, Authorization header or API-key marker. This is a boundary check, not a general secret scanner.
 
-Extra checks cover Stop at the fake Bold signal, retry UUID reuse, the unchanged verified-access error, history list/load/reload, dark colour, reduced motion, and drafts surviving `hidden`. The gzip measurement is the minified lazy panel chunk, including Markdown dependencies, with React in a shared chunk.
+Extra checks cover Stop at the fake Bold signal, retry UUID reuse, the unchanged verified-access error, history list/load/reload, dark colour, reduced motion, and drafts surviving `hidden`. A focused citation must remain the same focused DOM node while more text streams in. Rapid navigation must cancel the previous route, including when returning to the library. The gzip measurement is the minified lazy panel chunk, including Markdown dependencies, with React in a shared chunk.
 
 ## Install the actual tarball in Next.js
 
@@ -62,7 +62,7 @@ The check reads server HTML before JavaScript, waits for hydration and the lazy 
 
 ## Limits and failed runs
 
-The captured run is in [results.txt](./results.txt). Chromium at a narrow width is not a real phone or Safari test. This rig does not verify a live Bold account, production authentication, a deployment adapter's disconnect handling, an upstream persistence guarantee, or npm publication.
+The captured runs are in [results.txt](./results.txt), with the final review-fix verification appended after the initial run. Chromium at a narrow width is not a real phone or Safari test. This rig does not verify a live Bold account, production authentication, a deployment adapter's disconnect handling, an upstream persistence guarantee, or npm publication.
 
 Next 14 is used only for disposable React 18 compatibility testing. Its install reports two dependency vulnerabilities (one high, one critical); npm has no newer Next 14 patch. Do not deploy this generated legacy app. Neither Next nor its dependencies are assistant dependencies.
 
