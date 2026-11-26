@@ -1,6 +1,6 @@
-import { useMemo, type MouseEvent } from "react";
+import { useContext, useMemo, type MouseEvent } from "react";
 import { buildPassages, citationPlayStart, type ThreadMessage } from "../core";
-import { useAssistant } from "./provider";
+import { ConversationContext, useAssistant } from "./provider";
 
 export interface AssistantNavigation {
   navigate?: (href: string) => void;
@@ -16,7 +16,8 @@ export function assistantSafeHref(href: string | null | undefined): string | und
 
 /** Resolved passages and anchor props for chips/rows, including same-page seeking. */
 export function useAssistantSources(message: ThreadMessage, navigation: AssistantNavigation = {}) {
-  const { video, follow, switching } = useAssistant();
+  const { video, switching } = useAssistant();
+  const { follow } = useContext(ConversationContext)!;
   const result = useMemo(() => buildPassages(message.content, message), [message]);
   function sourceLink(id: string, wholePassage = false) {
     const source = result.citationsById.get(id);

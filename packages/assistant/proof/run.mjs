@@ -83,6 +83,8 @@ try {
   console.log("PASS 2: clean set-aside; Continue, source-follow, and mid-answer navigation each retain the thread after completion.");
 
   newQuestion();
+  wait("document.querySelector('video').readyState >= 2");
+  screenshot("assistant-video-empty");
   evaluate("document.querySelector('video').currentTime = 40");
   wait("document.querySelector('video').currentTime === 40");
   assert(!evaluate("!!document.querySelector('[data-moment]')"));

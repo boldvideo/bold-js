@@ -13,8 +13,13 @@ The provider takes `endpoint` or `transport`, required `viewerKey`, optional str
 `settings` and `labels: Partial<AssistantLabels>`. There is no history prop: history requires
 both transport `list` and `load`. Changing viewerKey clears the thread. Scope follows the page;
 set-aside uses core's rule. Keep the provider mounted across navigation.
-`useAssistant()` exposes messages, streaming, ask/stop/retry/startNew/open, history operations,
-video/place/switching/setAside/continueConversation, labels and branding. `useAssistantSources(message)`
+`useAssistant()` exposes messages, streaming, ask/stop/retry/startNew/open,
+video/place/switching/setAside/continueConversation, labels and branding.
+Its history field is null without both transport list and load. Otherwise it contains
+items, loading, error, hasMore, refresh() and more(). Refresh replaces the first page;
+more appends the next page. open(id) loads an item and resolves to a success boolean.
+Use continueConversation() for the Continue button; source-following is handled by sourceLink.
+`useAssistantSources(message)`
 resolves passages and sourceLink(id, wholePassage?) anchor props. These and useAssistantVideo
 are the three public hooks; the default panel uses no private API. AssistantPanel renders
 without a dock; AssistantAnswer renders one message. Navigation props are navigate(href)

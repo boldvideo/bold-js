@@ -6,7 +6,7 @@ import { AssistantProvider, AssistantPanel, useAssistant, useAssistantVideo, Ass
 import { createReplayTransport, syntheticAnswer } from "../src/testing";
 import { createAssistantHandler } from "../src/server";
 import { createFakeBold } from "../src/testing";
-import { createFetchTransport, type AssistantTransport, type AssistantEvent, type AskRequest, type ConversationDetail } from "../src/core";
+import { createFetchTransport, type AssistantTransport, type AssistantEvent, type AskRequest, type ConversationDetail, type ConversationSummary } from "../src/core";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
 import * as React from "react";
@@ -154,10 +154,11 @@ describe("public React contracts", () => {
       requests.push(request); yield* replay.ask(request, options);
     } };
     function Video() { useAssistantVideo({ id: "route-alias", canonicalVideoId: "video-1" }); return null; }
-    await act(async () => root.render(tree(<Probe />, transport)));
+    await preloadAssistantPanel();
+    await act(async () => root.render(tree(<><Probe /><AssistantPanel navigate={() => {}} videoHref={id => `/watch/${id}`} /></>, transport)));
     await act(async () => api.ask("Question"));
     const id = api.conversationId;
-    await act(async () => api.follow(api.messages[1].id, "video-1"));
+    await act(async () => host.querySelector<HTMLElement>('[data-citation="c_0_0"]')!.click());
     await act(async () => root.render(tree(<><Video /><Probe /></>, transport)));
     expect(api.setAside).toBe(false);
     await act(async () => api.ask("Follow up"));
@@ -206,11 +207,41 @@ describe("public React contracts", () => {
     await act(async () => root.render(tree(<Probe />, transport)));
     let opening!: Promise<boolean>;
     await act(async () => { opening = api.open("saved"); });
-    await act(async () => api.listHistory());
-    expect(api.historyLoading).toBe(true);
+    await act(async () => api.history!.refresh());
+    expect(api.history!.loading).toBe(true);
     await act(async () => { load.resolve(detail("saved")); await opening; });
-    expect(api.historyLoading).toBe(false);
+    expect(api.history!.loading).toBe(false);
     expect(api.conversationId).toBe("saved");
+  });
+
+  it("groups history paging, refresh and errors without exposing continuation internals", async () => {
+    const item = (id: string): ConversationSummary => ({ conversationId: id, title: id, preview: null,
+      scope: "library", status: "complete", messageCount: 2, createdAt: "", updatedAt: "", channel: "api", client: null, video: null });
+    let unavailable = false;
+    const transport: AssistantTransport = { ...replay, load: async id => detail(id),
+      list: async ({ offset = 0 } = {}) => {
+        if (unavailable) throw { type: "error", message: "History unavailable" };
+        return { conversations: [item(offset ? "older" : "newer")], pagination: { offset, limit: 1, hasMore: offset === 0 } };
+      } };
+    await act(async () => root.render(tree(<Probe />, transport)));
+    for (const key of ["continuedAt", "continueHere", "followed", "follow", "hasHistory", "historyLoading", "historyError", "historyHasMore", "listHistory"]) {
+      expect(api).not.toHaveProperty(key);
+    }
+    expect(api.history).toMatchObject({ items: [], loading: false, error: null, hasMore: false });
+    await act(async () => api.history!.refresh());
+    expect(api.history!.items.map(i => i.conversationId)).toEqual(["newer"]);
+    expect(api.history!.hasMore).toBe(true);
+    await act(async () => api.history!.more());
+    expect(api.history!.items.map(i => i.conversationId)).toEqual(["newer", "older"]);
+    expect(api.history!.hasMore).toBe(false);
+    unavailable = true;
+    await act(async () => api.history!.refresh());
+    expect(api.history!.error).toBe("History unavailable");
+    expect(api.history!.loading).toBe(false);
+    unavailable = false;
+    await act(async () => api.history!.refresh());
+    expect(api.history!.items.map(i => i.conversationId)).toEqual(["newer"]);
+    expect(api.history!.error).toBeNull();
   });
 
   it("restores a saved conversation under StrictMode and persists only its ID", async () => {
@@ -253,8 +284,11 @@ describe("public React contracts", () => {
     expect(host.querySelector('[role="alert"]')?.textContent).toBe(api.messages[1].error?.message);
     expect(host.textContent).toContain('Require verified AI access');
     expect(api.canRetry).toBe(false);
-    await act(async () => root.render(tree(<AssistantPanel />, replay, "another")));
-    expect(host.querySelector('[aria-label="Earlier conversations"]')).toBeNull();
+    for (const partial of [replay, { ...replay, list: transport.list }, { ...replay, load: transport.load }]) {
+      await act(async () => root.render(tree(<><Probe /><AssistantPanel /></>, partial, "another")));
+      expect(api.history).toBeNull();
+      expect(host.querySelector('[aria-label="Earlier conversations"]')).toBeNull();
+    }
   });
 
   it("uses provider labels while leaving server progress unchanged", async () => {

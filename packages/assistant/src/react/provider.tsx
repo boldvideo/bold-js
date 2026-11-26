@@ -39,12 +39,14 @@ interface ConversationValue extends Thread {
   startNew(): void;
   open(id: string): Promise<boolean>;
   canRetry: boolean;
-  hasHistory: boolean;
-  history: ConversationSummary[];
-  historyLoading: boolean;
-  historyError: string | null;
-  historyHasMore: boolean;
-  listHistory(more?: boolean): Promise<void>;
+  history: null | {
+    items: ConversationSummary[];
+    loading: boolean;
+    error: string | null;
+    hasMore: boolean;
+    refresh(): Promise<void>;
+    more(): Promise<void>;
+  };
   continuedAt: Place | null;
   continueHere(place: Place): void;
   followed: Followed;
@@ -272,8 +274,11 @@ function ProviderSession({ children, viewerKey, endpoint, transport: supplied, s
       ...(settings?.themeConfig?.light?.accent ? { "--bold-assistant-accent-light": settings.themeConfig.light.accent } : {}),
       ...(settings?.themeConfig?.dark?.accent ? { "--bold-assistant-accent-dark": settings.themeConfig.dark.accent } : {}),
     } as CSSProperties,
-    ask, retry, stop, startNew, open, canRetry, hasHistory, history, historyLoading: historyLoading || listing,
-    historyError: historyError ?? listError, historyHasMore, listHistory, continuedAt, continueHere, followed,
+    ask, retry, stop, startNew, open, canRetry,
+    history: hasHistory ? { items: history, loading: historyLoading || listing,
+      error: historyError ?? listError, hasMore: historyHasMore,
+      refresh: () => listHistory(), more: () => listHistory(true) } : null,
+    continuedAt, continueHere, followed,
     follow: (answerId, videoId) => setFollowed({ answerId, videoId }),
   };
   return <VideoContext.Provider value={store}><ConversationContext.Provider value={value}>
@@ -292,8 +297,9 @@ export function useAssistant() {
     continuedAt: value.continuedAt, canonicalVideoId: snapshot.video?.canonicalVideoId,
     followedAnswerId: value.followed && (snapshot.video?.videoId === value.followed.videoId
       || snapshot.video?.canonicalVideoId === value.followed.videoId) ? value.followed.answerId : null });
-  return { ...value, ...snapshot, place, setAside, continueConversation: () => value.continueHere(place) };
+  const { continuedAt, continueHere, followed, follow, ...publicValue } = value;
+  return { ...publicValue, ...snapshot, place, setAside, continueConversation: () => continueHere(place) };
 }
 
 // Registration is kept separate from the changing conversation context.
-export { VideoContext };
+export { VideoContext, ConversationContext };

@@ -53,7 +53,7 @@ export function AssistantAnswer({ message, ...navigation }: { message: ThreadMes
 
 export function AssistantPanelContent({ expandHref, onClose, inputRef, className = "", style, ...navigation }: AssistantPanelProps) {
   const assistant = useAssistant();
-  const { labels, video, switching, setAside, messages, isStreaming } = assistant;
+  const { labels, video, switching, setAside, messages, isStreaming, history } = assistant;
   const [draft, setDraft] = useState("");
   const [showHistory, setShowHistory] = useState(false);
   const scroll = useRef<HTMLDivElement>(null);
@@ -72,8 +72,8 @@ export function AssistantPanelContent({ expandHref, onClose, inputRef, className
       <span className="bold-assistant-avatar">{assistant.avatar ? <img src={assistant.avatar} alt="" /> : assistant.name.charAt(0)}</span>
       <strong>{assistant.name}</strong>
       <nav>
-        {assistant.hasHistory && <button type="button" aria-label={showHistory ? labels.back : labels.history} title={showHistory ? labels.back : labels.history}
-          onClick={() => { setShowHistory(!showHistory); if (!showHistory) void assistant.listHistory(); }}>{showHistory ? "←" : "↶"}</button>}
+        {history && <button type="button" aria-label={showHistory ? labels.back : labels.history} title={showHistory ? labels.back : labels.history}
+          onClick={() => { setShowHistory(!showHistory); if (!showHistory) void history.refresh(); }}>{showHistory ? "←" : "↶"}</button>}
         {!setAside && <button type="button" aria-label={labels.newQuestion} title={labels.newQuestion} onClick={() => { assistant.startNew(); setShowHistory(false); }}>＋</button>}
         {expandHref && <a href={assistantSafeHref(expandHref)} aria-label={labels.expand} title={labels.expand}>↗</a>}
         {onClose && <button type="button" aria-label={labels.close} title={labels.close} onClick={onClose}>×</button>}
@@ -82,16 +82,16 @@ export function AssistantPanelContent({ expandHref, onClose, inputRef, className
     <div className="bold-assistant-scroll" ref={scroll} onScroll={() => {
       const el = scroll.current!; atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
     }}>
-      {showHistory ? <div className="bold-assistant-history">
+      {showHistory && history ? <div className="bold-assistant-history">
         <h2>{labels.history}</h2>
-        {assistant.historyLoading && <p role="status">{labels.loadingHistory}</p>}
-        {!assistant.historyLoading && !assistant.history.length && !assistant.historyError && <p>{labels.emptyHistory}</p>}
-        {assistant.history.map(item => <button type="button" key={item.conversationId} disabled={assistant.historyLoading}
+        {history.loading && <p role="status">{labels.loadingHistory}</p>}
+        {!history.loading && !history.items.length && !history.error && <p>{labels.emptyHistory}</p>}
+        {history.items.map(item => <button type="button" key={item.conversationId} disabled={history.loading}
           onClick={() => void assistant.open(item.conversationId).then(ok => { if (ok) setShowHistory(false); })}>
           <strong>{item.title ?? item.preview ?? labels.untitledConversation}</strong>
           <small>{item.video?.title ?? labels.library} · <time dateTime={item.updatedAt}>{item.updatedAt.slice(0, 10)}</time></small>
         </button>)}
-        {assistant.historyHasMore && <button type="button" disabled={assistant.historyLoading} onClick={() => void assistant.listHistory(true)}>{labels.moreHistory}</button>}
+        {history.hasMore && <button type="button" disabled={history.loading} onClick={() => void history.more()}>{labels.moreHistory}</button>}
       </div> : <>
         <div className="bold-assistant-top" data-top-block>
           {video ? <><small>{labels.thisVideo}</small><h2>{video.title ?? labels.thisVideo}</h2>
@@ -116,7 +116,7 @@ export function AssistantPanelContent({ expandHref, onClose, inputRef, className
           : <AssistantAnswer key={message.id} message={message} {...navigation} />)}</div>
         {!setAside && assistant.canRetry && <button type="button" disabled={switching} onClick={() => void assistant.retry()}>{labels.retry}</button>}
       </>}
-      {assistant.historyError && <p role="alert">{assistant.historyError}</p>}
+      {history?.error && <p role="alert">{history.error}</p>}
     </div>
     <form onSubmit={event => { event.preventDefault(); if (!draft.trim() || switching || isStreaming) return; void assistant.ask(draft); setDraft(""); setShowHistory(false); }}>
       <p className="bold-assistant-scope" data-scope>{video ? labels.lookingAtVideo : labels.lookingAtLibrary}</p>
