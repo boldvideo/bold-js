@@ -40,8 +40,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # The SDK is the workspace root, which `pnpm -r` skips unless told otherwise.
       - name: Build packages
-        run: pnpm -r run build
+        run: pnpm -r --include-workspace-root run build
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
