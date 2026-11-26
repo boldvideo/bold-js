@@ -1,0 +1,36 @@
+{
+  "conversations": [
+    {
+      "conversation_id": "550e8400-e29b-41d4-a716-446655440001",
+      "scope": "library",
+      "title": "Synthetic library question",
+      "preview": "A synthetic library answer.",
+      "status": "active",
+      "message_count": 3,
+      "created_at": "2026-01-02T10:00:00Z",
+      "updated_at": "2026-01-02T10:05:00Z",
+      "channel": "api",
+      "client": "synthetic-client",
+      "video": null
+    },
+    {
+      "conversation_id": "550e8400-e29b-41d4-a716-446655440002",
+      "scope": "video",
+      "title": null,
+      "preview": null,
+      "status": "active",
+      "message_count": 1,
+      "created_at": "2026-01-01T09:00:00Z",
+      "updated_at": "2026-01-01T09:00:00Z",
+      "channel": "embed",
+      "client": null,
+      "video": {
+        "id": "synthetic-video",
+        "title": "Synthetic video lesson",
+        "thumbnail_url": "https://example.com/synthetic-thumbnail.jpg",
+        "url": null
+      }
+    }
+  ],
+  "pagination": { "limit": 2, "offset": 7, "has_more": true }
+}

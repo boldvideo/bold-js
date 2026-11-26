@@ -1,4 +1,4 @@
-import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, GetConversationOptions, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
+import type { AIEvent, AIResponse, AIChatResponse, AIRetrievalResponse, ChatOptions, GetConversationOptions, ListConversationsOptions, ConversationList, SearchOptions, RecommendationsOptions, RecommendationsResponse, AskOptions, RecommendOptions, RecommendResponse, Conversation, FeedbackReason, MessageFeedback, ImageInput, MultimodalCapability } from './types';
 import { camelizeKeys } from '../util/camelize';
 import { createVoice } from './voice';
 
@@ -206,10 +206,12 @@ async function jsonRequest<T = AIResponse>(
 async function getRequest<T>(
   path: string,
   config: AIConfig,
-  options?: GetConversationOptions
+  options?: GetConversationOptions & Pick<ListConversationsOptions, 'limit' | 'offset'>
 ): Promise<T> {
   const url = buildURL(config.baseURL, path);
   if (options?.viewer !== undefined) url.searchParams.set('viewer', options.viewer);
+  if (options?.limit !== undefined) url.searchParams.set('limit', String(options.limit));
+  if (options?.offset !== undefined) url.searchParams.set('offset', String(options.offset));
   for (const [key, value] of Object.entries(chatScopeParams(options ?? {}))) {
     url.searchParams.set(key, JSON.stringify(value));
   }
@@ -477,6 +479,23 @@ export interface AIClient {
    */
   getConversation(conversationId: string, options?: GetConversationOptions): Promise<Conversation>;
 
+  /**
+   * List a viewer's conversations, newest first, within the credential's visibility.
+   * Call on the server with a server-only API key. Verified AI access keys are not supported.
+   *
+   * @example
+   * // Server only. Derive viewer from your authenticated session.
+   * const serverBold = createClient(process.env.BOLD_API_KEY!);
+   * const page = await serverBold.ai.listConversations({ viewer, limit: 20, offset: 0 });
+   * for (const conversation of page.conversations) {
+   *   console.log(conversation.conversationId, conversation.title, conversation.preview);
+   * }
+   * const nextOffset = page.pagination.hasMore
+   *   ? page.pagination.offset + page.pagination.limit
+   *   : null;
+   */
+  listConversations(options: ListConversationsOptions): Promise<ConversationList>;
+
   /** Rate an assistant message. */
   rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback>;
 
@@ -620,6 +639,10 @@ export function createAI(config: AIConfig): AIClient {
     return getRequest<Conversation>(`ai/chat/${conversationId}`, config, options);
   }
 
+  async function listConversations(options: ListConversationsOptions): Promise<ConversationList> {
+    return getRequest<ConversationList>('ai/conversations', config, options);
+  }
+
   async function rateMessage(messageId: string, feedback: { rating: 'up' | 'down'; reasons?: FeedbackReason[]; note?: string }): Promise<MessageFeedback> {
     const response = await jsonRequest<{ data: MessageFeedback }>(
       `ai/messages/${encodeURIComponent(messageId)}/feedback`, feedback, config,
@@ -640,6 +663,7 @@ export function createAI(config: AIConfig): AIClient {
     recommendations: recommendations as AIClient['recommendations'],
     recommend: recommend as AIClient['recommend'],
     getConversation,
+    listConversations,
     rateMessage,
     clearRating,
     imageFromFile,

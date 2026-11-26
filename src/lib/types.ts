@@ -706,6 +706,45 @@ export interface Conversation {
   updatedAt: string;
 }
 
+/** Options for listing a viewer's conversations. Pagination defaults and limits are applied by the server. */
+export interface ListConversationsOptions {
+  /** Viewer UUID or external ID. */
+  viewer: string;
+  /** Defaults to 20; the server clamps to 1..100. */
+  limit?: number;
+  /** Defaults to 0; the server enforces a minimum of 0. */
+  offset?: number;
+}
+
+/** Video attached to a video-scoped conversation summary. */
+export interface ConversationVideo {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  url: string | null;
+}
+
+/** A viewer's conversation without its message history. */
+export interface ConversationSummary {
+  conversationId: string;
+  scope: 'library' | 'video' | null;
+  title: string | null;
+  preview: string | null;
+  status: string;
+  messageCount: number;
+  video: ConversationVideo | null;
+  createdAt: string;
+  updatedAt: string;
+  channel: NonNullable<ChatOptions['channel']>;
+  client: string | null;
+}
+
+/** Conversation page with the server's pagination values, unchanged. */
+export interface ConversationList {
+  conversations: ConversationSummary[];
+  pagination: { limit: number; offset: number; hasMore: boolean };
+}
+
 /** Per-request identity and grants for history. Gated conversations require their bound viewer/access/focus. */
 export interface GetConversationOptions {
   viewer?: string;
