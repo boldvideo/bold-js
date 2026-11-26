@@ -742,6 +742,7 @@ console.log(response.content);
 | `prompt` | `string` | The user's question (required) |
 | `focus` | `{ videoId: string; currentTime?: number }` | Answer from this video first, then widen to the library on a miss |
 | `stream` | `boolean` | `true` (default) for SSE, `false` for JSON |
+| `signal` | `AbortSignal` | Cancel the HTTP request and response body |
 | `synthesize` | `boolean` | `true` (default); `false` returns library retrieval results without synthesis |
 | `conversationId` | `string` | Pass to continue existing conversation |
 | `collectionId` | `string` | Filter to a specific collection |
@@ -752,6 +753,28 @@ console.log(response.content);
 | `tags` | `string[]` | Filter by tags |
 | `videoId` | `string` | Deprecated: legacy video-only route; use `focus` for video-first library chat |
 | `currentTime` | `number` | Legacy playback position in seconds (top-level `videoId` without `focus`); ignored when `focus` is present—use `focus.currentTime` |
+
+#### Stopping an answer
+
+Pass a signal to cancel `chat`, `ask`, `coach`, or `search`, in streaming or JSON mode.
+On a server, you can pass the incoming request's signal to stop the upstream request when it aborts.
+
+```typescript
+const controller = new AbortController();
+// Call controller.abort() from your Stop handler or page cleanup.
+try {
+  const stream = await bold.ai.chat({ prompt: 'Explain pricing', signal: controller.signal });
+  for await (const event of stream) {
+    if (event.type === 'text_delta') console.log(event.delta);
+  }
+} catch (error) {
+  if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
+}
+```
+
+`controller.abort()` rejects pending requests/reads with the native `AbortError`, not `AIAPIError`.
+Breaking out of `for await` (or returning after an event) also cancels the response body, without throwing.
+Use the signal to cancel before iteration starts or while a read is pending.
 
 ### Video focus and collection access
 

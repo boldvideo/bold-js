@@ -129,6 +129,16 @@ const stream: Promise<AsyncIterable<AIEvent>> = ai.chat({ ...options, stream: tr
 const json: Promise<AIChatResponse | AIRetrievalResponse> = ai.chat({ ...options, stream: false });
 void [stream, json];
 
+const signal = new AbortController().signal;
+for (const method of [ai.chat, ai.ask, ai.coach]) {
+  const streaming: Promise<AsyncIterable<AIEvent>> = method({ prompt: 'Question', signal });
+  const json: Promise<AIResponse> = method({ prompt: 'Question', stream: false, signal });
+  void [streaming, json];
+}
+const searchStream: Promise<AsyncIterable<AIEvent>> = ai.search({ prompt: 'Question', signal });
+const searchJSON: Promise<AIResponse> = ai.search({ prompt: 'Question', stream: false, signal });
+void [searchStream, searchJSON];
+
 async function useSynthesisOptions(synthesize: boolean, stream: boolean): Promise<void> {
   for (const method of [ai.chat, ai.ask, ai.coach]) {
     const retrieval: AIRetrievalResponse = await method({ prompt: 'Question', focus: { videoId: 'lesson-1' }, stream: false, synthesize: false });
