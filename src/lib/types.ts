@@ -523,6 +523,8 @@ export interface AIRetrievalResponse {
  */
 export interface ChatOptions {
   prompt: string;
+  /** Cancels the HTTP request and response body when aborted. */
+  signal?: AbortSignal;
   /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
   requestId?: string;
   /** Analytics attribution only; does not affect requestId deduplication. Missing/malformed values become unknown on the server. */
@@ -581,6 +583,8 @@ export interface AIContextMessage {
  */
 export interface SearchOptions {
   prompt: string;
+  /** Cancels the HTTP request and response body when aborted. */
+  signal?: AbortSignal;
   /** UUID for analytics deduplication. Reuse on retries; generate a new UUID for each intentional action. */
   requestId?: string;
   /** Analytics attribution only; does not affect requestId deduplication. Missing/malformed values become unknown on the server. */

@@ -46,7 +46,10 @@ export class AIAPIError extends Error {
 }
 
 async function httpError(method: string, url: URL, response: Response): Promise<AIAPIError> {
-  const body = await response.json().catch(() => undefined);
+  const body = await response.json().catch(error => {
+    if (error?.name === 'AbortError') throw error;
+    return undefined;
+  });
   return new AIAPIError(method, url.toString(), response, undefined, body);
 }
 
@@ -61,10 +64,12 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
 
   const decoder = new TextDecoder();
   let buffer = '';
+  let ended = false;
 
   try {
     while (true) {
       const { done, value } = await reader.read();
+      ended = done;
       
       if (value) {
         buffer += decoder.decode(value, { stream: true });
@@ -95,7 +100,6 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
           yield event;
           // Terminate on message_complete or error
           if (event.type === 'message_complete' || event.type === 'error') {
-            await reader.cancel();
             return;
           }
         } catch (err) {
@@ -106,6 +110,13 @@ async function* parseSSE(response: Response): AsyncIterable<AIEvent> {
       if (done) break;
     }
   } finally {
+    if (!ended) {
+      try {
+        await reader.cancel();
+      } catch {
+        // An aborted/errored body may reject cancellation; preserve the original error.
+      }
+    }
     reader.releaseLock();
   }
 }
@@ -148,7 +159,8 @@ export function chatScopeParams(options: Pick<ChatOptions, 'focus' | 'access'>):
 async function streamRequest(
   path: string,
   body: Record<string, unknown>,
-  config: AIConfig
+  config: AIConfig,
+  signal?: AbortSignal
 ): Promise<AsyncIterable<AIEvent>> {
   const url = buildURL(config.baseURL, path);
 
@@ -160,6 +172,7 @@ async function streamRequest(
       ...config.headers,
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {
@@ -176,7 +189,8 @@ async function jsonRequest<T = AIResponse>(
   path: string,
   body: Record<string, unknown> | undefined,
   config: AIConfig,
-  method: 'POST' | 'DELETE' = 'POST'
+  method: 'POST' | 'DELETE' = 'POST',
+  signal?: AbortSignal
 ): Promise<T> {
   const url = buildURL(config.baseURL, path);
 
@@ -188,6 +202,7 @@ async function jsonRequest<T = AIResponse>(
       ...config.headers,
     },
     body: JSON.stringify(body),
+    signal,
   });
 
   if (!response.ok) {
@@ -392,6 +407,12 @@ export interface AIClient {
    * // Non-streaming
    * const response = await bold.ai.chat({ prompt: "How do I price my SaaS?", stream: false });
    * console.log(response.content);
+   *
+   * @example
+   * // Cancel from a Stop button or when leaving the page.
+   * const controller = new AbortController();
+   * const stream = await bold.ai.chat({ prompt: "Explain pricing", signal: controller.signal });
+   * controller.abort(); // Pending requests/reads reject with AbortError.
    */
   chat(options: ChatOptions & { stream: false; synthesize: false }): Promise<AIRetrievalResponse>;
   chat(options: ChatOptions & { stream: false; synthesize?: true; focus?: never; access?: never }): Promise<AIResponse>;
@@ -551,10 +572,10 @@ export function createAI(config: AIConfig): AIClient {
 
     if (options.stream === false) {
       body.stream = false;
-      return jsonRequest<AIChatResponse | AIRetrievalResponse>(path, body, config);
+      return jsonRequest<AIChatResponse | AIRetrievalResponse>(path, body, config, 'POST', options.signal);
     }
 
-    return streamRequest(path, body, config);
+    return streamRequest(path, body, config, options.signal);
   }
 
   async function ask(options: AskOptions): Promise<AsyncIterable<AIEvent> | AIChatResponse | AIRetrievalResponse> {
@@ -585,10 +606,10 @@ export function createAI(config: AIConfig): AIClient {
 
     if (options.stream === false) {
       body.stream = false;
-      return jsonRequest(path, body, config);
+      return jsonRequest(path, body, config, 'POST', options.signal);
     }
 
-    return streamRequest(path, body, config);
+    return streamRequest(path, body, config, options.signal);
   }
 
   async function recommendations(options: RecommendationsOptions): Promise<AsyncIterable<AIEvent> | RecommendationsResponse> {

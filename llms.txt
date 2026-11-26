@@ -438,6 +438,13 @@ sanitize them before rendering as HTML.
 Chat, search, and recommendations support streaming (`stream: true`, the default)
 and non-streaming responses. Voice uses a browser session handle instead of SSE.
 
+Chat, ask, coach, and search accept `signal?: AbortSignal` in both modes. It is
+passed to fetch, never sent in the request body. `controller.abort()` rejects
+pending requests/reads with the native AbortError, not AIAPIError; catch around
+both the API call and iteration. Breaking/returning from active iteration cancels
+the response body without throwing. Use the signal before iteration starts or
+to interrupt a pending read.
+
 - `bold.ai.chat(options: ChatOptions)` - Conversational Q&A (library-wide or video-scoped)
 - `bold.ai.search(options: SearchOptions)` - Semantic search with AI summary
 - `bold.ai.recommendations(options: RecommendationsOptions)` - Topic-based video recommendations
@@ -760,6 +767,7 @@ union lists known events only. Parsing stops at `message_complete` or `error`.
 ```typescript
 {
   prompt: string;              // Required
+  signal?: AbortSignal;        // Cancel the HTTP request and response body
   focus?: ChatFocus;           // { videoId: string; currentTime?: number }
   requestId?: string;           // UUID per intentional action; reuse on retries
   channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
@@ -805,6 +813,7 @@ bound viewer/access/focus, even after gated mode is disabled. Omission is not a 
 ```typescript
 {
   prompt: string;              // Required
+  signal?: AbortSignal;        // Cancel the HTTP request and response body
   requestId?: string;           // UUID per intentional action; reuse on retries
   channel?: 'portal' | 'embed' | 'api' | 'mcp' | 'unknown';
   clientName?: string;
