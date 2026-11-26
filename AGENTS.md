@@ -25,7 +25,7 @@ This is the Bold JavaScript SDK (`@boldvideo/bold-js`) - a TypeScript client lib
 
 ## Packages
 
-The repository is a pnpm workspace that publishes two npm packages, each versioned
+The repository is a pnpm workspace that publishes three npm packages, each versioned
 and released on its own through the same changesets flow:
 
 - `@boldvideo/bold-js`: the SDK. It is the repository root (`src/`, `test/`), and
@@ -34,11 +34,7 @@ and released on its own through the same changesets flow:
   `package.json`, `tsconfig.json`, tests (`pnpm test`, vitest) and README. The SDK
   must not depend on it, and it takes SDK objects structurally instead of importing
   the SDK, so either can be released without the other.
-- `@boldvideo/assistant`: an unreleased, private package in `packages/assistant`.
-  Its `core`, `server` and `testing` entries have no runtime dependencies. It
-  takes SDK clients structurally; the workspace SDK is a dev dependency for type
-  drift checks. Build the SDK before running its lint. Do not publish it or add a
-  changeset until the React entry and release work are explicitly requested.
+- `@boldvideo/assistant`: the React assistant, in `packages/assistant`, published on its own. Its root entry supplies the provider, dock, panel and hooks; `styles.css` supplies the default look. Its `core`, `server` and `testing` entries have no runtime dependencies. It takes SDK clients and player handles structurally; the workspace SDK is a dev dependency for type drift checks. Build the SDK before running its lint. Its browser proofs and packed-app checks live in `proof/`.
 
 A changeset names the package it bumps. The root `tsconfig.json` and `.npmignore`
 exclude `packages/`, so the SDK's typecheck and tarball contain the SDK only. The

@@ -1,3 +1,5 @@
+import type { StuckMoment } from "./moment";
+
 export interface AssistantVideo {
   videoId: string;
   canonicalVideoId?: string | null;
@@ -8,6 +10,7 @@ export interface AssistantVideo {
   conversationStarters?: readonly string[];
   onSeek?: (seconds: number, interactionId?: string | null) => void;
   playing?: boolean;
+  moment?: StuckMoment | null;
 }
 export interface VideoSnapshot { video: AssistantVideo | null; switching: boolean }
 const SETTLE_MS = 120;
@@ -21,7 +24,8 @@ export function createVideoStore() {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const listeners = new Set<() => void>();
   function commit(video: AssistantVideo | null) {
-    const switching = video !== null && stale && pending > 0;
+    // A released page is unresolved even before its fallback mounts.
+    const switching = video !== null ? stale : pending > 0;
     if (state.video === video && state.switching === switching) return;
     state = { video, switching };
     for (const listener of [...listeners]) listener();

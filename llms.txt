@@ -2,13 +2,46 @@
 
 > TypeScript client for the Bold Video API. Fetch videos, playlists, settings. Stream AI responses. Track analytics.
 
-## Unreleased assistant package
+## Assistant package
 
-`packages/assistant` is private and not published. It has no root export or React code yet.
+`@boldvideo/assistant` is an independently published React 18/19 package in `packages/assistant`.
+Import its `styles.css` once. Integrate a server handler, `AssistantProvider` above the pages
+with `AssistantDock`, and `useAssistantVideo(video)` on the video page; spread the returned
+`props` and `ref` onto BoldPlayer or a native video. Register `AssistantVideoPending` in
+every video loading fallback so switching never flashes the library.
+The provider takes `endpoint` or `transport`, required `viewerKey`, optional structural
+`settings` and `labels: Partial<AssistantLabels>`. There is no history prop: history requires
+both transport `list` and `load`. Changing viewerKey clears the thread. Scope follows the page;
+set-aside uses core's rule. Keep the provider mounted across navigation.
+`useAssistant()` exposes messages, streaming, ask/stop/retry/startNew/open,
+video/place/switching/setAside/continueConversation, labels and branding.
+Its history field is null without both transport list and load. Otherwise it contains
+items, loading, error, hasMore, refresh() and more(). Refresh replaces the first page;
+more appends the next page. open(id) loads an item and resolves to a success boolean.
+Use continueConversation() for the Continue button; source-following is handled by sourceLink.
+`useAssistantSources(message)`
+resolves passages and sourceLink(id, wholePassage?) anchor props. These and useAssistantVideo
+are the three public hooks; the default panel uses no private API. AssistantPanel renders
+without a dock; AssistantAnswer renders one message. Navigation props are navigate(href)
+and videoHref(videoId, seconds). Source links carry interactionId; same-video sources seek.
+All defaults live in defaultAssistantLabels; data from the server is displayed unchanged.
+Other public helpers: formatAssistantTime, assistantChapterAt, assistantSafeHref,
+remarkAssistantCitations, preloadAssistantPanel. The panel is a lazy chunk.
+remarkAssistantCitations accepts AssistantCitationOptions with optional resolve(id), returning
+{ text, title, href?, canSeek } or undefined. It emits native citation elements; the panel
+delegates clicks so links keep focus across streaming updates. Without options it emits fragment links.
+Dock state: data-state="open|closed". Dock/panel: data-place="video|library", presence
+attributes data-switching and data-set-aside. Styles use --bold-assistant-* variables;
+the package README lists every default and includes a tested hooks-only panel example.
+Each question gets crypto.randomUUID(); retry reuses the original request and replaces
+the interrupted turn. Stop aborts the transport signal. Attempt guards reject late retries.
 `@boldvideo/assistant/core` exports `reduceThread`, `emptyThread`, `buildPassages`,
 `citationPlayStart`, `DEFAULT_PASSAGE_GAP_SECONDS`, `momentAfterMove`,
 `momentAfterStandingStill`, `PAUSE_AFTER_MS`, `createVideoStore`, `shouldSetAside`
 and `createFetchTransport`, plus their types. All playback times are seconds.
+question_asked accepts retry: true for the last interrupted/retryable matching question.
+AssistantVideo.moment contains paused/relistened facts. shouldSetAside accepts a followed
+interaction ID or local answer ID; the React caller scopes it to the destination video.
 Progress steps expose `stage`, `state`, optional `scope`, unchanged server `message`
 and `found: { passages, videos }` counts; locally inferred steps have no message.
 The answer's `scope.widenedFrom` records widening. Panels supply labels and translations.
@@ -24,8 +57,9 @@ listing and chat cancellation support, both present in the current workspace SDK
 Type-only checks verify that `ReturnType<typeof createClient>` is assignable to
 `AssistantBold`, that chat accepts `AbortSignal`, and that copied event types match.
 The handler supports open-mode tenants with a server key able to list conversations.
-Verified-access keys cannot list ownership; list/continue/load fail closed with the
-upstream 403. Loading bound history requiring focus is unsupported by `load(id)`.
+Verified-access failures return 403 verified_ai_access_unsupported; the fetch transport
+preserves typed JSON errors and the panel shows the handler's exact message.
+Loading bound history requiring focus is unsupported by `load(id)`.
 Do not bypass ownership or disable a tenant's access policy to work around this.
 
 ## Installation

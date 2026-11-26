@@ -40,7 +40,7 @@ export interface Thread {
   isStreaming: boolean;
 }
 export type ThreadEvent = AssistantEvent
-  | { type: "question_asked"; request: AskRequest; fresh?: boolean }
+  | { type: "question_asked"; request: AskRequest; fresh?: boolean; retry?: boolean }
   | { type: "viewer_stopped" | "stream_ended"; requestId: string }
   | { type: "thread_reset" }
   | { type: "conversation_loaded"; conversation: ConversationDetail }
@@ -90,7 +90,15 @@ export function reduceThread(state: Thread, fact: ThreadEvent | { type: string }
   }
   if (event.type === "question_asked") {
     const { request } = event;
-    const previous = event.fresh ? emptyThread : stopThread(state);
+    let previous = event.fresh ? emptyThread : stopThread(state);
+    if (event.retry) {
+      const question = state.messages.at(-2);
+      const answer = state.messages.at(-1);
+      if (state.isStreaming || question?.id !== `user-${request.requestId}`
+        || question.content !== request.prompt || answer?.role !== "assistant"
+        || !(answer.status === "stopped" || (answer.status === "error" && answer.error?.retryable))) return state;
+      previous = { ...previous, conversationId: request.conversationId, messages: previous.messages.slice(0, -2) };
+    }
     const base = { sources: [], citationMap: {}, steps: [] };
     return {
       conversationId: request.conversationId ?? previous.conversationId,

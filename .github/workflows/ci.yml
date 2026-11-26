@@ -99,7 +99,7 @@ jobs:
           pnpm run lint
           pnpm exec vitest run --coverage
           pnpm run build
-          node --input-type=module -e 'await Promise.all(["core", "server", "testing"].map(entry => import("@boldvideo/assistant/" + entry))); console.log("All assistant entry points imported")'
+          node --input-type=module -e 'await Promise.all(["@boldvideo/assistant", ...["core", "server", "testing"].map(entry => "@boldvideo/assistant/" + entry)].map(entry => import(entry))); console.log("All assistant entry points imported")'
 
   size-check:
     name: Bundle Size Check
