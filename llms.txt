@@ -2,6 +2,32 @@
 
 > TypeScript client for the Bold Video API. Fetch videos, playlists, settings. Stream AI responses. Track analytics.
 
+## Unreleased assistant package
+
+`packages/assistant` is private and not published. It has no root export or React code yet.
+`@boldvideo/assistant/core` exports `reduceThread`, `emptyThread`, `buildPassages`,
+`citationPlayStart`, `DEFAULT_PASSAGE_GAP_SECONDS`, `momentAfterMove`,
+`momentAfterStandingStill`, `PAUSE_AFTER_MS`, `createVideoStore`, `shouldSetAside`
+and `createFetchTransport`, plus their types. All playback times are seconds.
+Progress steps expose `stage`, `state`, optional `scope`, unchanged server `message`
+and `found: { passages, videos }` counts; locally inferred steps have no message.
+The answer's `scope.widenedFrom` records widening. Panels supply labels and translations.
+The reducer's `citationSources` stays paired with `citationIndices`; pass both to
+`buildPassages` so completion's reordered `sources` cannot redirect stable IDs.
+`@boldvideo/assistant/server` exports `createAssistantHandler({ bold, authorize })`:
+POST streams chat, GET lists the authorized viewer's conversations, and
+GET `?conversation=id` loads an owned conversation. Access is always decided by
+the app; missing access fails closed. Keys stay on the server.
+`@boldvideo/assistant/testing` exports `createReplayTransport`, `createFakeBold`
+and `syntheticAnswer` for keyless tests. The server requires SDK conversation
+listing and chat cancellation support, both present in the current workspace SDK.
+Type-only checks verify that `ReturnType<typeof createClient>` is assignable to
+`AssistantBold`, that chat accepts `AbortSignal`, and that copied event types match.
+The handler supports open-mode tenants with a server key able to list conversations.
+Verified-access keys cannot list ownership; list/continue/load fail closed with the
+upstream 403. Loading bound history requiring focus is unsupported by `load(id)`.
+Do not bypass ownership or disable a tenant's access policy to work around this.
+
 ## Installation
 
 ```bash
