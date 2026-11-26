@@ -8,12 +8,6 @@ type SDK = ReturnType<typeof createClient>;
 
 type EventsFromSDK = Assert<Assignable<AIEvent, AssistantEvent>>;
 type EventsToSDK = Assert<Assignable<AssistantEvent, AIEvent>>;
-type ExistingMethods = Assert<Assignable<SDK["ai"], Pick<AssistantBold["ai"], "chat" | "getConversation">>>;
-
-// Temporary, explicit incompatibilities with the current workspace SDK.
-// Remove these expected errors when listing and cancellation land. Their
-// becoming unused fails lint, forcing the complete contract to be checked.
-// @ts-expect-error The current SDK has no listConversations method.
 type FullClient = Assert<Assignable<SDK, AssistantBold>>;
-// @ts-expect-error Extra argument properties alone cannot prove cancellation support.
-type ChatCancellation = Assert<Assignable<"signal", keyof ChatOptions>>;
+// Structural assignment alone permits extra request fields; check signal explicitly.
+type ChatCancellation = Assert<Assignable<AbortSignal, ChatOptions["signal"]>>;

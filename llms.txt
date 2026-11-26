@@ -18,7 +18,9 @@ GET `?conversation=id` loads an owned conversation. Access is always decided by
 the app; missing access fails closed. Keys stay on the server.
 `@boldvideo/assistant/testing` exports `createReplayTransport`, `createFakeBold`
 and `syntheticAnswer` for keyless tests. The server requires SDK conversation
-listing and chat cancellation support, which are not in the current SDK yet.
+listing and chat cancellation support, both present in the current workspace SDK.
+Type-only checks verify that `ReturnType<typeof createClient>` is assignable to
+`AssistantBold`, that chat accepts `AbortSignal`, and that copied event types match.
 
 ## Installation
 

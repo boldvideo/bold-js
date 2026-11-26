@@ -110,9 +110,9 @@ export interface ConversationSummary {
   messageCount: number;
   createdAt: string;
   updatedAt: string;
-  channel: string | null;
-  client: { name: string | null; version: string | null } | null;
-  video: { id: string; title: string | null; thumbnailUrl: string | null; url: string | null } | null;
+  channel: "portal" | "embed" | "api" | "mcp" | "unknown";
+  client: string | null;
+  video: { id: string; title: string; thumbnailUrl: string | null; url: string | null } | null;
 }
 export interface ConversationPage {
   conversations: ConversationSummary[];

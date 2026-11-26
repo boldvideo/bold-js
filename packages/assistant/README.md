@@ -10,7 +10,7 @@ The later React entry will add the provider, hooks, dock, panel and stylesheet. 
 
 ## Server integration
 
-The handler requires a client with `ai.listConversations({ viewer, limit?, offset? })` and cancellation via `ai.chat({ signal })`. These are not yet available in the current workspace SDK. The structural types describe the upcoming contract; lint explicitly tracks the two missing capabilities. The existing chat, history detail and copied event types are checked against the SDK now.
+The handler requires a client with `ai.listConversations({ viewer, limit?, offset? })` and cancellation via `ai.chat({ signal })`. The current workspace SDK supplies both. Type-only checks verify that the client returned by `createClient` is assignable to `AssistantBold`, that chat accepts an `AbortSignal`, and that the copied event union matches the SDK. The assistant still imports no SDK code at runtime.
 
 ```ts
 // A server route. The key never enters the browser bundle.
