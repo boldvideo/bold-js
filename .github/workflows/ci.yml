@@ -76,6 +76,31 @@ jobs:
           pnpm test
           pnpm run build
 
+  assistant:
+    name: Assistant package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+      - name: Use Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Build SDK declarations for compatibility checks
+        run: pnpm run build
+      - name: Typecheck, test and build
+        working-directory: packages/assistant
+        run: |
+          pnpm run lint
+          pnpm exec vitest run --coverage
+          pnpm run build
+          node --input-type=module -e 'await Promise.all(["core", "server", "testing"].map(entry => import("@boldvideo/assistant/" + entry))); console.log("All assistant entry points imported")'
+
   size-check:
     name: Bundle Size Check
     runs-on: ubuntu-latest

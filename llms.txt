@@ -2,6 +2,21 @@
 
 > TypeScript client for the Bold Video API. Fetch videos, playlists, settings. Stream AI responses. Track analytics.
 
+## Unreleased assistant package
+
+`packages/assistant` is private and not published. It has no root export or React code yet.
+`@boldvideo/assistant/core` exports `reduceThread`, `emptyThread`, `buildPassages`,
+`citationPlayStart`, `DEFAULT_PASSAGE_GAP_SECONDS`, `momentAfterMove`,
+`momentAfterStandingStill`, `PAUSE_AFTER_MS`, `createVideoStore`, `shouldSetAside`
+and `createFetchTransport`, plus their types. All playback times are seconds.
+`@boldvideo/assistant/server` exports `createAssistantHandler({ bold, authorize })`:
+POST streams chat, GET lists the authorized viewer's conversations, and
+GET `?conversation=id` loads an owned conversation. Access is always decided by
+the app; missing access fails closed. Keys stay on the server.
+`@boldvideo/assistant/testing` exports `createReplayTransport`, `createFakeBold`
+and `syntheticAnswer` for keyless tests. The server requires SDK conversation
+listing and chat cancellation support, which are not in the current SDK yet.
+
 ## Installation
 
 ```bash
