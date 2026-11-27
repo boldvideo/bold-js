@@ -1187,8 +1187,10 @@ Fetch conversation starter prompts, resolved per collection when available and
 falling back to the account-level starters otherwise:
 
 ```typescript
+import { isAnsweredStarter } from '@boldvideo/bold-js';
+
 // Account-level starters (no collectionIds)
-const { data: starters } = await bold.conversationStarters.list();
+const { data: accountStarters } = await bold.conversationStarters.list();
 
 // Resolve starters for one or more collections
 const { data: starters } = await bold.conversationStarters.list({
@@ -1196,8 +1198,51 @@ const { data: starters } = await bold.conversationStarters.list({
 });
 
 starters.forEach((starter) => {
-  console.log(starter.text, starter.source, starter.collectionId);
+  if (!isAnsweredStarter(starter)) {
+    console.log(starter.text, starter.source, starter.collectionId);
+  }
 });
+```
+
+Pass `viewer` (a Bold viewer UUID or your external ID, as on AI chat) to include
+up to three **Answered for you** items before the regular starters. Without
+`viewer`, the request and response are unchanged; `collectionIds` still sends
+the same comma-separated `collection_ids` query parameter.
+
+`ConversationStarter` is now a union of the original `{ text, source, collectionId }`
+shape and `AnsweredConversationStarter`. Use `isAnsweredStarter(item)` to narrow
+before accessing variant-specific fields, including `source` and `collectionId`.
+Answered items have `kind: 'answered'`, `text`, nullable `chapter`,
+`video: { id, title, thumbnail }` (nullable thumbnail), `at` (integer seconds ≥ 0),
+and `conversation: { id, title }` (nullable title).
+
+**Always render `item.text` as card text. `conversation.title` is model-written
+metadata and must never be shown as card text.** For example, render a button
+that starts a focused chat when tapped:
+
+```typescript
+const viewer = 'your-external-member-id';
+const { data: items } = await bold.conversationStarters.list({
+  collectionIds: ['collection-uuid-1'],
+  viewer
+});
+
+for (const item of items) {
+  if (!isAnsweredStarter(item)) continue;
+  const card = document.createElement('button');
+  card.textContent = item.text;
+  card.onclick = async () => {
+    const stream = await bold.ai.chat({
+      prompt: item.text,
+      viewer,
+      focus: { videoId: item.video.id, currentTime: item.at }
+    });
+    for await (const event of stream) {
+      if (event.type === 'text_delta') console.log(event.delta);
+    }
+  };
+  document.body.append(card);
+}
 ```
 
 ---
@@ -1334,6 +1379,7 @@ import type {
   CreateCommentData,
   // Conversation Starters
   ConversationStarter,
+  AnsweredConversationStarter,
   ConversationStarterSource,
   ListConversationStartersOptions
 } from '@boldvideo/bold-js';

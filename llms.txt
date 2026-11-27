@@ -90,6 +90,44 @@ All content methods return `Promise<{ data: T }>`.
 - `bold.playlists.list()` - List playlists
 - `bold.playlists.get(id)` - Get playlist with videos
 
+### Conversation starters
+
+`bold.conversationStarters.list({ collectionIds?, viewer? })` returns
+`Promise<{ data: ConversationStarter[] }>`; the options object is optional.
+`collectionIds: string[]` sends the unchanged comma-separated `collection_ids`.
+`viewer: string` is a Bold viewer UUID or your external ID, as on AI chat.
+With a viewer, up to three answered items precede the regular starters.
+Without a viewer, the request and response are unchanged.
+
+Exported types:
+- `ListConversationStartersOptions`: `{ collectionIds?: string[]; viewer?: string }`.
+- `ConversationStarterSource`: `'collection' | 'account'`.
+- `ConversationStarter`: `{ text: string; source: ConversationStarterSource; collectionId: string | null } | AnsweredConversationStarter`.
+- `AnsweredConversationStarter`: `{ kind: 'answered'; text: string; chapter: string | null; video: { id: string; title: string; thumbnail: string | null }; at: number; conversation: { id: string; title: string | null } }`. `at` is integer seconds ≥ 0.
+
+Import `isAnsweredStarter` from `@boldvideo/bold-js` to narrow the union before
+reading variant-specific fields (including legacy `source` and `collectionId`).
+Always display `item.text` as card text. `conversation.title` is model-written
+metadata and must never be displayed as card text.
+
+```typescript
+import { isAnsweredStarter, type ConversationStarter } from '@boldvideo/bold-js';
+
+const { data: items } = await bold.conversationStarters.list({ collectionIds, viewer });
+// Pass each card's item to this tap handler.
+async function onStarterTap(item: ConversationStarter) {
+  if (!isAnsweredStarter(item)) return;
+  const stream = await bold.ai.chat({
+    prompt: item.text,
+    viewer,
+    focus: { videoId: item.video.id, currentTime: item.at }
+  });
+  for await (const event of stream) {
+    if (event.type === 'text_delta') console.log(event.delta);
+  }
+}
+```
+
 ### ListVideosOptions
 
 ```typescript

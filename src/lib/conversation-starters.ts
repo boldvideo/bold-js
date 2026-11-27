@@ -1,9 +1,13 @@
 import { AxiosError, AxiosInstance } from "axios";
 
 import { camelizeKeys } from "../util/camelize";
-import type { ConversationStarter, ListConversationStartersOptions } from "./types";
+import type { AnsweredConversationStarter, ConversationStarter, ListConversationStartersOptions } from "./types";
 
 type ApiClient = AxiosInstance;
+
+export function isAnsweredStarter(item: ConversationStarter): item is AnsweredConversationStarter {
+  return "kind" in item && item.kind === "answered";
+}
 
 export class ConversationStartersAPIError extends Error {
   readonly status?: number;
@@ -47,6 +51,9 @@ export function createConversationStarters(client: ApiClient) {
       const qs = new URLSearchParams();
       if (options.collectionIds?.length) {
         qs.set("collection_ids", options.collectionIds.join(","));
+      }
+      if (options.viewer !== undefined) {
+        qs.set("viewer", options.viewer);
       }
       const query = qs.toString();
       return get(client, `conversation-starters${query ? `?${query}` : ""}`);
