@@ -10,13 +10,21 @@ import {
 const legacy: ConversationStarter = { text: 'Explore', source: 'collection', collectionId: 'collection-1' };
 const answered: AnsweredConversationStarter = {
   kind: 'answered',
+  reason: 'unanswered',
   text: 'What does the camera workshop say about exposure?',
   chapter: null,
   video: { id: 'video-1', title: 'Camera workshop', thumbnail: null },
   at: 0,
   conversation: { id: 'conversation-1', title: null },
 };
-const starters: ConversationStarter[] = [legacy, answered];
+const revisited: AnsweredConversationStarter = { ...answered, reason: 'revisited' };
+const { reason, ...withoutReason } = answered;
+// @ts-expect-error Answered starters require a reason.
+const missingReason: ConversationStarter = withoutReason;
+// @ts-expect-error Answered starters only accept the documented reasons.
+const invalidReason: AnsweredConversationStarter = { ...answered, reason: 'other' };
+void [reason, missingReason, invalidReason];
+const starters: ConversationStarter[] = [legacy, answered, revisited];
 const onlyAnswered: AnsweredConversationStarter[] = starters.filter(isAnsweredStarter);
 void onlyAnswered;
 
@@ -26,10 +34,11 @@ async function loadAndChat() {
   const { data } = await client.conversationStarters.list(options);
   for (const item of data) {
     if (isAnsweredStarter(item)) {
+      const reason: 'unanswered' | 'revisited' = item.reason;
       const chapter: string | null = item.chapter;
       const thumbnail: string | null = item.video.thumbnail;
       const title: string | null = item.conversation.title;
-      void [chapter, thumbnail, title];
+      void [reason, chapter, thumbnail, title];
       // @ts-expect-error Conversation metadata is nullable.
       const nonNullTitle: string = item.conversation.title;
       void nonNullTitle;

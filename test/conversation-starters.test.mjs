@@ -9,6 +9,7 @@ import * as sdk from "../dist/index.js";
 const { createClient, ConversationStartersAPIError } = sdk;
 const answered = {
   kind: "answered",
+  reason: "unanswered",
   text: "What does “Camera workshop” say about my question: “How do I set exposure?”?",
   chapter: "Manual exposure",
   video: { id: "video-1", title: "Camera workshop", thumbnail: "https://example.com/thumbnail.png" },
@@ -17,6 +18,7 @@ const answered = {
 };
 const answeredAtStart = {
   ...answered,
+  reason: "revisited",
   chapter: null,
   video: { ...answered.video, thumbnail: null },
   at: 0,
@@ -161,7 +163,7 @@ test("sends viewer UUIDs and external IDs alongside unchanged collection_ids", a
   ]);
 });
 
-test("preserves mixed answered and legacy starters and camelizes collection_id", async () => {
+test("preserves answered reasons and legacy starters while camelizing collection_id", async () => {
   const { data } = await createConversationStartersClient().list({ viewer: "member-42" });
   assert.deepEqual(data, [
     answered,
