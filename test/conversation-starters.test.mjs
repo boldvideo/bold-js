@@ -1,8 +1,27 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
+import { createRequire } from "node:module";
 import test, { after, before, beforeEach } from "node:test";
 
-import { createClient, ConversationStartersAPIError } from "../dist/index.js";
+import * as sdk from "../dist/index.js";
+
+const { createClient, ConversationStartersAPIError } = sdk;
+const answered = {
+  kind: "answered",
+  text: "What does “Camera workshop” say about my question: “How do I set exposure?”?",
+  chapter: "Manual exposure",
+  video: { id: "video-1", title: "Camera workshop", thumbnail: "https://example.com/thumbnail.png" },
+  at: 3505,
+  conversation: { id: "conversation-1", title: "Exposure settings" },
+};
+const answeredAtStart = {
+  ...answered,
+  chapter: null,
+  video: { ...answered.video, thumbnail: null },
+  at: 0,
+  conversation: { ...answered.conversation, title: null },
+};
 
 const requests = [];
 
@@ -24,6 +43,18 @@ before(async () => {
     }
 
     res.writeHead(200, { "content-type": "application/json" });
+
+    if (new URL(req.url, "http://localhost").searchParams.has("viewer")) {
+      res.end(JSON.stringify({
+        data: [
+          answered,
+          answeredAtStart,
+          { text: "Explore this collection", source: "collection", collection_id: "collection-1" },
+          { text: "What can I ask?", source: "account", collection_id: null },
+        ],
+      }));
+      return;
+    }
 
     if (req.url.startsWith("/api/v1/conversation-starters?collection_ids=")) {
       res.end(
@@ -100,10 +131,55 @@ test("omits the query param when collectionIds is missing or empty", async () =>
   const conversationStarters = createConversationStartersClient();
 
   await conversationStarters.list();
+  await conversationStarters.list({});
   await conversationStarters.list({ collectionIds: [] });
+  await conversationStarters.list({ viewer: undefined });
+  await conversationStarters.list({ collectionIds: ["collection-1", "collection-2"], viewer: undefined });
 
-  assert.equal(requests[0].url, "/api/v1/conversation-starters");
-  assert.equal(requests[1].url, "/api/v1/conversation-starters");
+  assert.deepEqual(requests.map(({ url }) => url), [
+    "/api/v1/conversation-starters",
+    "/api/v1/conversation-starters",
+    "/api/v1/conversation-starters",
+    "/api/v1/conversation-starters",
+    "/api/v1/conversation-starters?collection_ids=collection-1%2Ccollection-2",
+  ]);
+});
+
+test("sends viewer UUIDs and external IDs alongside unchanged collection_ids", async () => {
+  const conversationStarters = createConversationStartersClient();
+  await conversationStarters.list({ viewer: "00000000-0000-4000-8000-000000000001" });
+  await conversationStarters.list({
+    collectionIds: ["collection-1", "collection-2"],
+    viewer: "member+team & org/42",
+  });
+  await conversationStarters.list({ collectionIds: [], viewer: "" });
+
+  assert.deepEqual(requests, [
+    { method: "GET", authorization: "tenant-key", url: "/api/v1/conversation-starters?viewer=00000000-0000-4000-8000-000000000001" },
+    { method: "GET", authorization: "tenant-key", url: "/api/v1/conversation-starters?collection_ids=collection-1%2Ccollection-2&viewer=member%2Bteam+%26+org%2F42" },
+    { method: "GET", authorization: "tenant-key", url: "/api/v1/conversation-starters?viewer=" },
+  ]);
+});
+
+test("preserves mixed answered and legacy starters and camelizes collection_id", async () => {
+  const { data } = await createConversationStartersClient().list({ viewer: "member-42" });
+  assert.deepEqual(data, [
+    answered,
+    answeredAtStart,
+    { text: "Explore this collection", source: "collection", collectionId: "collection-1" },
+    { text: "What can I ask?", source: "account", collectionId: null },
+  ]);
+  for (const { isAnsweredStarter } of [sdk, createRequire(import.meta.url)("../dist/index.cjs")]) {
+    assert.deepEqual(data.map(isAnsweredStarter), [true, true, false, false]);
+    assert.deepEqual(data.filter(isAnsweredStarter), [answered, answeredAtStart]);
+  }
+});
+
+test("conversation starter types narrow both variants and compose with focused chat", () => {
+  const result = spawnSync(process.execPath, [
+    "node_modules/typescript/bin/tsc", "--project", "tsconfig.json", "--noEmit",
+  ], { encoding: "utf8" });
+  assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
 });
 
 test("camelizes collection_id, including null for account-sourced items", async () => {

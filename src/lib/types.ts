@@ -261,10 +261,28 @@ export type ConversationStarter = {
   text: string;
   source: ConversationStarterSource;
   collectionId: string | null;
+} | AnsweredConversationStarter;
+
+/** A newly published video answering a question the viewer asked. */
+export type AnsweredConversationStarter = {
+  kind: "answered";
+  /** Card text and the prompt to use when starting a focused chat. */
+  text: string;
+  chapter: string | null;
+  video: { id: string; title: string; thumbnail: string | null };
+  /** Start of the answering moment in seconds (integer >= 0). */
+  at: number;
+  conversation: {
+    id: string;
+    /** Model-written metadata; never display as card text. Use `text` instead. */
+    title: string | null;
+  };
 };
 
 export type ListConversationStartersOptions = {
   collectionIds?: string[];
+  /** Bold viewer UUID or your external ID, as on AI chat. */
+  viewer?: string;
 };
 
 export type Settings = {
