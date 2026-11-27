@@ -266,6 +266,11 @@ export type ConversationStarter = {
 /** A newly published video answering a question the viewer asked. */
 export type AnsweredConversationStarter = {
   kind: "answered";
+  reason:
+    /** Pearl found no or only a weak answer originally; this video is the first real answer. Show prominently. */
+    | "unanswered"
+    /** Pearl had answered; this video covers the topic again. Show as a quiet hint. */
+    | "revisited";
   /** Card text and the prompt to use when starting a focused chat. */
   text: string;
   chapter: string | null;

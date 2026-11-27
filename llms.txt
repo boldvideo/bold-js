@@ -96,14 +96,17 @@ All content methods return `Promise<{ data: T }>`.
 `Promise<{ data: ConversationStarter[] }>`; the options object is optional.
 `collectionIds: string[]` sends the unchanged comma-separated `collection_ids`.
 `viewer: string` is a Bold viewer UUID or your external ID, as on AI chat.
-With a viewer, up to three answered items precede the regular starters.
+With a viewer, up to three `unanswered` items come first, then at most one `revisited` item, before the regular starters.
 Without a viewer, the request and response are unchanged.
 
 Exported types:
 - `ListConversationStartersOptions`: `{ collectionIds?: string[]; viewer?: string }`.
 - `ConversationStarterSource`: `'collection' | 'account'`.
 - `ConversationStarter`: `{ text: string; source: ConversationStarterSource; collectionId: string | null } | AnsweredConversationStarter`.
-- `AnsweredConversationStarter`: `{ kind: 'answered'; text: string; chapter: string | null; video: { id: string; title: string; thumbnail: string | null }; at: number; conversation: { id: string; title: string | null } }`. `at` is integer seconds ≥ 0.
+- `AnsweredConversationStarter`: `{ kind: 'answered'; reason: 'unanswered' | 'revisited'; text: string; chapter: string | null; video: { id: string; title: string; thumbnail: string | null }; at: number; conversation: { id: string; title: string | null } }`. `reason` is required; `at` is integer seconds ≥ 0.
+
+Render `reason: 'unanswered'` prominently: Pearl originally found nothing or only a weak answer, and this video is the first real answer.
+Render `reason: 'revisited'` as a quiet starter: Pearl had answered, and this video covers the topic again.
 
 Import `isAnsweredStarter` from `@boldvideo/bold-js` to narrow the union before
 reading variant-specific fields (including legacy `source` and `collectionId`).

@@ -1205,16 +1205,20 @@ starters.forEach((starter) => {
 ```
 
 Pass `viewer` (a Bold viewer UUID or your external ID, as on AI chat) to include
-up to three **Answered for you** items before the regular starters. Without
+**Answered for you** items before the regular starters: up to three `unanswered`
+items first, then at most one `revisited` item. Without
 `viewer`, the request and response are unchanged; `collectionIds` still sends
 the same comma-separated `collection_ids` query parameter.
 
 `ConversationStarter` is now a union of the original `{ text, source, collectionId }`
 shape and `AnsweredConversationStarter`. Use `isAnsweredStarter(item)` to narrow
 before accessing variant-specific fields, including `source` and `collectionId`.
-Answered items have `kind: 'answered'`, `text`, nullable `chapter`,
+Answered items have `kind: 'answered'`, required `reason: 'unanswered' | 'revisited'`, `text`, nullable `chapter`,
 `video: { id, title, thumbnail }` (nullable thumbnail), `at` (integer seconds ≥ 0),
 and `conversation: { id, title }` (nullable title).
+
+Render `reason: 'unanswered'` prominently: Pearl originally found nothing or only a weak answer, and this video is the first real answer.
+Render `reason: 'revisited'` as a quiet starter: Pearl had answered, and this video covers the topic again.
 
 **Always render `item.text` as card text. `conversation.title` is model-written
 metadata and must never be shown as card text.** For example, render a button
